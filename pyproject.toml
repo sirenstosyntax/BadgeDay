@@ -44,3 +44,10 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "tests"]
+# `supabase/` at the repo root holds the SQL migrations, not a Python package. Ruff
+# infers first-party names from top-level directories, so without this it files the
+# Supabase SDK alongside our own imports and then fights the fix on every run.
+known-third-party = ["supabase"]
