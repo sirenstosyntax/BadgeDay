@@ -70,24 +70,27 @@ export type Coverage = {
   percent: number
 }
 
-export type ReviewRow = {
+/**
+ * One answered question. Carries the answer, unlike `QuizQuestion` — safe because the
+ * view behind it joins through responses, so nothing unanswered can appear here.
+ *
+ * `citation` arrives already rendered. The browser does not assemble it from section_path
+ * and page numbers, deliberately: the same string is shown on answering and again on
+ * review, and a second implementation is a second chance to point at the wrong section.
+ */
+export type ReviewItem = {
   question_id: string
-  session_id: string
-  document_id: string
   type: QuestionType
   stem: string
   options: string[] | null
-  correct_index: number | null
-  correct_answer: boolean | null
-  model_answer: string | null
-  explanation: string
   is_correct: boolean | null
   selected_index: number | null
   answered_boolean: boolean | null
   answered_text: string | null
+  correct_index: number | null
+  correct_answer: boolean | null
+  model_answer: string | null
+  explanation: string
+  citation: string
   answered_at: string
-  section_path: string[]
-  section_title: string | null
-  page_start: number
-  page_end: number
 }

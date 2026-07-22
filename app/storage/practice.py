@@ -74,6 +74,32 @@ class Verdict(BaseModel):
     citation: str
 
 
+class ReviewItem(BaseModel):
+    """One answered question, with everything needed to learn from it.
+
+    Carries the answer, unlike QuizQuestion — which is safe here precisely because
+    `answered_questions` joins through `responses`. A question a candidate has not
+    answered cannot appear in this list at all.
+    """
+
+    question_id: str
+    type: QuestionType
+    stem: str
+    options: list[str] | None = None
+
+    is_correct: bool | None = None
+    selected_index: int | None = None
+    answered_boolean: bool | None = None
+    answered_text: str | None = None
+
+    correct_index: int | None = None
+    correct_answer: bool | None = None
+    model_answer: str | None = None
+    explanation: str
+    citation: str
+    answered_at: datetime
+
+
 class Coverage(BaseModel):
     document_id: str
     sections_total: int
@@ -208,39 +234,46 @@ def _translate(exc: APIError) -> Exception:
     return exc
 
 
-def _verdict(row: dict[str, Any]) -> Verdict:
-    citation = format_section_path(row.get("section_path") or [])
+def _citation(row: dict[str, Any]) -> str:
+    """Render a stored location the way a candidate would look it up.
+
+    One implementation, used by both the verdict and the review list, and deliberately not
+    reimplemented in the browser. The citation is the product; two renderings of it are two
+    chances to point at a section that is not where we said it was.
+    """
+    label = format_section_path(row.get("section_path") or [])
     page_start, page_end = row["page_start"], row["page_end"]
     pages = f"p. {page_start}" if page_start == page_end else f"pp. {page_start}–{page_end}"
     title = row.get("section_title")
 
-    if citation and title:
-        display = f"{citation} {title}, {pages}"
-    elif citation:
-        display = f"{citation}, {pages}"
-    else:
-        display = pages
+    if label and title:
+        return f"{label} {title}, {pages}"
+    if label:
+        return f"{label}, {pages}"
+    return pages
 
+
+def _verdict(row: dict[str, Any]) -> Verdict:
     return Verdict(
         is_correct=row["is_correct"],
         explanation=row["explanation"],
         correct_index=row["correct_index"],
         correct_answer=row["correct_answer"],
         model_answer=row["model_answer"],
-        citation=display,
+        citation=_citation(row),
     )
 
 
 # --- Review and coverage -----------------------------------------------------
 
 
-def reviewable(db: Client, session_id: str) -> list[dict]:
+def reviewable(db: Client, session_id: str) -> list[ReviewItem]:
     """Everything answered in a session, with its answer and citation.
 
     Reads answered_questions, which joins through responses — so a question is reviewable
     only once it has been answered.
     """
-    return (
+    rows = (
         db.table("answered_questions")
         .select("*")
         .eq("session_id", session_id)
@@ -248,6 +281,7 @@ def reviewable(db: Client, session_id: str) -> list[dict]:
         .execute()
         .data
     )
+    return [ReviewItem.model_validate({**row, "citation": _citation(row)}) for row in rows]
 
 
 def coverage(db: Client, document_id: str | None = None) -> list[Coverage]:

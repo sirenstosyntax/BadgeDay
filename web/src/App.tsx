@@ -3,11 +3,25 @@ import { api } from './lib/api'
 import { signOut, useSession } from './lib/auth'
 import { Documents } from './ui/Documents'
 import { Quiz } from './ui/Quiz'
+import { Review } from './ui/Review'
+import { Saved } from './ui/Saved'
 import { SignIn } from './ui/SignIn'
+
+/**
+ * Where the candidate is. A tagged union rather than a router: the app has four places
+ * and two of them need a session id, which a union carries and a path string would have
+ * to be parsed back out of. When there is a reason for real URLs — sharing, deep links,
+ * the back button — that is the moment to add a router, not before.
+ */
+type View =
+  | { name: 'documents' }
+  | { name: 'saved' }
+  | { name: 'quiz'; sessionId: string }
+  | { name: 'review'; sessionId: string }
 
 export default function App() {
   const { session, loading } = useSession()
-  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [view, setView] = useState<View>({ name: 'documents' })
   const [starting, setStarting] = useState(false)
 
   // Blank rather than a spinner: restoring a stored session takes a few milliseconds, and
@@ -24,7 +38,8 @@ export default function App() {
   async function practise(documentId: string | null) {
     setStarting(true)
     try {
-      setSessionId((await api.practice.start(documentId)).id)
+      const started = await api.practice.start(documentId)
+      setView({ name: 'quiz', sessionId: started.id })
     } finally {
       setStarting(false)
     }
@@ -34,8 +49,21 @@ export default function App() {
     <div className="min-h-screen bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
       <header className="border-b border-stone-200 dark:border-stone-800">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-          <span className="font-semibold tracking-tight">BadgeDay</span>
+          <button
+            onClick={() => setView({ name: 'documents' })}
+            className="font-semibold tracking-tight"
+          >
+            BadgeDay
+          </button>
           <div className="flex items-center gap-3 text-sm">
+            {view.name !== 'saved' && (
+              <button
+                onClick={() => setView({ name: 'saved' })}
+                className="text-stone-600 hover:underline dark:text-stone-400"
+              >
+                Saved
+              </button>
+            )}
             <span className="hidden text-stone-500 sm:inline dark:text-stone-400">
               {session.user.email}
             </span>
@@ -50,10 +78,18 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-8">
-        {sessionId ? (
-          <Quiz sessionId={sessionId} onDone={() => setSessionId(null)} />
-        ) : starting ? (
+        {starting ? (
           <p className="text-sm text-stone-500">Starting…</p>
+        ) : view.name === 'quiz' ? (
+          <Quiz
+            sessionId={view.sessionId}
+            onDone={() => setView({ name: 'documents' })}
+            onReview={() => setView({ name: 'review', sessionId: view.sessionId })}
+          />
+        ) : view.name === 'review' ? (
+          <Review sessionId={view.sessionId} onDone={() => setView({ name: 'documents' })} />
+        ) : view.name === 'saved' ? (
+          <Saved onDone={() => setView({ name: 'documents' })} />
         ) : (
           <Documents onPractise={(id) => void practise(id)} />
         )}

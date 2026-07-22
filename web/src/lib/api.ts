@@ -5,7 +5,7 @@ import type {
   NextQuestion,
   PracticeSession,
   QuizQuestion,
-  ReviewRow,
+  ReviewItem,
   Verdict,
 } from './types'
 
@@ -75,7 +75,7 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(answer),
       }),
-    review: (sessionId: string) => request<ReviewRow[]>(`/sessions/${sessionId}/review`),
+    review: (sessionId: string) => request<ReviewItem[]>(`/sessions/${sessionId}/review`),
     complete: (sessionId: string) =>
       request<PracticeSession>(`/sessions/${sessionId}/complete`, { method: 'POST' }),
   },

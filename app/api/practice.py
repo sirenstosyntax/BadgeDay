@@ -15,6 +15,7 @@ from app.storage.practice import (
     PracticeSession,
     QuestionNotFound,
     QuizQuestion,
+    ReviewItem,
     SessionNotFound,
     Verdict,
     complete_session,
@@ -107,7 +108,7 @@ def answer(db: DbDep, session_id: str, body: Answer) -> Verdict:
 
 
 @router.get("/sessions/{session_id}/review")
-def review(db: DbDep, session_id: str) -> list[dict]:
+def review(db: DbDep, session_id: str) -> list[ReviewItem]:
     """Everything answered in this session, with the source section for each."""
     _session(db, session_id)
     return reviewable(db, session_id)

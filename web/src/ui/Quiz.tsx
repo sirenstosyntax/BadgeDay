@@ -12,7 +12,15 @@ import type { QuizQuestion, Verdict } from '../lib/types'
  * this candidate's role. The UI is not choosing to withhold anything — there is nothing
  * here to withhold.
  */
-export function Quiz({ sessionId, onDone }: { sessionId: string; onDone: () => void }) {
+export function Quiz({
+  sessionId,
+  onDone,
+  onReview,
+}: {
+  sessionId: string
+  onDone: () => void
+  onReview: () => void
+}) {
   const [question, setQuestion] = useState<QuizQuestion | null>(null)
   const [remaining, setRemaining] = useState(0)
   const [verdict, setVerdict] = useState<Verdict | null>(null)
@@ -81,15 +89,28 @@ export function Quiz({ sessionId, onDone }: { sessionId: string; onDone: () => v
         <p className="text-sm text-stone-600 dark:text-stone-400">
           Every question in this set has been answered.
         </p>
-        <button
-          onClick={() => {
-            void api.practice.complete(sessionId).catch(() => {})
-            onDone()
-          }}
-          className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900"
-        >
-          Back to documents
-        </button>
+        <div className="flex justify-center gap-2">
+          {/* Review first, and it leads: getting the answer right is not the same as
+              knowing where it came from, and the citation is the thing worth re-reading. */}
+          <button
+            onClick={() => {
+              void api.practice.complete(sessionId).catch(() => {})
+              onReview()
+            }}
+            className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900"
+          >
+            Review this session
+          </button>
+          <button
+            onClick={() => {
+              void api.practice.complete(sessionId).catch(() => {})
+              onDone()
+            }}
+            className="rounded-lg border border-stone-300 px-4 py-2 text-sm dark:border-stone-700"
+          >
+            Back to documents
+          </button>
+        </div>
       </div>
     )
   }
