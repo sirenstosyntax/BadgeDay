@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_anon_key: str = ""
     supabase_service_role_key: str = ""
+    # Direct Postgres connection, used only to apply migrations and to verify RLS.
+    # Application code goes through the Supabase client, never this.
+    supabase_db_url: str = ""
 
     # --- Stripe --------------------------------------------------------------
     stripe_secret_key: str = ""

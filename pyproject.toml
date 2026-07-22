@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Cited practice questions generated from a firefighter promotional reading list."
 requires-python = ">=3.12"
 dependencies = [
+    "psycopg[binary]>=3.2",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
     "pydantic>=2.9",
