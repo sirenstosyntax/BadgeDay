@@ -7,6 +7,7 @@ deployment — pricing, model IDs, endpoints — is hardcoded at a call site.
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -41,6 +42,25 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     stripe_price_id_monthly: str = ""
     stripe_price_id_intensive_90day: str = ""
+
+    @field_validator("azure_docintel_endpoint")
+    @classmethod
+    def _endpoint_must_be_a_url(cls, value: str) -> str:
+        """Reject a non-URL endpoint at startup rather than deep in the pipeline.
+
+        Pasting the wrong secret into this field is an easy mistake — the variables sit
+        next to each other in .env — and without this check the failure surfaces much
+        later as an opaque HTTP error during ingestion.
+        """
+        if value and not value.startswith("https://"):
+            raise ValueError(
+                "AZURE_DOCINTEL_ENDPOINT must be a URL beginning with https:// — for "
+                "example https://sts-docintel.cognitiveservices.azure.com/. Find it in "
+                "the Azure portal under your Document Intelligence resource -> Keys and "
+                "Endpoint. (If the value you pasted starts with 'sk-', that is an API "
+                "key, not an endpoint.)"
+            )
+        return value
 
     @property
     def azure_docintel_configured(self) -> bool:
