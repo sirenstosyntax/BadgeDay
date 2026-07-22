@@ -1,0 +1,27 @@
+# Secrets
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# User-uploaded documents — never in git history
+uploads/
+*.pdf
+*.docx
+!tests/fixtures/*
+
+# Frontend
+node_modules/
+dist/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/

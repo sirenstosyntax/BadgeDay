@@ -1,0 +1,116 @@
+{
+  "source_name": "synthetic_sog.pdf",
+  "page_count": 2,
+  "blocks": [
+    {
+      "text": "EXAMPLE FIRE DEPARTMENT",
+      "page": 1,
+      "role": null
+    },
+    {
+      "text": "STANDARD OPERATING GUIDELINE 304",
+      "page": 1,
+      "role": null
+    },
+    {
+      "text": "SUBJECT: Structural Fire Attack",
+      "page": 1,
+      "role": null
+    },
+    {
+      "text": "304.1 Purpose",
+      "page": 1,
+      "role": null
+    },
+    {
+      "text": "This guideline establishes the minimum expectations for offensive and defensive fire attack at structure fires within the jurisdiction.",
+      "page": 1,
+      "role": null
+    },
+    {
+      "text": "304.2 Scope",
+      "page": 1,
+      "role": null
+    },
+    {
+      "text": "This guideline applies to all suppression personnel operating at a structure fire incident.",
+      "page": 1,
+      "role": null
+    },
+    {
+      "text": "304.2.1 Interior Operations",
+      "page": 1,
+      "role": null
+    },
+    {
+      "text": "A minimum of two members shall enter the hazard area together and shall remain in voice or visual contact at all times.",
+      "page": 1,
+      "role": null
+    },
+    {
+      "text": "SOG 304 - Page 1 of 2",
+      "page": 1,
+      "role": "pageNumber"
+    },
+    {
+      "text": "A charged hoseline shall be in place before the interior attack team advances past the entry point.",
+      "page": 2,
+      "role": null
+    },
+    {
+      "text": "304.2.2 Exterior Operations",
+      "page": 2,
+      "role": "sectionHeading"
+    },
+    {
+      "text": "Master streams shall not be directed into a structure while any member is operating inside that structure.",
+      "page": 2,
+      "role": null
+    },
+    {
+      "text": "2.5 gallons of foam concentrate shall be carried on each engine company assigned to this response.",
+      "page": 2,
+      "role": null
+    },
+    {
+      "text": "304.3 Responsibilities",
+      "page": 2,
+      "role": null
+    },
+    {
+      "text": "304.3.1 Company Officer",
+      "page": 2,
+      "role": null
+    },
+    {
+      "text": "The company officer shall confirm a completed 360-degree size-up before committing the company to an interior attack.",
+      "page": 2,
+      "role": null
+    },
+    {
+      "text": "304.3.2 Incident Commander",
+      "page": 2,
+      "role": "sectionHeading"
+    },
+    {
+      "text": "The incident commander shall announce the operational strategy over the assigned tactical channel and shall repeat the announcement on any change of strategy.",
+      "page": 2,
+      "role": null
+    },
+    {
+      "text": "Nothing in this guideline relieves any member of the obligation to report an unsafe condition immediately to the incident commander.",
+      "page": 2,
+      "role": null
+    },
+    {
+      "text": "Revised: January 2026",
+      "page": 2,
+      "role": null
+    },
+    {
+      "text": "SOG 304 - Page 2 of 2",
+      "page": 2,
+      "role": "pageNumber"
+    }
+  ]
+}
