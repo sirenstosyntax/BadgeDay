@@ -16,6 +16,14 @@ recording. An earlier hand-written version got the block granularity wrong (visu
 rather than paragraphs) and missed page-furniture roles entirely, which hid two real
 defects until a genuine document was run through.
 
+`synthetic_outline_sog.json` covers the other numbering family: named headings
+(`PURPOSE`, `PROCEDURE`) followed by `A.` / `1.` / `a.` / `i.` — the classic legal outline,
+which is what regional and county guidelines actually use. Unlike the decimal fixture this
+one is **hand-written**, because the `sectionHeading` role it depends on is assigned from
+visual formatting that a uniform-font render cannot reproduce. It also carries an org
+chart's worth of all-caps labels (`COMMAND`, `HYDRANT`), which look exactly like headings
+and must not become sections.
+
 It exercises the parts of the pipeline where silent failure destroys the product:
 
 - **Hierarchical outline numbering** — `304.1`, `304.2`, `304.2.1`, `304.3.2`. Chunk

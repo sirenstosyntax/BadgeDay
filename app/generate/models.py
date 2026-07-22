@@ -21,7 +21,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
-from app.ingest.models import Chunk
+from app.ingest.models import Chunk, format_section_path
 
 QuestionType = Literal["multiple_choice", "true_false", "short_answer"]
 
@@ -31,7 +31,7 @@ class Citation(BaseModel):
 
     document_id: str
     chunk_id: str
-    section_number: str | None
+    section_path: list[str]
     section_title: str | None
     page_start: int = Field(ge=1)
     page_end: int = Field(ge=1)
@@ -41,7 +41,7 @@ class Citation(BaseModel):
         return cls(
             document_id=chunk.document_id,
             chunk_id=chunk.chunk_id,
-            section_number=chunk.section_number,
+            section_path=list(chunk.section_path),
             section_title=chunk.section_title,
             page_start=chunk.page_start,
             page_end=chunk.page_end,
@@ -54,10 +54,11 @@ class Citation(BaseModel):
             if self.page_start == self.page_end
             else f"pp. {self.page_start}–{self.page_end}"
         )
-        if self.section_number and self.section_title:
-            return f"§ {self.section_number} {self.section_title}, {pages}"
-        if self.section_number:
-            return f"§ {self.section_number}, {pages}"
+        label = format_section_path(self.section_path)
+        if label and self.section_title:
+            return f"{label} {self.section_title}, {pages}"
+        if label:
+            return f"{label}, {pages}"
         return pages
 
 

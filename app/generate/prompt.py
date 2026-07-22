@@ -79,10 +79,11 @@ It is shown to them on review alongside the source reference."""
 def build_user_message(chunk: Chunk, target_count: int) -> str:
     """The per-section instruction, carrying the section text and how much to write."""
     where = chunk.location()
+    label = chunk.section_label
     heading = (
-        f"{chunk.section_number} {chunk.section_title}"
-        if chunk.section_number and chunk.section_title
-        else (chunk.section_number or "unnumbered passage")
+        f"{label} {chunk.section_title}"
+        if label and chunk.section_title
+        else (label or "unnumbered passage")
     )
     return (
         f"Section: {heading}\n"

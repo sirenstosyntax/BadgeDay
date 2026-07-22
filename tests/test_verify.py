@@ -40,7 +40,7 @@ def chunk() -> Chunk:
         document_id="doc-1",
         ordinal=3,
         kind="outline",
-        section_number="304.2.1",
+        section_path=["304.2.1"],
         section_title="Interior Operations",
         page_start=1,
         page_end=2,
@@ -95,7 +95,7 @@ def test_quote_matching_survives_line_breaks_and_case(chunk) -> None:
         options=["A charged hoseline", "A ladder", "A fan", "A saw"],
         correct_index=0,
     )
-    assert _verified(draft, chunk).citation.section_number == "304.2.1"
+    assert _verified(draft, chunk).citation.section_path == ["304.2.1"]
 
 
 # --- Copyright ---------------------------------------------------------------
@@ -197,19 +197,19 @@ def test_citation_is_built_from_the_chunk_not_the_model(chunk) -> None:
     citation = _verified(_mc(), chunk).citation
     assert citation.chunk_id == "chunk-1"
     assert citation.document_id == "doc-1"
-    assert citation.section_number == "304.2.1"
+    assert citation.section_path == ["304.2.1"]
     assert (citation.page_start, citation.page_end) == (1, 2)
 
 
 def test_citation_display_includes_section_and_page_range(chunk) -> None:
-    assert _verified(_mc(), chunk).citation.display() == "§ 304.2.1 Interior Operations, pp. 1–2"
+    assert _verified(_mc(), chunk).citation.display() == "304.2.1 Interior Operations, pp. 1–2"
 
 
 def test_citation_display_for_unnumbered_source() -> None:
     citation = Citation(
         document_id="d",
         chunk_id="c",
-        section_number=None,
+        section_path=[],
         section_title=None,
         page_start=4,
         page_end=4,
@@ -249,7 +249,7 @@ def test_container_heading_chunk_is_not_generatable() -> None:
         document_id="d",
         ordinal=5,
         kind="outline",
-        section_number="304.3",
+        section_path=["304.3"],
         section_title="Responsibilities",
         page_start=2,
         page_end=2,
@@ -259,6 +259,28 @@ def test_container_heading_chunk_is_not_generatable() -> None:
 
 
 def test_substantive_chunk_is_generatable(chunk) -> None:
+    assert is_generatable(chunk)
+
+
+def test_single_block_outline_item_is_generatable() -> None:
+    """An outline item is one block whose text *is* the requirement, not a heading.
+
+    Requiring more than one line skipped these entirely — a real section stating a real
+    rule was treated as an empty container.
+    """
+    chunk = Chunk(
+        chunk_id="c",
+        document_id="d",
+        ordinal=14,
+        kind="outline",
+        section_path=["PROCEDURE", "C", "4"],
+        page_start=3,
+        page_end=3,
+        text=(
+            "4. Initial Attack - The first arriving Aerial Apparatus or Rescue Unit will "
+            "assume Inside Truck and act as Division Supervisor until relieved."
+        ),
+    )
     assert is_generatable(chunk)
 
 
@@ -321,7 +343,7 @@ def test_numbered_section_needs_less_text_than_an_unnumbered_one() -> None:
         page_end=1,
         text="304.5 Ventilation\nVertical ventilation requires the approval of command.",
     )
-    numbered = Chunk(kind="outline", section_number="304.5", section_title="Ventilation", **common)
+    numbered = Chunk(kind="outline", section_path=["304.5"], section_title="Ventilation", **common)
     unnumbered = Chunk(kind="semantic", **common)
     assert is_generatable(numbered)
     assert not is_generatable(unnumbered)

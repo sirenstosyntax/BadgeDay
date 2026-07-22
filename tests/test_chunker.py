@@ -1,17 +1,16 @@
 """Chunker tests.
 
 The brief names the chunker as one of two components where silent failure destroys the
-product, so these tests target the specific ways it can fail quietly: a section number
-attached to the wrong text, a page number that sends the candidate to the wrong page, a
-false-positive heading that fragments a section, and IDs that shift under re-ingestion
-and orphan existing citations.
+product. These tests target the ways it fails quietly: an outline path attached to the
+wrong text, a page number that sends the candidate to the wrong page, a false heading
+that fragments a section, a real heading missed so its content becomes uncitable, and
+IDs that shift under re-ingestion and orphan existing citations.
+
+Both numbering families are covered, because a chunker that only understands one leaves
+whole documents citable by page number alone.
 """
 
-from app.ingest.chunker import (
-    _is_plausible_successor,
-    chunk_document,
-    chunk_id_for,
-)
+from app.ingest.chunker import chunk_document, chunk_id_for
 from app.ingest.models import AnalyzedBlock, AnalyzedDocument
 
 DOC_ID = "doc-1"
@@ -28,40 +27,201 @@ def _doc(*blocks: tuple[str, int] | tuple[str, int, str]) -> AnalyzedDocument:
     )
 
 
-def _by_section(chunks: list) -> dict[str | None, object]:
-    return {chunk.section_number: chunk for chunk in chunks}
+def _paths(chunks) -> list[list[str]]:
+    return [c.section_path for c in chunks]
 
 
-# --- Outline structure -------------------------------------------------------
+def _by_path(chunks) -> dict[str, object]:
+    return {c.section_label: c for c in chunks}
 
 
-def test_every_numbered_heading_becomes_its_own_chunk(synthetic_sog) -> None:
-    sections = {c.section_number for c in chunk_document(synthetic_sog, DOC_ID)}
-    assert {"304.1", "304.2", "304.2.1", "304.2.2", "304.3", "304.3.1", "304.3.2"} <= sections
+# --- Decimal outlines --------------------------------------------------------
 
 
-def test_child_section_is_not_swallowed_by_its_parent(synthetic_sog) -> None:
-    """304.2.1 must be citable on its own, not folded into 304.2."""
-    chunks = _by_section(chunk_document(synthetic_sog, DOC_ID))
+def test_decimal_headings_become_their_own_chunks(synthetic_sog) -> None:
+    labels = {c.section_label for c in chunk_document(synthetic_sog, DOC_ID)}
+    assert {"304.1", "304.2.1", "304.2.2", "304.3.1", "304.3.2"} <= labels
+
+
+def test_decimal_child_is_not_swallowed_by_its_parent(synthetic_sog) -> None:
+    chunks = _by_path(chunk_document(synthetic_sog, DOC_ID))
     assert "two members shall enter the hazard area" in chunks["304.2.1"].text
-    assert "two members shall enter the hazard area" not in chunks["304.2"].text
 
 
-def test_section_title_is_captured(synthetic_sog) -> None:
-    chunks = _by_section(chunk_document(synthetic_sog, DOC_ID))
-    assert chunks["304.2.1"].section_title == "Interior Operations"
-    assert chunks["304.3.1"].section_title == "Company Officer"
+def test_decimal_path_has_a_single_element(synthetic_sog) -> None:
+    """A decimal number states its own depth, so it needs no ancestors to be found."""
+    chunk = _by_path(chunk_document(synthetic_sog, DOC_ID))["304.2.1"]
+    assert chunk.section_path == ["304.2.1"]
 
 
-def test_body_text_stays_with_its_heading(synthetic_sog) -> None:
-    """Trailing prose after the last heading belongs to that heading, not to a new chunk."""
-    chunks = _by_section(chunk_document(synthetic_sog, DOC_ID))
-    assert "unsafe condition" in chunks["304.3.2"].text
-
-
-def test_chunks_are_in_reading_order(synthetic_sog) -> None:
+def test_measurement_is_not_treated_as_a_decimal_heading(synthetic_sog) -> None:
+    """`2.5 gallons of foam...` looks like a section number and is not one."""
     chunks = chunk_document(synthetic_sog, DOC_ID)
-    assert [c.ordinal for c in chunks] == list(range(len(chunks)))
+    assert "2.5" not in {c.section_label for c in chunks}
+    assert "foam concentrate" in _by_path(chunks)["304.2.2"].text
+
+
+# --- Lettered outlines -------------------------------------------------------
+
+
+def test_named_headings_are_recognized_from_layout_role(synthetic_outline_sog) -> None:
+    """PURPOSE and PROCEDURE carry no marker — only the sectionHeading role finds them."""
+    labels = {c.section_label for c in chunk_document(synthetic_outline_sog, DOC_ID)}
+    assert "PURPOSE" in labels
+    assert any(label.startswith("PROCEDURE") for label in labels)
+
+
+def test_ordinal_markers_nest_under_their_named_heading(synthetic_outline_sog) -> None:
+    paths = _paths(chunk_document(synthetic_outline_sog, DOC_ID))
+    assert ["PROCEDURE", "A"] in paths
+    assert ["PROCEDURE", "C", "3"] in paths
+
+
+BODY = " ".join(["Every company officer shall verify this assignment on arrival."] * 3)
+
+
+def _deep_doc() -> AnalyzedDocument:
+    """Four levels, each item substantial enough to be cited on its own.
+
+    Lists open at A / 1 / a / i, which is what real outlines do — and what the sequence
+    guard requires, since a list appearing to start at `C` is more often prose.
+    """
+    return _doc(
+        ("PROCEDURE", 1, "sectionHeading"),
+        (f"A. Supply responsibilities are assigned as follows. {BODY}", 1),
+        (f"1. Relay Operations shall be established as follows. {BODY}", 1),
+        (f"a. The Water Supply Officer shall confirm the following. {BODY}", 1),
+        (f"i. The total length of hose and the elevation change. {BODY}", 1),
+        (f"ii. The rated capacity of every pump in the relay. {BODY}", 1),
+    )
+
+
+def test_depth_is_inferred_from_the_order_styles_appear() -> None:
+    """A. then 1. then a. then i. — the marker says position, the order says depth."""
+    labels = {c.section_label for c in chunk_document(_deep_doc(), DOC_ID)}
+    assert "PROCEDURE A.1.a" in labels
+
+
+def test_full_path_is_kept_so_a_deep_item_can_be_found() -> None:
+    """Item `c` alone is meaningless; PROCEDURE C.3.c can be looked up."""
+    chunk = _by_path(chunk_document(_deep_doc(), DOC_ID))["PROCEDURE A.1.a"]
+    assert chunk.section_path == ["PROCEDURE", "A", "1", "a"]
+
+
+def test_roman_sub_items_nest_under_their_letter() -> None:
+    """`i.` after `c.` opens a nested roman list rather than continuing the letters."""
+    labels = {c.section_label for c in chunk_document(_deep_doc(), DOC_ID)}
+    assert "PROCEDURE A.1.a.ii" in labels
+
+
+def test_thin_sub_items_merge_into_the_section_a_reader_would_look_up(
+    synthetic_outline_sog,
+) -> None:
+    """One-line list items are reachable through their parent, not stranded alone."""
+    chunk = _by_path(chunk_document(synthetic_outline_sog, DOC_ID))["PROCEDURE C.3"]
+    assert "rated capacity of every pump" in chunk.text
+    assert "intake pressure" in chunk.text.lower()
+
+
+def test_roman_after_h_continues_the_lettered_list() -> None:
+    """`i.` is both a numeral and the ninth letter. After `h.` it is the letter."""
+    letters = "abcdefghi"
+    doc = _doc(
+        ("PROCEDURE", 1, "sectionHeading"),
+        *[
+            (f"{ch}. Requirement number {n} of the sequence. {BODY}", 1)
+            for n, ch in enumerate(letters, start=1)
+        ],
+    )
+    paths = _paths(chunk_document(doc, DOC_ID))
+    assert ["PROCEDURE", "i"] in paths
+    assert ["PROCEDURE", "h", "i"] not in paths
+
+
+# --- False headings ----------------------------------------------------------
+
+
+def test_all_caps_diagram_labels_do_not_become_sections(synthetic_outline_sog) -> None:
+    """An org chart's labels look exactly like headings. Only the role tagging knows."""
+    labels = {c.section_label for c in chunk_document(synthetic_outline_sog, DOC_ID)}
+    assert "COMMAND" not in labels
+    assert "HYDRANT" not in labels
+
+
+def test_a_number_mid_list_that_breaks_sequence_is_not_a_heading() -> None:
+    """A marker must open a list or continue one; prose starting with a digit does neither."""
+    doc = _doc(
+        ("PROCEDURE", 1, "sectionHeading"),
+        (f"1. First item of the list. {BODY}", 1),
+        (f"7. This sentence merely begins with a number and continues no sequence. {BODY}", 1),
+    )
+    paths = _paths(chunk_document(doc, DOC_ID))
+    assert ["PROCEDURE", "1"] in paths
+    assert ["PROCEDURE", "7"] not in paths
+
+
+def test_a_list_that_continues_in_sequence_is_kept() -> None:
+    doc = _doc(
+        ("PROCEDURE", 1, "sectionHeading"),
+        (f"1. First item of the list. {BODY}", 1),
+        (f"2. Second item of the list. {BODY}", 1),
+        (f"3. Third item of the list. {BODY}", 1),
+    )
+    paths = _paths(chunk_document(doc, DOC_ID))
+    assert ["PROCEDURE", "1"] in paths
+    assert ["PROCEDURE", "3"] in paths
+
+
+def test_unroled_capitals_before_any_heading_stay_in_the_preamble(
+    synthetic_outline_sog,
+) -> None:
+    first = chunk_document(synthetic_outline_sog, DOC_ID)[0]
+    assert first.kind == "semantic"
+    assert first.section_path == []
+    assert "EXAMPLE COUNTY FIRE CHIEFS ASSOCIATION" in first.text
+
+
+# --- Subtree merging ---------------------------------------------------------
+
+
+def test_short_subtree_is_emitted_whole_under_its_own_heading() -> None:
+    """Sub-items too thin to question alone must not be stranded from their parent."""
+    doc = _doc(
+        ("PROCEDURE", 1, "sectionHeading"),
+        ("1. Water Supply shall be established by the third arriving company.", 1),
+        ("a. Supplementing the sprinkler system;", 1),
+        ("b. Supplementing the standpipe system;", 1),
+    )
+    chunks = chunk_document(doc, DOC_ID, max_chars=1800)
+    parent = _by_path(chunks)["PROCEDURE 1"]
+    assert "sprinkler system" in parent.text
+    assert "standpipe system" in parent.text
+    assert "PROCEDURE 1.a" not in {c.section_label for c in chunks}
+
+
+def test_oversized_subtree_splits_into_its_children() -> None:
+    doc = _doc(
+        ("PROCEDURE", 1, "sectionHeading"),
+        ("1. Water Supply shall be established by the third arriving company.", 1),
+        ("a. " + "x" * 900, 1),
+        ("b. " + "y" * 900, 1),
+    )
+    labels = {c.section_label for c in chunk_document(doc, DOC_ID, max_chars=800)}
+    assert "PROCEDURE 1.a" in labels
+    assert "PROCEDURE 1.b" in labels
+
+
+def test_no_content_is_lost_when_a_subtree_splits() -> None:
+    doc = _doc(
+        ("PROCEDURE", 1, "sectionHeading"),
+        ("1. Water Supply shall be established by the third arriving company.", 1),
+        ("a. " + "x" * 900, 1),
+        ("b. " + "y" * 900, 1),
+    )
+    combined = "\n".join(c.text for c in chunk_document(doc, DOC_ID, max_chars=800))
+    assert "x" * 900 in combined
+    assert "y" * 900 in combined
+    assert "Water Supply shall be established" in combined
 
 
 # --- Page location -----------------------------------------------------------
@@ -69,168 +229,56 @@ def test_chunks_are_in_reading_order(synthetic_sog) -> None:
 
 def test_section_spanning_a_page_break_reports_both_pages(synthetic_sog) -> None:
     """Reporting only the heading's page would send the candidate to the wrong page."""
-    chunk = _by_section(chunk_document(synthetic_sog, DOC_ID))["304.2.1"]
+    chunk = _by_path(chunk_document(synthetic_sog, DOC_ID))["304.2.1"]
     assert (chunk.page_start, chunk.page_end) == (1, 2)
 
 
-def test_single_page_section_reports_one_page(synthetic_sog) -> None:
-    chunk = _by_section(chunk_document(synthetic_sog, DOC_ID))["304.1"]
-    assert (chunk.page_start, chunk.page_end) == (1, 1)
+def test_location_renders_path_and_pages(synthetic_outline_sog) -> None:
+    chunk = _by_path(chunk_document(synthetic_outline_sog, DOC_ID))["PROCEDURE C.3"]
+    assert chunk.location() == "PROCEDURE C.3, p. 2"
 
 
-# --- False-positive headings -------------------------------------------------
-
-
-def test_measurement_is_not_treated_as_a_heading(synthetic_sog) -> None:
-    """`2.5 gallons of foam…` looks like a section number and is not one."""
-    chunks = chunk_document(synthetic_sog, DOC_ID)
-    assert "2.5" not in {c.section_number for c in chunks}
-    assert "foam concentrate" in _by_section(chunks)["304.2.2"].text
-
-
-def test_capitalized_measurement_is_rejected_by_succession() -> None:
-    """Shape and capitalization both pass here; only the outline rule catches it."""
-    doc = _doc(
-        ("304.2 Scope", 1),
-        ("3.5 Inch Supply Line shall be used for all master stream operations.", 1),
-    )
-    chunks = chunk_document(doc, DOC_ID)
-    assert len(chunks) == 1
-    assert chunks[0].section_number == "304.2"
-
-
-def test_long_sentence_shaped_like_a_heading_is_rejected() -> None:
-    doc = _doc(
-        ("304.2 Scope", 1),
-        (
-            "304.9 Members shall ensure that every appliance carried on the apparatus is "
-            "inspected and returned to service before the end of the shift.",
-            1,
-        ),
-    )
-    assert len(chunk_document(doc, DOC_ID)) == 1
-
-
-def test_bare_integer_is_not_a_heading() -> None:
-    doc = _doc(("304 Structural Fire Attack", 1), ("Body text.", 1))
-    chunks = chunk_document(doc, DOC_ID)
-    assert chunks[0].kind == "semantic"
-    assert chunks[0].section_number is None
+def test_location_without_a_path_is_just_the_page(synthetic_outline_sog) -> None:
+    assert chunk_document(synthetic_outline_sog, DOC_ID)[0].location() == "p. 1"
 
 
 # --- Page furniture ----------------------------------------------------------
 
 
-def test_page_footer_is_dropped(synthetic_sog) -> None:
-    """A running footer must not reach the generator.
-
-    It is well-cited, factually present in the document, and worthless as a question —
-    exactly the kind of content the citation rule cannot protect against.
-    """
-    combined = "\n".join(c.text for c in chunk_document(synthetic_sog, DOC_ID))
-    assert "Page 1 of 2" not in combined
+def test_page_furniture_is_dropped(synthetic_outline_sog) -> None:
+    combined = "\n".join(c.text for c in chunk_document(synthetic_outline_sog, DOC_ID))
     assert "Page 2 of 2" not in combined
+    assert "EXAMPLE COUNTY SOG - WATER SUPPLY" not in combined
 
 
 def test_footer_does_not_interrupt_a_section_spanning_pages(synthetic_sog) -> None:
-    """The footer sat between two sentences of 304.2.1. Both must survive, adjacent."""
-    chunk = _by_section(chunk_document(synthetic_sog, DOC_ID))["304.2.1"]
+    chunk = _by_path(chunk_document(synthetic_sog, DOC_ID))["304.2.1"]
     assert "voice or visual contact" in chunk.text
     assert "charged hoseline" in chunk.text
     assert "SOG 304" not in chunk.text
 
 
-def test_page_header_and_number_roles_are_dropped() -> None:
-    doc = _doc(
-        ("EXAMPLE FIRE DEPARTMENT SOG 304", 1, "pageHeader"),
-        ("304.2 Scope", 1),
-        ("This applies to all personnel.", 1),
-        ("14", 1, "pageNumber"),
-    )
-    chunks = chunk_document(doc, DOC_ID)
-    assert len(chunks) == 1
-    assert chunks[0].section_number == "304.2"
-    assert chunks[0].text == "304.2 Scope\nThis applies to all personnel."
-
-
 def test_unroled_blocks_are_always_kept() -> None:
     """Only explicit furniture roles are dropped — never text merely resembling it."""
-    doc = _doc(("304.2 Scope", 1), ("Page 1 of the pre-incident plan shall be posted.", 1))
-    assert "Page 1 of the pre-incident plan" in chunk_document(doc, DOC_ID)[0].text
-
-
-# --- Succession rule ---------------------------------------------------------
-
-
-def test_succession_accepts_descendants_and_siblings() -> None:
-    assert _is_plausible_successor((304, 2, 1), (304, 2))
-    assert _is_plausible_successor((304, 3), (304, 2, 2))
-    assert _is_plausible_successor((305,), (304, 9))
-    assert _is_plausible_successor((1,), None)
-
-
-def test_succession_rejects_repeats_and_backward_moves() -> None:
-    assert not _is_plausible_successor((304, 2), (304, 2))
-    assert not _is_plausible_successor((304, 1), (304, 2))
-    assert not _is_plausible_successor((2, 5), (304, 2, 2))
-    assert not _is_plausible_successor((304, 2), (304, 2, 1))
-
-
-# --- Semantic fallback -------------------------------------------------------
-
-
-def test_preamble_becomes_a_semantic_chunk(synthetic_sog) -> None:
-    first = chunk_document(synthetic_sog, DOC_ID)[0]
-    assert first.kind == "semantic"
-    assert first.section_number is None
-    assert "EXAMPLE FIRE DEPARTMENT" in first.text
-
-
-def test_document_without_numbering_is_entirely_semantic() -> None:
     doc = _doc(
-        ("Recruit orientation handout", 1),
-        ("Report to the training division at 0700.", 1),
+        ("PROCEDURE", 1, "sectionHeading"),
+        ("Page 1 of the pre-incident plan shall be posted at the entrance.", 1),
     )
-    chunks = chunk_document(doc, DOC_ID)
-    assert all(c.kind == "semantic" for c in chunks)
-    assert all(c.section_number is None for c in chunks)
+    assert "pre-incident plan" in chunk_document(doc, DOC_ID)[0].text
 
 
-# --- Size splitting ----------------------------------------------------------
+# --- Ordering and identity ---------------------------------------------------
 
 
-def test_oversized_section_splits_but_keeps_its_section_number() -> None:
-    """A long section must still cite as that section, in every piece."""
-    body = [(f"Sentence number {i} of the requirement.", 1) for i in range(40)]
-    doc = _doc(("304.2 Scope", 1), *body)
-    chunks = chunk_document(doc, DOC_ID, max_chars=200)
-    assert len(chunks) > 1
-    assert all(c.section_number == "304.2" for c in chunks)
-    assert all(c.kind == "outline" for c in chunks)
+def test_chunks_are_in_reading_order(synthetic_outline_sog) -> None:
+    chunks = chunk_document(synthetic_outline_sog, DOC_ID)
+    assert [c.ordinal for c in chunks] == list(range(len(chunks)))
 
 
-def test_split_preserves_every_block() -> None:
-    body = [(f"Line {i}.", 1) for i in range(30)]
-    doc = _doc(("304.2 Scope", 1), *body)
-    chunks = chunk_document(doc, DOC_ID, max_chars=100)
-    combined = "\n".join(c.text for c in chunks)
-    for i in range(30):
-        assert f"Line {i}." in combined
-
-
-def test_single_long_block_is_never_split() -> None:
-    doc = _doc(("304.2 Scope", 1), ("x" * 5000, 1))
-    chunks = chunk_document(doc, DOC_ID, max_chars=200)
-    assert any("x" * 5000 in c.text for c in chunks)
-
-
-# --- Identity ----------------------------------------------------------------
-
-
-def test_chunk_ids_are_stable_across_runs(synthetic_sog) -> None:
+def test_chunk_ids_are_stable_across_runs(synthetic_outline_sog) -> None:
     """Citations store chunk_id. Re-ingestion must not orphan them."""
-    first = [c.chunk_id for c in chunk_document(synthetic_sog, DOC_ID)]
-    second = [c.chunk_id for c in chunk_document(synthetic_sog, DOC_ID)]
+    first = [c.chunk_id for c in chunk_document(synthetic_outline_sog, DOC_ID)]
+    second = [c.chunk_id for c in chunk_document(synthetic_outline_sog, DOC_ID)]
     assert first == second
 
 
@@ -241,3 +289,13 @@ def test_chunk_ids_differ_between_documents() -> None:
 def test_empty_document_yields_no_chunks() -> None:
     doc = AnalyzedDocument(source_name="empty.pdf", page_count=1, blocks=[])
     assert chunk_document(doc, DOC_ID) == []
+
+
+def test_document_without_structure_is_entirely_semantic() -> None:
+    doc = _doc(
+        ("Recruit orientation handout for the spring hiring process.", 1),
+        ("Report to the training division at 0700 in station uniform.", 1),
+    )
+    chunks = chunk_document(doc, DOC_ID)
+    assert all(c.kind == "semantic" for c in chunks)
+    assert all(c.section_path == [] for c in chunks)

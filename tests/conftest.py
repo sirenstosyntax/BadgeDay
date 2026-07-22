@@ -29,4 +29,11 @@ def analyzer() -> FixtureDocumentAnalyzer:
 
 @pytest.fixture
 def synthetic_sog(analyzer: FixtureDocumentAnalyzer) -> AnalyzedDocument:
+    """Decimal-numbered guideline: 304.1, 304.2, 304.2.1."""
     return analyzer.analyze(Path("synthetic_sog.pdf"))
+
+
+@pytest.fixture
+def synthetic_outline_sog(analyzer: FixtureDocumentAnalyzer) -> AnalyzedDocument:
+    """Lettered-outline guideline: named headings, then A. / 1. / a. / i."""
+    return analyzer.analyze(Path("synthetic_outline_sog.pdf"))
