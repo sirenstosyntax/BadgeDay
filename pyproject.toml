@@ -27,6 +27,7 @@ dev = [
 
 [project.scripts]
 badgeday-ingest = "app.ingest.cli:main"
+badgeday-worker = "app.worker.runner:main"
 
 [build-system]
 requires = ["hatchling"]

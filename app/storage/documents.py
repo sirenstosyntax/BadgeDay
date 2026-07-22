@@ -149,6 +149,24 @@ def delete_document(db: Client, document_id: str) -> bool:
     return True
 
 
+def set_status(
+    db: Client, document_id: str, status: DocumentStatus, error: str | None = None
+) -> None:
+    """Move a document along the ingestion pipeline.
+
+    Called by the worker, which is the only thing that knows how far a document has got.
+    The candidate polls this field, so every stage transition is a visible one — a
+    document that sits at 'analyzing' for ten minutes is telling the truth about where it
+    is, which is more useful than a spinner that says nothing.
+    """
+    patch: dict = {"status": status, "error": error}
+    db.table("documents").update(patch).eq("id", document_id).execute()
+
+
+def record_page_count(db: Client, document_id: str, page_count: int) -> None:
+    db.table("documents").update({"page_count": page_count}).eq("id", document_id).execute()
+
+
 def _remove_quietly(db: Client, path: str) -> None:
     """Best-effort cleanup on a path we are already failing out of."""
     try:
