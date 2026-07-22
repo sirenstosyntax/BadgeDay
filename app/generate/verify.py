@@ -95,21 +95,37 @@ def longest_shared_run(stem: str, source: str) -> int:
     return longest
 
 
+# A numbered section is structurally evidenced as body content, so a modest amount of
+# text earns it a question. A chunk with no section number has no such evidence — it is
+# as likely to be a title block or a revision stamp as it is to be prose — so it has to
+# carry more substance before it is worth spending a request on.
+MIN_WORDS_OUTLINE = 10
+MIN_WORDS_SEMANTIC = 25
+
+
 def is_generatable(chunk: Chunk) -> bool:
     """Is there anything in this chunk worth asking about?
 
-    A container heading — `304.3 Responsibilities`, whose substance lives entirely in its
-    children — produces a chunk holding only its heading line. Asking a question about it
-    would yield an ungrounded question wearing a valid-looking citation.
+    Two ways a chunk fails. A container heading — `304.3 Responsibilities`, whose
+    substance lives entirely in its children — holds only its heading line. And a title
+    block or revision stamp is prose-shaped but carries nothing an officer needs to know.
+
+    Both would produce questions that are perfectly grounded and perfectly worthless, so
+    neither the citation rule nor the verification gate catches them. Skipping is also
+    the cheaper answer: the model, asked, correctly returns zero questions for a title
+    block — but only after a request has been paid for.
     """
     body = chunk.text.strip()
     if not body:
         return False
+
     if chunk.section_number:
         lines = [line for line in body.splitlines() if line.strip()]
         if len(lines) <= 1:
             return False
-    return len(_words(body)) >= 10
+        return len(_words(body)) >= MIN_WORDS_OUTLINE
+
+    return len(_words(body)) >= MIN_WORDS_SEMANTIC
 
 
 def verify_draft(draft: DraftQuestion, chunk: Chunk) -> Question | Rejection:

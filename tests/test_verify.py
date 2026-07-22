@@ -273,3 +273,55 @@ def test_very_short_chunk_is_not_generatable() -> None:
         text="Revised: January 2026",
     )
     assert not is_generatable(chunk)
+
+
+def test_title_block_is_not_generatable() -> None:
+    """A cover block is prose-shaped and worth nothing — skip before paying for a request."""
+    chunk = Chunk(
+        chunk_id="c",
+        document_id="d",
+        ordinal=0,
+        kind="semantic",
+        page_start=1,
+        page_end=1,
+        text=(
+            "EXAMPLE FIRE DEPARTMENT\n"
+            "STANDARD OPERATING GUIDELINE 304\n"
+            "SUBJECT: Structural Fire Attack"
+        ),
+    )
+    assert not is_generatable(chunk)
+
+
+def test_unnumbered_prose_is_generatable() -> None:
+    """A document with no outline numbering must still produce questions."""
+    chunk = Chunk(
+        chunk_id="c",
+        document_id="d",
+        ordinal=0,
+        kind="semantic",
+        page_start=1,
+        page_end=1,
+        text=(
+            "Candidates report to the training division at 0700 in station uniform. "
+            "Anyone arriving after the roll is called will be released from the process "
+            "and may reapply at the next open filing period."
+        ),
+    )
+    assert is_generatable(chunk)
+
+
+def test_numbered_section_needs_less_text_than_an_unnumbered_one() -> None:
+    """A section number is structural evidence that the text is body content."""
+    common = dict(
+        chunk_id="c",
+        document_id="d",
+        ordinal=1,
+        page_start=1,
+        page_end=1,
+        text="304.5 Ventilation\nVertical ventilation requires the approval of command.",
+    )
+    numbered = Chunk(kind="outline", section_number="304.5", section_title="Ventilation", **common)
+    unnumbered = Chunk(kind="semantic", **common)
+    assert is_generatable(numbered)
+    assert not is_generatable(unnumbered)

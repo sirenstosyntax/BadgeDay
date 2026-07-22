@@ -23,6 +23,19 @@ The test suite runs with no credentials at all. Document extraction sits behind 
 provider seam (`app/ingest/analyzer.py`), so the chunker and citation resolver are tested
 against synthetic fixtures rather than a live Azure resource.
 
+## Run the pipeline from the command line
+
+The whole ingestion and generation path works before any UI or database exists, so you
+can look at what it actually produces rather than at what its tests assert:
+
+```bash
+badgeday-ingest path/to/sog.pdf                          # analyze and chunk
+badgeday-ingest path/to/sog.pdf --generate --count 3     # also generate questions
+badgeday-ingest path/to/sog.pdf --generate --section 304.2.1
+```
+
+Chunking needs `AZURE_DOCINTEL_*`; generating also needs `ANTHROPIC_API_KEY`.
+
 ## Run the API
 
 ```bash
