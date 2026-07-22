@@ -40,6 +40,12 @@ class Settings(BaseSettings):
     # Application code goes through the Supabase client, never this.
     supabase_db_url: str = ""
 
+    # --- Uploads -------------------------------------------------------------
+    # Ceiling on a single uploaded document. A reading list is SOG packets and published
+    # texts, which sit far below this; the cap exists so that one oversized or malicious
+    # upload cannot be read wholesale into the process memory of a request handler.
+    max_upload_bytes: int = 25 * 1024 * 1024
+
     # --- Stripe --------------------------------------------------------------
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
