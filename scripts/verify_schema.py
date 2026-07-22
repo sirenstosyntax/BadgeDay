@@ -1,18 +1,25 @@
-"""Prove the row-level security policies actually isolate users.
+"""Prove the schema's guarantees hold against a live database.
 
-The brief's privacy constraint — documents are private per user, never shared — is
-enforced by database policy rather than by application code. That is only worth anything
-if the policies work, and a policy that silently fails is worse than none, because the
-application is written believing it is protected.
+Four things the DDL claims, none of which are true merely because they are written down:
 
-So this does not inspect the policies. It creates two real users, gives each a document
-with chunks and questions, and then tries to read one user's data using the other user's
-credentials. Anything that comes back is a leak.
+1. **Isolation.** The privacy constraint — documents are private per user, never shared —
+   is enforced by database policy rather than application code. A policy that silently
+   fails is worse than none, because the application is written believing it is
+   protected. So this does not inspect the policies; it creates two real users, gives
+   each documents, chunks and questions, and tries to read one user's data with the
+   other's credentials. Anything returned is a leak.
+2. **Constraints.** The check constraints on `questions` restate the application's
+   verification gate. If they do not actually reject a malformed row, the second line of
+   defence is decorative.
+3. **Cascade.** Hard delete of an account must remove everything, in one statement,
+   leaving no orphans.
+4. **Coverage.** The view must move when a candidate answers a question, and must count
+   only sections worth questioning.
 
-    python scripts/verify_rls.py
+    python scripts/verify_schema.py
 
-Both users and everything cascading from them are deleted at the end, including on
-failure. Run against a development project.
+Every user created here is deleted at the end, including on failure. Run against a
+development project.
 """
 
 import sys
@@ -85,6 +92,29 @@ class Api:
         r = self.client.get(
             f"{self.url}/rest/v1/{table}?{query}",
             headers={"apikey": self.anon_key, "Authorization": f"Bearer {token}"},
+        )
+        r.raise_for_status()
+        return r.json()
+
+    def insert_as_service_raw(self, table: str, row: dict) -> httpx.Response:
+        """Insert without raising, for probing what the database refuses."""
+        return self.client.post(
+            f"{self.url}/rest/v1/{table}",
+            headers={
+                "apikey": self.service_key,
+                "Authorization": f"Bearer {self.service_key}",
+                "Content-Type": "application/json",
+            },
+            json=row,
+        )
+
+    def coverage(self, document_id: str) -> list:
+        r = self.client.get(
+            f"{self.url}/rest/v1/document_coverage?document_id=eq.{document_id}",
+            headers={
+                "apikey": self.service_key,
+                "Authorization": f"Bearer {self.service_key}",
+            },
         )
         r.raise_for_status()
         return r.json()
@@ -244,6 +274,111 @@ def main() -> int:
 
         print("\nSignup trigger:\n")
         check("profile row was created automatically", len(profiles) == 1)
+
+        # --- Constraints ---------------------------------------------------
+        # These restate the verification gate at the database level. If they do not
+        # reject, the second line of defence does nothing.
+        print("\nMalformed rows are rejected:\n")
+
+        malformed = [
+            (
+                "multiple choice with no options",
+                "questions",
+                {"type": "multiple_choice", "stem": "S", "explanation": "E"},
+            ),
+            (
+                "multiple choice indexing past the last option",
+                "questions",
+                {
+                    "type": "multiple_choice",
+                    "stem": "S",
+                    "explanation": "E",
+                    "options": ["a", "b", "c"],
+                    "correct_index": 9,
+                },
+            ),
+            (
+                "true/false carrying a model answer",
+                "questions",
+                {
+                    "type": "true_false",
+                    "stem": "S",
+                    "explanation": "E",
+                    "correct_answer": True,
+                    "model_answer": "x",
+                },
+            ),
+            (
+                "short answer with no model answer",
+                "questions",
+                {"type": "short_answer", "stem": "S", "explanation": "E"},
+            ),
+        ]
+        for name, table, payload in malformed:
+            response = api.insert_as_service_raw(
+                table,
+                {
+                    **payload,
+                    "document_id": alice["document"]["id"],
+                    "chunk_id": alice["chunk"]["id"],
+                },
+            )
+            check(name, response.status_code >= 400, f"status {response.status_code}")
+
+        backwards = api.insert_as_service_raw(
+            "chunks",
+            {
+                "id": str(uuid.uuid4()),
+                "document_id": alice["document"]["id"],
+                "ordinal": 99,
+                "kind": "outline",
+                "section_path": [],
+                "page_start": 5,
+                "page_end": 2,
+                "body": "x",
+            },
+        )
+        check(
+            "chunk ending before it starts",
+            backwards.status_code >= 400,
+            f"status {backwards.status_code}",
+        )
+
+        # --- Coverage ------------------------------------------------------
+        print("\nCoverage tracking:\n")
+
+        before = api.coverage(alice["document"]["id"])
+        check(
+            "counts the document's questionable sections",
+            before and before[0]["sections_total"] == 1,
+            f"got {before}",
+        )
+        check(
+            "starts at zero exercised",
+            before and before[0]["sections_exercised"] == 0,
+            f"got {before}",
+        )
+
+        session = api.insert_as_service(
+            "practice_sessions",
+            {"user_id": alice_id, "document_id": alice["document"]["id"]},
+        )
+        api.insert_as_service(
+            "responses",
+            {
+                "session_id": session["id"],
+                "question_id": alice["question"]["id"],
+                "user_id": alice_id,
+                "answered_boolean": True,
+                "is_correct": True,
+            },
+        )
+        after = api.coverage(alice["document"]["id"])
+        check(
+            "advances once the section has been exercised",
+            after and after[0]["sections_exercised"] == 1,
+            f"got {after}",
+        )
 
     finally:
         for user_id in (alice_id, bob_id):
