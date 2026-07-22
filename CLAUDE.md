@@ -35,8 +35,22 @@ Recruit helps candidates develop the attributes departments hire for — through
 tests, mock interviews, teaching of foundational principles common to all departments,
 and the common traps that keep candidates from getting hired.
 
-**Shape:** authored content library with expert review. This is closer to DrillGround's
-model than to Command's. There is no user upload, no retrieval, and no citation chain.
+**Shape:** coaching and feedback against expert-authored rubrics — not a question bank.
+There is no user upload, no retrieval, and no citation chain.
+
+**Anchor the product on the oral board and on candidate-readiness gap analysis.** That is
+where candidates are actually eliminated: most who reach the oral board have already
+passed the written, and the next largest group is eliminated for being uncompetitive on
+paper (no EMT, no coursework, no volunteer time) in ways that are fixable 6–18 months out.
+Foundational principles and common traps are supporting content. Written-exam practice
+comes last if at all — it is the most commoditized piece of the market and carries the
+worst risk-to-differentiation ratio, since that is where the copyrighted commercial
+batteries live.
+
+This shape is deliberate for cost reasons as well. A question bank means an ever-growing
+library of items, each needing review and each decaying as hiring practices shift.
+Rubric-based critique means the reviewable asset is a bounded, stable set of rubrics and
+frameworks, and the candidate's own answer supplies the variable content.
 
 **Explicitly not the Command model:** Recruit must NOT be built to depend on the
 candidate uploading department hiring materials. A pre-hire candidate has no such
