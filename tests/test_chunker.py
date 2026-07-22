@@ -12,16 +12,19 @@ from app.ingest.chunker import (
     chunk_document,
     chunk_id_for,
 )
-from app.ingest.models import AnalyzedDocument, AnalyzedLine
+from app.ingest.models import AnalyzedBlock, AnalyzedDocument
 
 DOC_ID = "doc-1"
 
 
-def _doc(*lines: tuple[str, int]) -> AnalyzedDocument:
+def _doc(*blocks: tuple[str, int] | tuple[str, int, str]) -> AnalyzedDocument:
+    """Build a document from (text, page) or (text, page, role) tuples."""
     return AnalyzedDocument(
         source_name="t.pdf",
-        page_count=max(page for _, page in lines),
-        lines=[AnalyzedLine(text=text, page=page) for text, page in lines],
+        page_count=max(b[1] for b in blocks),
+        blocks=[
+            AnalyzedBlock(text=b[0], page=b[1], role=b[2] if len(b) > 2 else None) for b in blocks
+        ],
     )
 
 
@@ -115,6 +118,47 @@ def test_bare_integer_is_not_a_heading() -> None:
     assert chunks[0].section_number is None
 
 
+# --- Page furniture ----------------------------------------------------------
+
+
+def test_page_footer_is_dropped(synthetic_sog) -> None:
+    """A running footer must not reach the generator.
+
+    It is well-cited, factually present in the document, and worthless as a question —
+    exactly the kind of content the citation rule cannot protect against.
+    """
+    combined = "\n".join(c.text for c in chunk_document(synthetic_sog, DOC_ID))
+    assert "Page 1 of 2" not in combined
+    assert "Page 2 of 2" not in combined
+
+
+def test_footer_does_not_interrupt_a_section_spanning_pages(synthetic_sog) -> None:
+    """The footer sat between two sentences of 304.2.1. Both must survive, adjacent."""
+    chunk = _by_section(chunk_document(synthetic_sog, DOC_ID))["304.2.1"]
+    assert "voice or visual contact" in chunk.text
+    assert "charged hoseline" in chunk.text
+    assert "SOG 304" not in chunk.text
+
+
+def test_page_header_and_number_roles_are_dropped() -> None:
+    doc = _doc(
+        ("EXAMPLE FIRE DEPARTMENT SOG 304", 1, "pageHeader"),
+        ("304.2 Scope", 1),
+        ("This applies to all personnel.", 1),
+        ("14", 1, "pageNumber"),
+    )
+    chunks = chunk_document(doc, DOC_ID)
+    assert len(chunks) == 1
+    assert chunks[0].section_number == "304.2"
+    assert chunks[0].text == "304.2 Scope\nThis applies to all personnel."
+
+
+def test_unroled_blocks_are_always_kept() -> None:
+    """Only explicit furniture roles are dropped — never text merely resembling it."""
+    doc = _doc(("304.2 Scope", 1), ("Page 1 of the pre-incident plan shall be posted.", 1))
+    assert "Page 1 of the pre-incident plan" in chunk_document(doc, DOC_ID)[0].text
+
+
 # --- Succession rule ---------------------------------------------------------
 
 
@@ -165,7 +209,7 @@ def test_oversized_section_splits_but_keeps_its_section_number() -> None:
     assert all(c.kind == "outline" for c in chunks)
 
 
-def test_split_preserves_every_line() -> None:
+def test_split_preserves_every_block() -> None:
     body = [(f"Line {i}.", 1) for i in range(30)]
     doc = _doc(("304.2 Scope", 1), *body)
     chunks = chunk_document(doc, DOC_ID, max_chars=100)
@@ -174,7 +218,7 @@ def test_split_preserves_every_line() -> None:
         assert f"Line {i}." in combined
 
 
-def test_single_long_line_is_never_split() -> None:
+def test_single_long_block_is_never_split() -> None:
     doc = _doc(("304.2 Scope", 1), ("x" * 5000, 1))
     chunks = chunk_document(doc, DOC_ID, max_chars=200)
     assert any("x" * 5000 in c.text for c in chunks)
@@ -195,5 +239,5 @@ def test_chunk_ids_differ_between_documents() -> None:
 
 
 def test_empty_document_yields_no_chunks() -> None:
-    doc = AnalyzedDocument(source_name="empty.pdf", page_count=1, lines=[])
+    doc = AnalyzedDocument(source_name="empty.pdf", page_count=1, blocks=[])
     assert chunk_document(doc, DOC_ID) == []

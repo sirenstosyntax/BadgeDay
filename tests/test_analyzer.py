@@ -16,18 +16,18 @@ from app.ingest.models import AnalyzedDocument
 def test_fixture_loads_as_analyzed_document(synthetic_sog: AnalyzedDocument) -> None:
     assert synthetic_sog.source_name == "synthetic_sog.pdf"
     assert synthetic_sog.page_count == 2
-    assert len(synthetic_sog.lines) > 0
+    assert len(synthetic_sog.blocks) > 0
 
 
 def test_fixture_preserves_page_numbers(synthetic_sog: AnalyzedDocument) -> None:
     """A citation is only as good as its page number."""
-    pages = {line.page for line in synthetic_sog.lines}
+    pages = {line.page for line in synthetic_sog.blocks}
     assert pages == {1, 2}
 
 
 def test_fixture_preserves_reading_order(synthetic_sog: AnalyzedDocument) -> None:
     """Outline chunking depends on lines arriving in document order."""
-    texts = [line.text for line in synthetic_sog.lines]
+    texts = [line.text for line in synthetic_sog.blocks]
     assert texts.index("304.1 Purpose") < texts.index("304.2 Scope")
     assert texts.index("304.2 Scope") < texts.index("304.2.1 Interior Operations")
     assert texts.index("304.2.1 Interior Operations") < texts.index("304.3 Responsibilities")

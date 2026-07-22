@@ -9,7 +9,7 @@ first numbered heading, and documents with no outline numbering at all. Body tex
 *following* a heading belongs to that heading until the next one — that is how outlines
 work, and a parser cannot reliably decide otherwise.
 
-Note on the name: `semantic` here means size-bounded grouping at line boundaries, not
+Note on the name: `semantic` here means size-bounded grouping at block boundaries, not
 embedding-based similarity. Real semantic segmentation is a later improvement; the field
 name is the brief's, and the honest description is this one.
 
@@ -20,7 +20,7 @@ something shaped exactly like a section number. Accepting it would fragment the 
 section and stamp a bogus section number onto every citation derived from it — a citation
 that points somewhere the text does not exist is worse than no citation at all.
 
-Three independent signals must all agree before a line is treated as a heading:
+Three independent signals must all agree before a block is treated as a heading:
 
 1. **Shape** — `<digits>(.<digits>)+` followed by text. A bare `304` is not enough; real
    SOG headings in this scheme carry at least one dot.
@@ -39,7 +39,7 @@ exist. The first is a worse answer; the second is a broken promise.
 ## Container sections (read this before building coverage tracking)
 
 A heading whose content lives entirely in its children — `304.3 Responsibilities`, with
-the substance in `304.3.1` and `304.3.2` — produces a chunk holding only the heading line.
+the substance in `304.3.1` and `304.3.2` — produces a chunk holding only the heading block.
 That is structurally correct and the chunk is kept, because dropping it would erase the
 section from the document's outline.
 
@@ -52,14 +52,21 @@ Two downstream consequences:
   100% and make the tracker read as broken to a candidate who has in fact covered
   everything.
 
-The signal is a chunk whose text is exactly its heading line.
+The signal is a chunk whose text is exactly its heading block.
 """
 
 import re
 import uuid
 from dataclasses import dataclass
 
-from app.ingest.models import AnalyzedDocument, AnalyzedLine, Chunk
+from app.ingest.models import (
+    ROLE_PAGE_FOOTER,
+    ROLE_PAGE_HEADER,
+    ROLE_PAGE_NUMBER,
+    AnalyzedBlock,
+    AnalyzedDocument,
+    Chunk,
+)
 
 # Fixed namespace so chunk IDs are reproducible across ingestion runs. Citations store a
 # chunk_id; if re-ingesting a document minted new IDs, every existing citation would
@@ -70,6 +77,12 @@ HEADING_PATTERN = re.compile(r"^(\d+(?:\.\d+)+)\s+(\S.*)$")
 
 MAX_HEADING_WORDS = 12
 DEFAULT_MAX_CHARS = 1800
+
+# Repeating page furniture, dropped before chunking. A running footer appears on every
+# page, so it lands inside every section that spans a page break — interrupting a
+# sentence mid-thought and offering the generator something it could write a perfectly
+# well-cited question about ("SOG 304 - Page 1 of 2") that teaches nothing.
+LAYOUT_FURNITURE = frozenset({ROLE_PAGE_HEADER, ROLE_PAGE_FOOTER, ROLE_PAGE_NUMBER})
 
 
 @dataclass(frozen=True)
@@ -126,50 +139,50 @@ def _detect_heading(text: str, previous: tuple[int, ...] | None) -> _Heading | N
 
 
 def _split_into_sections(
-    lines: list[AnalyzedLine],
-) -> list[tuple[_Heading | None, list[AnalyzedLine]]]:
-    """Group lines under the heading that governs them.
+    blocks: list[AnalyzedBlock],
+) -> list[tuple[_Heading | None, list[AnalyzedBlock]]]:
+    """Group blocks under the heading that governs them.
 
     The leading group has no heading when the document opens with preamble.
     """
-    sections: list[tuple[_Heading | None, list[AnalyzedLine]]] = []
+    sections: list[tuple[_Heading | None, list[AnalyzedBlock]]] = []
     current_heading: _Heading | None = None
-    current_lines: list[AnalyzedLine] = []
+    current_blocks: list[AnalyzedBlock] = []
     previous_parts: tuple[int, ...] | None = None
 
-    for line in lines:
-        heading = _detect_heading(line.text, previous_parts)
+    for block in blocks:
+        heading = _detect_heading(block.text, previous_parts)
         if heading is not None:
-            if current_lines:
-                sections.append((current_heading, current_lines))
+            if current_blocks:
+                sections.append((current_heading, current_blocks))
             current_heading = heading
-            current_lines = [line]
+            current_blocks = [block]
             previous_parts = heading.parts
         else:
-            current_lines.append(line)
+            current_blocks.append(block)
 
-    if current_lines:
-        sections.append((current_heading, current_lines))
+    if current_blocks:
+        sections.append((current_heading, current_blocks))
 
     return sections
 
 
-def _split_by_size(lines: list[AnalyzedLine], max_chars: int) -> list[list[AnalyzedLine]]:
-    """Break an oversized section at line boundaries.
+def _split_by_size(blocks: list[AnalyzedBlock], max_chars: int) -> list[list[AnalyzedBlock]]:
+    """Break an oversized section at block boundaries.
 
-    A single line is never split — better an over-long chunk than a citation pointing at
+    A single block is never split — better an over-long chunk than a citation pointing at
     half a sentence.
     """
-    groups: list[list[AnalyzedLine]] = []
-    current: list[AnalyzedLine] = []
+    groups: list[list[AnalyzedBlock]] = []
+    current: list[AnalyzedBlock] = []
     size = 0
 
-    for line in lines:
-        length = len(line.text) + 1
+    for block in blocks:
+        length = len(block.text) + 1
         if current and size + length > max_chars:
             groups.append(current)
             current, size = [], 0
-        current.append(line)
+        current.append(block)
         size += length
 
     if current:
@@ -190,9 +203,10 @@ def chunk_document(
 ) -> list[Chunk]:
     """Split an analyzed document into citable chunks, in reading order."""
     chunks: list[Chunk] = []
+    body = [b for b in document.blocks if b.role not in LAYOUT_FURNITURE]
 
-    for heading, lines in _split_into_sections(document.lines):
-        for group in _split_by_size(lines, max_chars):
+    for heading, blocks in _split_into_sections(body):
+        for group in _split_by_size(blocks, max_chars):
             ordinal = len(chunks)
             chunks.append(
                 Chunk(
@@ -202,9 +216,9 @@ def chunk_document(
                     kind="outline" if heading is not None else "semantic",
                     section_number=heading.number if heading is not None else None,
                     section_title=heading.title if heading is not None else None,
-                    page_start=min(line.page for line in group),
-                    page_end=max(line.page for line in group),
-                    text="\n".join(line.text for line in group),
+                    page_start=min(block.page for block in group),
+                    page_end=max(block.page for block in group),
+                    text="\n".join(block.text for block in group),
                 )
             )
 

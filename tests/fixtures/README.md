@@ -4,9 +4,19 @@ Everything here is **synthetic**. No real department document, and no user-uploa
 document, may ever be committed to this repository — see the `.gitignore` rules for
 `*.pdf` and `*.docx`.
 
-`synthetic_sog.json` is a hand-written `AnalyzedDocument` (see `app/ingest/models.py`)
-standing in for what Azure Document Intelligence would return for a two-page SOG. It
-exists to exercise the parts of the pipeline where silent failure destroys the product:
+`synthetic_sog.json` is an `AnalyzedDocument` (see `app/ingest/models.py`) **recorded from
+a real Azure Document Intelligence run**, not hand-written. A synthetic two-page SOG was
+rendered to PDF, analyzed, and the result serialized here — so the fixture reproduces
+Document Intelligence's actual output shape, including paragraph roles, rather than an
+assumption about it.
+
+Regenerate it by rendering the same content to PDF and running it through
+`AzureDocumentAnalyzer`. Do not hand-edit: the value of this file is that it is a
+recording. An earlier hand-written version got the block granularity wrong (visual lines
+rather than paragraphs) and missed page-furniture roles entirely, which hid two real
+defects until a genuine document was run through.
+
+It exercises the parts of the pipeline where silent failure destroys the product:
 
 - **Hierarchical outline numbering** — `304.1`, `304.2`, `304.2.1`, `304.3.2`. Chunk
   boundaries must follow this structure, and the depth must survive into the citation.
@@ -19,6 +29,10 @@ exists to exercise the parts of the pipeline where silent failure destroys the p
 - **A false-positive heading** — `2.5 gallons of foam concentrate…` starts with what looks
   like a section number. Treating it as a heading would fragment `304.2.2` and attach a
   bogus section number to a citation.
+- **A running page footer** — `SOG 304 - Page 1 of 2`, carrying the `pageNumber` role,
+  sits *between* the two sentences of `304.2.1`. It must be dropped: it would otherwise
+  interrupt the section mid-thought and hand the generator a perfectly citable, perfectly
+  worthless question. This is the case the citation rule cannot catch on its own.
 
 Note that body text following a heading belongs to that heading until the next heading —
 including the closing paragraph after `304.3.2`. Semantic fallback is for preamble and for

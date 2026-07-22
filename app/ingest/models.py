@@ -7,6 +7,10 @@ The pipeline has two stages with a deliberate seam between them:
 `AnalyzedDocument` is provider-neutral. Azure Document Intelligence is one producer of
 it; the JSON fixtures in tests/fixtures are another. The chunker never sees an Azure
 type, which is what makes it testable without an Azure account.
+
+The division of labour across the seam: the analyzer *records* what extraction saw,
+including layout roles, without editing. The chunker makes the editorial decisions —
+which blocks are document furniture, where sections begin, how text is grouped.
 """
 
 from typing import Literal
@@ -15,16 +19,30 @@ from pydantic import BaseModel, Field
 
 ChunkKind = Literal["outline", "semantic"]
 
+# Roles that Document Intelligence assigns to repeating page furniture. These are
+# recorded by the analyzer and dropped by the chunker — see chunker.LAYOUT_FURNITURE.
+ROLE_PAGE_HEADER = "pageHeader"
+ROLE_PAGE_FOOTER = "pageFooter"
+ROLE_PAGE_NUMBER = "pageNumber"
 
-class AnalyzedLine(BaseModel):
-    """One line of extracted text, with the page it appeared on.
 
-    Page numbers are 1-indexed to match what a candidate sees when they open the PDF —
-    a citation that says "page 12" must mean the page labelled 12 by their reader.
+class AnalyzedBlock(BaseModel):
+    """One contiguous block of extracted text — a paragraph, not a visual line.
+
+    Document Intelligence returns both. Paragraphs are the right unit: a sentence that
+    wraps across three visual lines is one paragraph, so chunk text does not end up with
+    newlines mid-sentence.
+
+    Page numbers are 1-indexed to match what a candidate sees when they open the PDF — a
+    citation that says "page 12" must mean the page labelled 12 by their reader.
+
+    `role` is the layout role extraction assigned, when it assigned one — `pageNumber`,
+    `pageHeader`, `sectionHeading`, and so on. Recorded verbatim, including `None`.
     """
 
     text: str
     page: int = Field(ge=1)
+    role: str | None = None
 
 
 class AnalyzedDocument(BaseModel):
@@ -32,7 +50,7 @@ class AnalyzedDocument(BaseModel):
 
     source_name: str
     page_count: int = Field(ge=1)
-    lines: list[AnalyzedLine]
+    blocks: list[AnalyzedBlock]
 
 
 class Chunk(BaseModel):
