@@ -53,6 +53,21 @@ class AnalyzedDocument(BaseModel):
     blocks: list[AnalyzedBlock]
 
 
+def format_section_path(path: list[str]) -> str:
+    """Render an outline path the way a reader would cite it.
+
+    A decimal number already states its own position, so it stands alone: `304.2.1`.
+    An ordinal path needs its ancestors to mean anything — item `d` is meaningless
+    without knowing it sits under `PROCEDURE`, `C`, `4` — so the root is kept and the
+    rest joined: `PROCEDURE C.4.d`.
+    """
+    if not path:
+        return ""
+    if len(path) == 1:
+        return path[0]
+    return f"{path[0]} {'.'.join(path[1:])}"
+
+
 class Chunk(BaseModel):
     """A stored, citable unit of source text.
 
@@ -66,14 +81,26 @@ class Chunk(BaseModel):
     ordinal: int = Field(ge=0, description="Position in the source document, 0-indexed.")
     kind: ChunkKind
 
-    # Present for outline chunks (e.g. "304.2.1"), absent for semantic fallback chunks.
-    section_number: str | None = None
+    # The outline path to this chunk, outermost first: ["304.2.1"] for a decimal
+    # guideline, ["PROCEDURE", "C", "4", "d"] for a lettered one. Empty for semantic
+    # chunks, which have no position in an outline.
+    section_path: list[str] = Field(default_factory=list)
     section_title: str | None = None
 
     page_start: int = Field(ge=1)
     page_end: int = Field(ge=1)
 
     text: str
+
+    @property
+    def section_label(self) -> str:
+        """The outline reference, as cited. Empty when the chunk has no outline position."""
+        return format_section_path(self.section_path)
+
+    @property
+    def depth(self) -> int:
+        """How deep in the outline this chunk sits. 0 for semantic chunks."""
+        return len(self.section_path)
 
     def location(self) -> str:
         """Human-readable source location, as shown to the candidate on review."""
@@ -82,6 +109,5 @@ class Chunk(BaseModel):
             if self.page_start == self.page_end
             else f"pp. {self.page_start}–{self.page_end}"
         )
-        if self.section_number:
-            return f"§ {self.section_number}, {pages}"
-        return pages
+        label = self.section_label
+        return f"{label}, {pages}" if label else pages

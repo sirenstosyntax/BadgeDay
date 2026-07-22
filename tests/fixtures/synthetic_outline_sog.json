@@ -1,0 +1,32 @@
+{
+  "source_name": "synthetic_outline_sog.pdf",
+  "page_count": 2,
+  "blocks": [
+    { "text": "EXAMPLE COUNTY FIRE CHIEFS ASSOCIATION", "page": 1, "role": null },
+    { "text": "WATER SUPPLY STANDARD OPERATING GUIDELINE", "page": 1, "role": null },
+    { "text": "Adopted March 2024", "page": 1, "role": null },
+    { "text": "PURPOSE", "page": 1, "role": "sectionHeading" },
+    { "text": "This guideline establishes how member agencies establish and sustain water supply at working structure fires under the automatic aid agreement.", "page": 1, "role": null },
+    { "text": "PROCEDURE", "page": 1, "role": "sectionHeading" },
+    { "text": "A. The first arriving engine company shall secure its own supply before committing to fire attack, except where an officer determines that a rescue takes precedence.", "page": 1, "role": null },
+    { "text": "B. The second arriving engine company shall establish a supply line from the nearest hydrant capable of delivering the required flow.", "page": 1, "role": null },
+    { "text": "C. Supply responsibilities are assigned as follows.", "page": 1, "role": null },
+    { "text": "1. Water Supply Officer - The third arriving company officer shall assume the Water Supply assignment and report the established flow to Command.", "page": 1, "role": null },
+    { "text": "2. Hydrant Assignment - Companies shall not draft from a hydrant already supplying an aerial apparatus without the approval of the Water Supply Officer.", "page": 1, "role": null },
+    { "text": "EXAMPLE COUNTY SOG - WATER SUPPLY", "page": 2, "role": "pageHeader" },
+    { "text": "Page 2 of 2", "page": 2, "role": "pageNumber" },
+    { "text": "3. Relay Operations - Where hydrant spacing exceeds the distance a single company can supply, relay pumping shall be established under the following conditions.", "page": 2, "role": null },
+    { "text": "a. The supplying company shall confirm the discharge pressure with the receiving company before charging the line.", "page": 2, "role": null },
+    { "text": "b. Intake pressure shall not be allowed to fall below twenty pounds per square inch at any point in the relay.", "page": 2, "role": null },
+    { "text": "c. The Water Supply Officer shall confirm the following before the relay is placed in service.", "page": 2, "role": null },
+    { "text": "i. The total length of hose in the relay and the elevation change across it.", "page": 2, "role": null },
+    { "text": "ii. The rated capacity of every pump operating in the relay.", "page": 2, "role": null },
+    { "text": "iii. The identity of the officer responsible for each pump position.", "page": 2, "role": null },
+    { "text": "d. A relay shall not be shut down without notifying every company operating from it.", "page": 2, "role": null },
+    { "text": "D. Any member may report a water supply problem directly to Command without going through the Water Supply Officer.", "page": 2, "role": null },
+    { "text": "COMMAND", "page": 2, "role": null },
+    { "text": "WATER SUPPLY", "page": 2, "role": null },
+    { "text": "RELAY", "page": 2, "role": null },
+    { "text": "HYDRANT", "page": 2, "role": null }
+  ]
+}

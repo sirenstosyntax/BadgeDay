@@ -119,10 +119,12 @@ def is_generatable(chunk: Chunk) -> bool:
     if not body:
         return False
 
-    if chunk.section_number:
-        lines = [line for line in body.splitlines() if line.strip()]
-        if len(lines) <= 1:
-            return False
+    # Word count is the whole test. An earlier version also required more than one line,
+    # on the assumption that a chunk is a heading followed by body text. That is wrong
+    # for outline items: `PROCEDURE C.4` is a single block whose text *is* the
+    # requirement, and it was being skipped as empty. A container heading is caught by
+    # word count anyway — "304.3 Responsibilities" is two words.
+    if chunk.section_path:
         return len(_words(body)) >= MIN_WORDS_OUTLINE
 
     return len(_words(body)) >= MIN_WORDS_SEMANTIC

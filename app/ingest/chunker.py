@@ -1,63 +1,45 @@
 """Outline-aware chunking.
 
-SOGs are numbered hierarchically — 304, 304.2, 304.2.1 — and that numbering is what a
-candidate uses to find a passage when they check a citation. So chunk boundaries follow
-the outline, and the section number travels with the chunk into the citation.
+A candidate checking a citation navigates by the document's own structure — "PROCEDURE,
+item 4.d.ii" or "§ 304.2.1". So chunk boundaries follow the outline, and the path to a
+chunk travels with it into the citation. A chunk that can only say "page 4" sends a
+candidate hunting through a page; on a two-hundred-page reading list that is no citation
+at all.
 
-Two things fall back to size-bounded grouping ("semantic" chunks): preamble before the
-first numbered heading, and documents with no outline numbering at all. Body text
-*following* a heading belongs to that heading until the next one — that is how outlines
-work, and a parser cannot reliably decide otherwise.
+Numbering conventions vary by department and are recognized in `outline.py`. This module
+turns recognized headings into a tree, then decides where chunk boundaries fall.
 
-Note on the name: `semantic` here means size-bounded grouping at block boundaries, not
-embedding-based similarity. Real semantic segmentation is a later improvement; the field
-name is the brief's, and the honest description is this one.
+## Where boundaries go
 
-## Detecting a heading
+Not simply at every heading. A deep outline produces items far too small to question —
+`a. Supplementing the sprinkler system;` is five words. Chunking at every marker would
+strand that content: too thin to generate from on its own, and absent from its parent.
 
-The hard problem is false positives. `2.5 gallons of foam concentrate…` opens with
-something shaped exactly like a section number. Accepting it would fragment the real
-section and stamp a bogus section number onto every citation derived from it — a citation
-that points somewhere the text does not exist is worse than no citation at all.
+So a node is emitted whole, with all its descendants, when the subtree fits within
+`max_chars`. `5. Water Supply` arrives as one chunk carrying its sub-items, cited as the
+section a reader would actually look up. Only when a subtree is too large does it split
+into its children. This is the "hybrid" the brief asks for: outline structure decides
+*where* boundaries can fall, size decides *which* of them are taken.
 
-Three independent signals must all agree before a block is treated as a heading:
+## Page furniture
 
-1. **Shape** — `<digits>(.<digits>)+` followed by text. A bare `304` is not enough; real
-   SOG headings in this scheme carry at least one dot.
-2. **Title-like text** — begins with a capital and runs no longer than
-   `MAX_HEADING_WORDS`. `2.5 gallons` fails on the lowercase `g`.
-3. **Hierarchical succession** — the number must be a plausible successor to the previous
-   heading: a descendant of it, or a sibling of it or of one of its ancestors. After
-   `304.2.2`, the number `2.5` is neither, so it is rejected even if it had survived the
-   first two checks.
+Running headers and footers are dropped before anything else. A footer appears on every
+page, so it lands inside every section spanning a page break — interrupting a sentence,
+and offering the generator a perfectly citable, perfectly worthless question. That last
+part is why it matters: nothing about it is false, so no grounding check catches it.
 
-The failure mode this trades toward is missing a real heading rather than inventing one.
-A missed heading degrades a citation's precision — the candidate is sent to the parent
-section instead of the child. An invented heading sends them to a section that does not
-exist. The first is a worse answer; the second is a broken promise.
+## Container sections (read before building coverage tracking)
 
-## Container sections (read this before building coverage tracking)
-
-A heading whose content lives entirely in its children — `304.3 Responsibilities`, with
-the substance in `304.3.1` and `304.3.2` — produces a chunk holding only the heading block.
-That is structurally correct and the chunk is kept, because dropping it would erase the
-section from the document's outline.
-
-Two downstream consequences:
-
-- **Generation must skip it.** There is nothing to ask a question about. Attempting one
-  would produce an ungrounded question wearing a valid-looking citation.
-- **Coverage tracking must exclude it from the denominator.** Coverage is "% of sections
-  exercised"; a section that can never be exercised would hold coverage permanently below
-  100% and make the tracker read as broken to a candidate who has in fact covered
-  everything.
-
-The signal is a chunk whose text is exactly its heading block.
+A heading whose content lives entirely in its children can still emit a heading-only
+chunk when its subtree is too large to merge. It is kept, because dropping it would erase
+the section from the outline. Generation skips it (`is_generatable`), and coverage
+tracking must exclude it from the denominator — a section that can never be exercised
+would hold coverage below 100% forever and read as broken to a candidate who has in fact
+covered everything.
 """
 
-import re
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from app.ingest.models import (
     ROLE_PAGE_FOOTER,
@@ -67,108 +49,170 @@ from app.ingest.models import (
     AnalyzedDocument,
     Chunk,
 )
+from app.ingest.outline import (
+    Marker,
+    MarkerStyle,
+    decimal_depth,
+    decimal_follows,
+    is_ambiguous_roman,
+    opens_or_continues,
+    parse_marker,
+)
 
 # Fixed namespace so chunk IDs are reproducible across ingestion runs. Citations store a
 # chunk_id; if re-ingesting a document minted new IDs, every existing citation would
 # dangle.
 CHUNK_ID_NAMESPACE = uuid.UUID("f1c0d9a2-6b7e-5d3a-9c14-2e8b7a4f0d63")
 
-HEADING_PATTERN = re.compile(r"^(\d+(?:\.\d+)+)\s+(\S.*)$")
-
-MAX_HEADING_WORDS = 12
 DEFAULT_MAX_CHARS = 1800
 
-# Repeating page furniture, dropped before chunking. A running footer appears on every
-# page, so it lands inside every section that spans a page break — interrupting a
-# sentence mid-thought and offering the generator something it could write a perfectly
-# well-cited question about ("SOG 304 - Page 1 of 2") that teaches nothing.
+# Below this, a sub-item is a fragment rather than a section: too little text to generate
+# a question from, so splitting it out would strand its content rather than make it
+# citable. Roughly eighteen words — above a list item like "a. Supplementing the
+# sprinkler system;" and below the shortest numbered subsection that states a real
+# requirement. Set it higher and genuine subsections get absorbed, silently coarsening
+# their citations.
+MIN_SPLIT_CHARS = 120
+
 LAYOUT_FURNITURE = frozenset({ROLE_PAGE_HEADER, ROLE_PAGE_FOOTER, ROLE_PAGE_NUMBER})
 
 
-@dataclass(frozen=True)
-class _Heading:
-    number: str
-    title: str
-    parts: tuple[int, ...]
+@dataclass
+class _Node:
+    """One outline section: its own text, and everything nested beneath it."""
+
+    marker: Marker | None = None
+    path: list[str] = field(default_factory=list)
+    blocks: list[AnalyzedBlock] = field(default_factory=list)
+    children: list["_Node"] = field(default_factory=list)
+    last_child_label: dict[MarkerStyle, str] = field(default_factory=dict)
+
+    @property
+    def style(self) -> MarkerStyle | None:
+        return self.marker.style if self.marker else None
+
+    def subtree_blocks(self) -> list[AnalyzedBlock]:
+        blocks = list(self.blocks)
+        for child in self.children:
+            blocks.extend(child.subtree_blocks())
+        return blocks
+
+    def subtree_chars(self) -> int:
+        return sum(len(b.text) + 1 for b in self.subtree_blocks())
 
 
-def _parse_parts(number: str) -> tuple[int, ...]:
-    return tuple(int(part) for part in number.split("."))
+def _resolve_style(marker: Marker, stack: list[_Node]) -> MarkerStyle:
+    """Disambiguate `i.`, `v.`, and `x.`, which are both numerals and letters.
 
-
-def _is_plausible_successor(candidate: tuple[int, ...], previous: tuple[int, ...] | None) -> bool:
-    """Could `candidate` follow `previous` in a well-formed outline?
-
-    Valid: a descendant (304.2 -> 304.2.1), or a sibling of the previous heading or of
-    any of its ancestors (304.2.2 -> 304.3, or -> 305).
-
-    Invalid: repeating a number, moving backwards, or an unrelated branch — which is what
-    a measurement like 2.5 looks like after 304.2.2.
+    An `i.` following `h.` continues a lettered list. An `i.` anywhere else opens a
+    nested roman one. Getting this wrong either fragments a list or buries a level.
     """
-    if previous is None:
-        return True
+    if marker.style is not MarkerStyle.LOWER_ROMAN or not is_ambiguous_roman(marker.label):
+        return marker.style
 
-    if len(candidate) > len(previous) and candidate[: len(previous)] == previous:
-        return True
-
-    for index in range(min(len(candidate), len(previous))):
-        if candidate[index] != previous[index]:
-            # Everything before `index` matched, so this is a sibling at that level.
-            return candidate[index] > previous[index]
-
-    return False
-
-
-def _detect_heading(text: str, previous: tuple[int, ...] | None) -> _Heading | None:
-    match = HEADING_PATTERN.match(text.strip())
-    if match is None:
-        return None
-
-    number, title = match.group(1), match.group(2).strip()
-
-    if not title or not title[0].isupper():
-        return None
-    if len(title.split()) > MAX_HEADING_WORDS:
-        return None
-
-    parts = _parse_parts(number)
-    if not _is_plausible_successor(parts, previous):
-        return None
-
-    return _Heading(number=number, title=title, parts=parts)
+    for node in reversed(stack):
+        previous = node.last_child_label.get(MarkerStyle.LOWER_ALPHA)
+        if previous is not None:
+            expected = chr(ord(previous) + 1)
+            if expected == marker.label.lower():
+                return MarkerStyle.LOWER_ALPHA
+            break
+    return MarkerStyle.LOWER_ROMAN
 
 
-def _split_into_sections(
-    blocks: list[AnalyzedBlock],
-) -> list[tuple[_Heading | None, list[AnalyzedBlock]]]:
-    """Group blocks under the heading that governs them.
+def _target_index(
+    marker: Marker,
+    style: MarkerStyle,
+    stack: list[_Node],
+    last_decimal: str | None,
+) -> int | None:
+    """Where in the open stack this heading belongs, or None if it is not a heading.
 
-    The leading group has no heading when the document opens with preamble.
+    Depth comes from the numbering family. A decimal number states its own depth. An
+    ordinal marker's depth is wherever its style already sits in the stack — or one
+    level deeper than the current node if the style is new, which is how a reader infers
+    that `a.` nests under `1.` on first encountering it.
     """
-    sections: list[tuple[_Heading | None, list[AnalyzedBlock]]] = []
-    current_heading: _Heading | None = None
-    current_blocks: list[AnalyzedBlock] = []
-    previous_parts: tuple[int, ...] | None = None
+    if style is MarkerStyle.NAMED:
+        return 1
+
+    if style is MarkerStyle.DECIMAL:
+        if not decimal_follows(marker.label, last_decimal):
+            return None
+        depth = decimal_depth(marker.label)
+        for index in range(1, len(stack)):
+            node = stack[index]
+            if node.style is MarkerStyle.DECIMAL and decimal_depth(node.path[-1]) >= depth:
+                return index
+        return len(stack)
+
+    for index in range(1, len(stack)):
+        node = stack[index]
+        if node.style is style:
+            parent = stack[index - 1]
+            if not opens_or_continues(style, marker.label, parent.last_child_label.get(style)):
+                return None
+            return index
+
+    if not opens_or_continues(style, marker.label, None):
+        return None
+    return len(stack)
+
+
+def _parent_path(stack: list[_Node], style: MarkerStyle) -> list[str]:
+    """The ancestor path a new node inherits.
+
+    A decimal number already names its own ancestors — `304.2.1` states that it sits
+    under `304.2` — so repeating them would produce `304.2 304.2.1`. Decimal ancestors
+    are therefore dropped, while a named heading above them is kept, since a document
+    can put `PROCEDURE` over a decimal series and the heading still carries meaning.
+    """
+    if style is not MarkerStyle.DECIMAL:
+        return stack[-1].path
+    return [
+        node.marker.label
+        for node in stack[1:]
+        if node.marker is not None and node.style is not MarkerStyle.DECIMAL
+    ]
+
+
+def _build_tree(blocks: list[AnalyzedBlock]) -> _Node:
+    root = _Node()
+    stack: list[_Node] = [root]
+    last_decimal: str | None = None
 
     for block in blocks:
-        heading = _detect_heading(block.text, previous_parts)
-        if heading is not None:
-            if current_blocks:
-                sections.append((current_heading, current_blocks))
-            current_heading = heading
-            current_blocks = [block]
-            previous_parts = heading.parts
-        else:
-            current_blocks.append(block)
+        marker = parse_marker(block.text, block.role)
+        target: int | None = None
+        style: MarkerStyle | None = None
 
-    if current_blocks:
-        sections.append((current_heading, current_blocks))
+        if marker is not None:
+            style = _resolve_style(marker, stack)
+            marker = Marker(style=style, label=marker.label, text=marker.text)
+            target = _target_index(marker, style, stack, last_decimal)
 
-    return sections
+        if marker is None or target is None:
+            stack[-1].blocks.append(block)
+            continue
+
+        del stack[target:]
+        parent = stack[-1]
+        node = _Node(
+            marker=marker,
+            path=[*_parent_path(stack, style), marker.label],
+            blocks=[block],
+        )
+        parent.children.append(node)
+        parent.last_child_label[style] = marker.label
+        stack.append(node)
+        if style is MarkerStyle.DECIMAL:
+            last_decimal = marker.label
+
+    return root
 
 
 def _split_by_size(blocks: list[AnalyzedBlock], max_chars: int) -> list[list[AnalyzedBlock]]:
-    """Break an oversized section at block boundaries.
+    """Break an oversized run at block boundaries.
 
     A single block is never split — better an over-long chunk than a citation pointing at
     half a sentence.
@@ -196,30 +240,71 @@ def chunk_id_for(document_id: str, ordinal: int) -> str:
     return str(uuid.uuid5(CHUNK_ID_NAMESPACE, f"{document_id}:{ordinal}"))
 
 
+def _emit_whole(node: _Node, max_chars: int) -> bool:
+    """Should this node be emitted as one chunk carrying all its descendants?
+
+    Two competing goods. Splitting at every marker gives the most precise citation — a
+    candidate sent to `PROCEDURE C.4.d` rather than to `PROCEDURE`. Merging keeps thin
+    sub-items reachable: `a. Supplementing the sprinkler system;` is five words, too
+    little to question on its own and lost entirely if separated from its parent.
+
+    So children are kept separate when each one carries enough text to stand as its own
+    citation, and absorbed when they are fragments. Preferring the merge unconditionally
+    silently coarsens every citation in a well-structured document; preferring the split
+    unconditionally strands the content of every deep list.
+    """
+    if not node.children:
+        return True
+    if node.subtree_chars() > max_chars:
+        return False
+    return not all(child.subtree_chars() >= MIN_SPLIT_CHARS for child in node.children)
+
+
+def _emit(
+    node: _Node,
+    document_id: str,
+    max_chars: int,
+    chunks: list[Chunk],
+) -> None:
+    def append(blocks: list[AnalyzedBlock], path: list[str], title: str | None) -> None:
+        if not blocks:
+            return
+        ordinal = len(chunks)
+        chunks.append(
+            Chunk(
+                chunk_id=chunk_id_for(document_id, ordinal),
+                document_id=document_id,
+                ordinal=ordinal,
+                kind="outline" if path else "semantic",
+                section_path=list(path),
+                section_title=title,
+                page_start=min(b.page for b in blocks),
+                page_end=max(b.page for b in blocks),
+                text="\n".join(b.text for b in blocks),
+            )
+        )
+
+    title = node.marker.title if node.marker else None
+
+    if node.marker is not None and _emit_whole(node, max_chars):
+        append(node.subtree_blocks(), node.path, title)
+        return
+
+    for group in _split_by_size(node.blocks, max_chars):
+        append(group, node.path, title)
+
+    for child in node.children:
+        _emit(child, document_id, max_chars, chunks)
+
+
 def chunk_document(
     document: AnalyzedDocument,
     document_id: str,
     max_chars: int = DEFAULT_MAX_CHARS,
 ) -> list[Chunk]:
     """Split an analyzed document into citable chunks, in reading order."""
-    chunks: list[Chunk] = []
     body = [b for b in document.blocks if b.role not in LAYOUT_FURNITURE]
-
-    for heading, blocks in _split_into_sections(body):
-        for group in _split_by_size(blocks, max_chars):
-            ordinal = len(chunks)
-            chunks.append(
-                Chunk(
-                    chunk_id=chunk_id_for(document_id, ordinal),
-                    document_id=document_id,
-                    ordinal=ordinal,
-                    kind="outline" if heading is not None else "semantic",
-                    section_number=heading.number if heading is not None else None,
-                    section_title=heading.title if heading is not None else None,
-                    page_start=min(block.page for block in group),
-                    page_end=max(block.page for block in group),
-                    text="\n".join(block.text for block in group),
-                )
-            )
-
+    root = _build_tree(body)
+    chunks: list[Chunk] = []
+    _emit(root, document_id, max_chars, chunks)
     return chunks

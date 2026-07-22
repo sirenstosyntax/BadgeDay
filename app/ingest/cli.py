@@ -23,7 +23,7 @@ from app.ingest.chunker import chunk_document
 def _print_chunks(chunks: list) -> None:
     print(f"\n{len(chunks)} chunks\n")
     for chunk in chunks:
-        title = chunk.section_title or "(unnumbered)"
+        title = chunk.section_title or ""
         print(f"{chunk.ordinal:>3}  {chunk.kind:<8}  {chunk.location():<24}  {title}")
 
 
@@ -105,7 +105,7 @@ def main() -> int:
 
     targets = chunks
     if args.section:
-        targets = [c for c in chunks if c.section_number == args.section]
+        targets = [c for c in chunks if c.section_label == args.section]
         if not targets:
             print(f"\nNo section {args.section} in this document.", file=sys.stderr)
             return 1
