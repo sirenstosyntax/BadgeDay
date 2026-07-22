@@ -108,6 +108,21 @@ class Api:
             json=row,
         )
 
+    def select_as_service(self, table: str, query: str) -> list:
+        """Read past RLS, to see what is actually left in a table rather than what a
+        given user is permitted to see. Checking for orphans as a user would be
+        circular: RLS hides another user's surviving rows just as effectively as
+        deletion removes them."""
+        r = self.client.get(
+            f"{self.url}/rest/v1/{table}?select=*&{query}",
+            headers={
+                "apikey": self.service_key,
+                "Authorization": f"Bearer {self.service_key}",
+            },
+        )
+        r.raise_for_status()
+        return r.json()
+
     def coverage(self, document_id: str) -> list:
         r = self.client.get(
             f"{self.url}/rest/v1/document_coverage?document_id=eq.{document_id}",
@@ -164,6 +179,16 @@ def _seed(api: Api, user_id: str, label: str) -> dict:
             "explanation": "Because it is theirs.",
             "correct_answer": True,
         },
+    )
+    # Saved questions and jobs are seeded purely so the cascade has something to fail to
+    # remove. An untouched table proves nothing about a delete that never reached it.
+    api.insert_as_service(
+        "saved_questions",
+        {"user_id": user_id, "question_id": question["id"]},
+    )
+    api.insert_as_service(
+        "jobs",
+        {"kind": "ingest", "document_id": document["id"]},
     )
     return {"document": document, "chunk": chunk, "question": question}
 
@@ -379,6 +404,42 @@ def main() -> int:
             after and after[0]["sections_exercised"] == 1,
             f"got {after}",
         )
+
+        # --- Cascade -------------------------------------------------------
+        # "Delete account (hard-delete user content)" is a V1 scope commitment, and it
+        # rests entirely on `on delete cascade` firing along every path out of
+        # auth.users. A cascade that silently does not fire leaves a candidate's
+        # documents in the database after their account is gone — the promise broken
+        # quietly, with nothing in the application to notice.
+        #
+        # This runs last: it destroys the fixtures every check above depends on.
+        print("\nAccount deletion:\n")
+
+        api.delete_user(alice_id)
+        alice_document_id = alice["document"]["id"]
+        orphans = [
+            ("profiles", f"id=eq.{alice_id}"),
+            ("documents", f"user_id=eq.{alice_id}"),
+            ("chunks", f"document_id=eq.{alice_document_id}"),
+            ("questions", f"document_id=eq.{alice_document_id}"),
+            ("practice_sessions", f"user_id=eq.{alice_id}"),
+            ("responses", f"user_id=eq.{alice_id}"),
+            ("saved_questions", f"user_id=eq.{alice_id}"),
+            ("jobs", f"document_id=eq.{alice_document_id}"),
+        ]
+        for table, query in orphans:
+            rows = api.select_as_service(table, query)
+            check(f"leaves no {table} behind", rows == [], f"got {len(rows)} rows")
+
+        # Over-deletion is as much a failure as under-deletion: a cascade wired to the
+        # wrong column would take the other candidate's data with it.
+        survivors = api.select_as_service("documents", f"user_id=eq.{bob_id}")
+        check(
+            "leaves the other candidate's documents untouched",
+            len(survivors) == 1,
+            f"got {len(survivors)} rows",
+        )
+        alice_id = None
 
     finally:
         for user_id in (alice_id, bob_id):
