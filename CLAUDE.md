@@ -2,21 +2,47 @@
 
 ## What this is
 
-BadgeDay Command V1: a web app for firefighter promotional candidates (Lieutenant /
-Captain / Battalion Chief). The candidate uploads their department's announced
-promotional reading list (their own public documents: SOGs listed on the exam
-announcement, standard published texts) and BadgeDay generates cited practice questions
-from those exact documents, with a quiz interface that tracks coverage until nothing on
-the list can surprise them.
+BadgeDay is a B2C subscription product under Sirens to Syntax LLC serving firefighters at
+two different career moments. Consumer brand — completely separate from DrillGround
+(B2G). Domains: badgeday.com / badgeday.app. Social: @badgedayapp.
 
-B2C subscription product under Sirens to Syntax LLC. Consumer brand — completely
-separate from DrillGround (B2G). Domains: badgeday.com / badgeday.app. Social:
-@badgedayapp.
+## Product family
 
-**The one-sentence pitch:** "Upload your reading list. Drill cited questions until badge
-day."
+BadgeDay has two parts. **They are architecturally different products sharing a brand, an
+account layer, and a billing layer.** Do not assume a pattern from one transfers to the
+other — in particular, the citation-grounding discipline that defines Command has no
+equivalent in Recruit, and the "we ship zero content" rule is Command-only.
 
-## V1 scope (MVP — build only this)
+### BadgeDay Command — promotional exam prep (V1, building now)
+
+For serving firefighters testing for Lieutenant / Captain / Battalion Chief. The
+candidate uploads their department's announced promotional reading list (their own public
+documents: SOGs listed on the exam announcement, standard published texts) and BadgeDay
+generates cited practice questions from those exact documents, with a quiz interface that
+tracks coverage until nothing on the list can surprise them.
+
+**Pitch:** "Upload your reading list. Drill cited questions until badge day."
+
+**Shape:** RAG over user-uploaded documents. BadgeDay ships zero content. Every question
+carries a citation resolvable to a stored chunk.
+
+### BadgeDay Recruit — pre-hire preparation (later; do not build during V1)
+
+For candidates who have not been hired yet and are working to become competitive: no
+department, no reading list. Formerly referred to as "BadgeDay Entry."
+
+Recruit helps candidates develop the attributes departments hire for — through practice
+tests, mock interviews, teaching of foundational principles common to all departments,
+and the common traps that keep candidates from getting hired.
+
+**Shape:** authored content library with expert review. This is closer to DrillGround's
+model than to Command's. There is no user upload, no retrieval, and no citation chain.
+
+**Explicitly not the Command model:** Recruit must NOT be built to depend on the
+candidate uploading department hiring materials. A pre-hire candidate has no such
+documents, and requiring them would gate the product on something its users do not have.
+
+## V1 scope — Command only (MVP — build only this)
 
 - **Auth + billing:** email auth, Stripe subscription (monthly ~$29 and a 90-day
   intensive ~$129 — exact pricing configurable, not hardcoded).
@@ -39,28 +65,51 @@ day."
 
 ## Explicitly OUT of scope for V1
 
-- Voice / oral-board simulation (that's the V2 engine — do not scaffold it)
-- Entry-level tier (BadgeDay Entry comes later)
+- Voice / oral-board simulation (that's the V2 engine — do not scaffold it). Note this
+  also defers Recruit's voice-based mock interviews; text-based interview practice is
+  available sooner.
+- BadgeDay Recruit in any form (see Product family above — comes after Command V1)
 - Department/team accounts of ANY kind (see firewall below)
 - Native mobile apps (responsive web only)
 - Community features, leaderboards, content marketplace
 
 ## Hard constraints — never violate, never "helpfully" work around
 
-- **Citation grounding:** no question ships without a traceable source location. If
-  retrieval confidence is low, generate fewer questions, not ungrounded ones. This
-  discipline is the product.
-- **Copyright:** questions and answers are written in original words. Cite locations; do
-  not reproduce passages from uploaded texts beyond short functional references. Never
-  store or display long verbatim extracts in question content.
+### Product-wide
+
 - **Buyer firewall:** individuals only. No feature that lets a department create, export,
   or administer examinations. No org accounts, no "share with my department," no
   exam-builder mode. (Company policy: exam prep is sold only to individuals; exam
   creation is sold to no one.)
-- **No department-specific content from us:** the system contains no preloaded department
-  documents. Users upload their own.
+- **Copyright:** questions and answers are written in original words. Never store or
+  display long verbatim extracts in question content.
+- **No licensed standards as a grounding source:** BadgeDay does not derive content from
+  licensed or copyrighted standards and texts (NFPA, IFSTA and equivalents), and does not
+  derive Recruit content from commercial hiring-test batteries (National Testing Network
+  / FireTEAM, IPMA-HR, CPS HR and equivalents). Testing the same underlying *abilities*
+  with original items is fine; tracking a specific published battery's structure or
+  content is not.
 - **Privacy:** user documents are private per user, never shared across users, never used
   to improve prompts/models, hard-deletable.
+
+### Command only
+
+- **Citation grounding:** no question ships without a traceable source location. If
+  retrieval confidence is low, generate fewer questions, not ungrounded ones. This
+  discipline is the product. Cite locations rather than reproducing passages.
+- **No department-specific content from us:** the system contains no preloaded department
+  documents. Users upload their own. BadgeDay ships zero content.
+
+### Recruit only
+
+- **Ships authored content by design.** The Command rules above do not apply: there is no
+  upload, no retrieval, and nothing to cite. This is a deliberate departure, not an
+  oversight — Recruit's users have no department documents to supply.
+- **Expert review replaces citation grounding as the quality gate.** No Recruit item
+  publishes without SME review. Since a candidate cannot check a Recruit question against
+  a source the way they can a Command question, review is the only thing standing behind
+  its accuracy.
+- **Never depends on user-uploaded department materials.** See Product family above.
 
 ## Tech stack (use this; ask before deviating)
 
