@@ -40,6 +40,17 @@ class Settings(BaseSettings):
     # Application code goes through the Supabase client, never this.
     supabase_db_url: str = ""
 
+    # --- Web ------------------------------------------------------------------
+    # Origins the browser app is served from. Comma-separated, because this arrives as an
+    # environment variable. Empty in production is deliberate: an unset value permits
+    # nothing rather than everything, so a deploy that forgets to set it fails visibly
+    # instead of accepting requests from anywhere.
+    cors_origins: str = "http://localhost:5173"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
     # --- Uploads -------------------------------------------------------------
     # Ceiling on a single uploaded document. A reading list is SOG packets and published
     # texts, which sit far below this; the cap exists so that one oversized or malicious
