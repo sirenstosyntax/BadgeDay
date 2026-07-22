@@ -5,9 +5,17 @@ without pulling in a migration framework before the schema has settled.
 
     python scripts/apply_migrations.py            # apply anything not yet applied
     python scripts/apply_migrations.py --status   # show what has and has not run
+    python scripts/apply_migrations.py --mark-applied 0001_initial_schema.sql
 
 Each file runs inside a transaction, so a migration that fails partway leaves nothing
 behind. Applied filenames are recorded in schema_migrations.
+
+`--mark-applied` records a migration as run without running it. It exists for schema
+applied out of band — pasted into the Supabase SQL editor before this script had
+credentials, which is how the first project was stood up. The alternative is worse: the
+DDL is not idempotent (`create table public.profiles`, not `create table if not exists`),
+so a blind re-run aborts on the first statement and the ledger stays empty forever.
+Recording the truth once lets every later migration flow through the script normally.
 """
 
 import argparse
@@ -42,7 +50,15 @@ def _checksum(text: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Apply Supabase migrations.")
-    parser.add_argument("--status", action="store_true", help="report without applying")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--status", action="store_true", help="report without applying")
+    mode.add_argument(
+        "--mark-applied",
+        nargs="+",
+        metavar="FILENAME",
+        default=[],
+        help="record migrations as applied without running them (schema applied by hand)",
+    )
     args = parser.parse_args()
 
     settings = get_settings()
@@ -63,6 +79,30 @@ def main() -> int:
             conn.commit()
             cur.execute("select filename, checksum from public.schema_migrations")
             applied = dict(cur.fetchall())
+
+        if args.mark_applied:
+            # Named explicitly rather than "mark everything pending" — a typo should fail
+            # loudly, not quietly record a migration that never ran.
+            by_name = {path.name: path for path in files}
+            unknown = [name for name in args.mark_applied if name not in by_name]
+            if unknown:
+                sys.exit(
+                    f"Not a migration in {MIGRATIONS_DIR}: {', '.join(unknown)}\n"
+                    f"Available: {', '.join(by_name)}"
+                )
+
+            for name in args.mark_applied:
+                if name in applied:
+                    print(f"  {'already recorded':<22} {name}")
+                    continue
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "insert into public.schema_migrations (filename, checksum) values (%s, %s)",
+                        (name, _checksum(by_name[name].read_text())),
+                    )
+                conn.commit()
+                print(f"  {'marked applied':<22} {name}")
+            return 0
 
         for path in files:
             sql = path.read_text()
