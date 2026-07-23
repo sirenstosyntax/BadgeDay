@@ -5,6 +5,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.account import router as account_router
 from app.api.documents import router as documents_router
 from app.api.health import router as health_router
 from app.api.practice import router as practice_router
@@ -35,3 +36,4 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(documents_router)
 app.include_router(practice_router)
+app.include_router(account_router)

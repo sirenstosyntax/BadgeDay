@@ -7,8 +7,10 @@ write — and even there the policy, not this code, is what enforces it.
 """
 
 from fastapi import APIRouter, HTTPException, UploadFile, status
+from postgrest.exceptions import APIError
 
 from app.api.deps import CurrentUserDep, DbDep, SettingsDep
+from app.storage.billing import SubscriptionRequired, as_subscription_required
 from app.storage.documents import (
     CONTENT_TYPES,
     DocumentRecord,
@@ -54,7 +56,17 @@ def upload_document(
     if not data:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "That file is empty.")
 
-    return create_document(db, user.id, file.filename or "document", file.content_type, data)
+    try:
+        return create_document(db, user.id, file.filename or "document", file.content_type, data)
+    except APIError as exc:
+        raised = as_subscription_required(exc)
+        if isinstance(raised, SubscriptionRequired):
+            raise HTTPException(
+                status.HTTP_402_PAYMENT_REQUIRED,
+                "A subscription is needed to add documents. Your existing documents are "
+                "unaffected and you can still delete them.",
+            ) from exc
+        raise
 
 
 @router.get("")
