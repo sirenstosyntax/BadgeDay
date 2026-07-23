@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ApiError, api } from './lib/api'
 import { useAccount } from './lib/account'
 import { signOut, useSession } from './lib/auth'
+import { Account } from './ui/Account'
 import { Documents } from './ui/Documents'
 import { Paywall } from './ui/Paywall'
 import { Quiz } from './ui/Quiz'
@@ -18,12 +19,13 @@ import { SignIn } from './ui/SignIn'
 type View =
   | { name: 'documents' }
   | { name: 'saved' }
+  | { name: 'account' }
   | { name: 'quiz'; sessionId: string }
   | { name: 'review'; sessionId: string }
 
 export default function App() {
   const { session, loading } = useSession()
-  const { entitled, refreshAccount } = useAccount(!!session)
+  const { account, entitled, refreshAccount } = useAccount(!!session)
   const [view, setView] = useState<View>({ name: 'documents' })
   const [starting, setStarting] = useState(false)
   const [showPaywall, setShowPaywall] = useState(false)
@@ -96,6 +98,12 @@ export default function App() {
     }
   }
 
+  // The account and its token are gone once deletion returns, so signing out is not a
+  // courtesy — it clears the now-invalid local session and drops the app back to sign-in.
+  async function afterDeleted() {
+    await signOut()
+  }
+
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
       <header className="border-b border-stone-200 dark:border-stone-800">
@@ -130,9 +138,12 @@ export default function App() {
                 Subscribe
               </button>
             )}
-            <span className="hidden text-stone-500 sm:inline dark:text-stone-400">
+            <button
+              onClick={() => setView({ name: 'account' })}
+              className="hidden text-stone-500 hover:underline sm:inline dark:text-stone-400"
+            >
               {session.user.email}
-            </span>
+            </button>
             <button
               onClick={signOut}
               className="rounded-md border border-stone-300 px-2 py-1 dark:border-stone-700"
@@ -161,6 +172,14 @@ export default function App() {
           <Review sessionId={view.sessionId} onDone={() => setView({ name: 'documents' })} />
         ) : view.name === 'saved' ? (
           <Saved onDone={() => setView({ name: 'documents' })} />
+        ) : view.name === 'account' ? (
+          <Account
+            account={account}
+            onManageBilling={() => void manageBilling()}
+            onSubscribe={() => setShowPaywall(true)}
+            onDeleted={() => void afterDeleted()}
+            onDone={() => setView({ name: 'documents' })}
+          />
         ) : (
           <Documents
             entitled={entitled}

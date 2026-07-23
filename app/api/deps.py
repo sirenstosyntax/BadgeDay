@@ -21,8 +21,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 from supabase import AuthError, Client, create_client
 
+from app.billing.gateway import PaymentGateway, StripeGateway
 from app.config import Settings, get_settings
-from app.storage.client import user_client
+from app.storage.client import service_client, user_client
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 
@@ -96,3 +97,22 @@ def user_db(user: CurrentUserDep, settings: SettingsDep) -> Client:
 
 
 DbDep = Annotated[Client, Depends(user_db)]
+
+
+def service_db(settings: SettingsDep) -> Client:
+    """A service-role client, RLS bypassed. For trusted, non-candidate writes only.
+
+    Two endpoints need it: the Stripe webhook, whose caller is Stripe rather than a
+    candidate, and account deletion, which removes an auth user (an admin operation no
+    candidate token can perform). Never reach for it to serve a candidate's own data — that
+    is what `user_db` is for, and storage/client.py explains why the distinction matters.
+    """
+    return service_client(settings)
+
+
+def get_gateway(settings: SettingsDep) -> PaymentGateway:
+    return StripeGateway(settings)
+
+
+ServiceDbDep = Annotated[Client, Depends(service_db)]
+GatewayDep = Annotated[PaymentGateway, Depends(get_gateway)]

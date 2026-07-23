@@ -42,6 +42,15 @@ class PaymentGateway(Protocol):
         """Create a billing-portal session and return its URL."""
         ...
 
+    def delete_customer(self, customer_id: str) -> None:
+        """Delete the Stripe customer, which cancels any live subscription with it.
+
+        Used when a candidate deletes their account: stopping the billing is the point,
+        and removing the customer takes their details off Stripe too. A customer that is
+        already gone is not an error — the end state is the one asked for.
+        """
+        ...
+
     def read_event(self, *, payload: bytes, signature: str) -> dict:
         """Verify a webhook's signature and return the event as a plain dict.
 
@@ -97,6 +106,17 @@ class StripeGateway:
             params={"customer": customer_id, "return_url": return_url}
         )
         return session.url
+
+    def delete_customer(self, customer_id: str) -> None:
+        try:
+            self._client.customers.delete(customer_id)
+        except self._stripe.InvalidRequestError as exc:
+            # A customer Stripe has no record of is already in the state we want. Anything
+            # else — auth, a network fault — must propagate so account deletion aborts
+            # before it removes anything, rather than leaving a live subscription behind.
+            if getattr(exc, "code", None) == "resource_missing":
+                return
+            raise
 
     def read_event(self, *, payload: bytes, signature: str) -> dict:
         try:

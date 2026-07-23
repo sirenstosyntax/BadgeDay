@@ -13,32 +13,16 @@ candidate's identity, and the request is authenticated — here by Stripe's sign
 """
 
 from datetime import UTC, datetime
-from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel
-from supabase import Client
 
-from app.api.deps import CurrentUserDep, DbDep, SettingsDep
-from app.billing.gateway import PaymentGateway, StripeGateway, WebhookVerificationError
+from app.api.deps import CurrentUserDep, DbDep, GatewayDep, ServiceDbDep, SettingsDep
+from app.billing.gateway import WebhookVerificationError
 from app.billing.plan import CHECKOUT_MODE, LinkCustomer, Plan, plan_changes
 from app.storage.billing import apply_change, customer_id_for
-from app.storage.client import service_client
 
 router = APIRouter(tags=["billing"])
-
-
-def get_gateway(settings: SettingsDep) -> PaymentGateway:
-    return StripeGateway(settings)
-
-
-def service_db(settings: SettingsDep) -> Client:
-    """A service-role client, for the webhook's trusted writes only. Not for candidate data."""
-    return service_client(settings)
-
-
-GatewayDep = Annotated[PaymentGateway, Depends(get_gateway)]
-ServiceDbDep = Annotated[Client, Depends(service_db)]
 
 
 class StartCheckout(BaseModel):

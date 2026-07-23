@@ -11,9 +11,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.api.billing import get_gateway, service_db
 from app.api.billing import router as billing_router
-from app.api.deps import CurrentUser, current_user, user_db
+from app.api.deps import CurrentUser, current_user, get_gateway, service_db, user_db
 from app.billing.gateway import WebhookVerificationError
 from app.billing.plan import GrantPass, LinkCustomer
 from app.config import Settings, get_settings

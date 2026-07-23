@@ -56,6 +56,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 export const api = {
   account: {
     me: () => request<Account>('/me'),
+    // Hard-deletes the candidate and everything of theirs, and cancels billing. The token
+    // is invalid the instant this returns — the caller signs out immediately after.
+    remove: () => request<void>('/me', { method: 'DELETE' }),
   },
 
   billing: {
