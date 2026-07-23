@@ -11,6 +11,7 @@ what an event *means* — that is `plan.plan_changes`, kept separate so the mean
 testable without constructing Stripe objects.
 """
 
+import json
 from typing import Literal, Protocol
 
 from app.config import Settings
@@ -119,10 +120,21 @@ class StripeGateway:
             raise
 
     def read_event(self, *, payload: bytes, signature: str) -> dict:
+        # verify_header, not construct_event: we want exactly one thing from Stripe here, a
+        # yes/no on the signature, and verify_header is that primitive. construct_event does
+        # more — it parses and *types* the event into a StripeObject — and that extra step
+        # both is a place an unusual-but-genuine payload could raise a non-signature error we
+        # would wrongly 500 on, and hands back an object that is awkward to turn back into a
+        # plain dict. The payload is already the JSON we want, and it is the exact bytes the
+        # signature covers, so once the signature checks out we parse it directly.
         try:
-            event = self._stripe.Webhook.construct_event(
-                payload, signature, self._webhook_secret
+            # Decoded, not raw bytes: verify_header interpolates the payload with %s, so a
+            # bytes payload would be signed as its repr (b'...') and never match. Decoding
+            # here is what construct_event does for us internally; calling verify_header
+            # directly means doing it ourselves.
+            self._stripe.WebhookSignature.verify_header(
+                payload.decode("utf-8"), signature, self._webhook_secret
             )
         except (ValueError, self._stripe.SignatureVerificationError) as exc:
             raise WebhookVerificationError(str(exc)) from exc
-        return dict(event)
+        return json.loads(payload)
