@@ -11,11 +11,16 @@ definition of the rule, and the two would drift the first time one of them learn
 grace period.
 """
 
+import logging
 from datetime import datetime
 
 from postgrest.exceptions import APIError
 from pydantic import BaseModel
 from supabase import Client
+
+from app.billing.plan import Change, GrantPass, LinkCustomer, SetSubscription
+
+logger = logging.getLogger(__name__)
 
 # What PostgREST returns when a row-level security policy refuses a write. For documents
 # and practice_sessions after 0005, the overwhelmingly likely reason is that the candidate
@@ -50,6 +55,68 @@ def entitlement(db: Client, user_id: str) -> Entitlement:
         subscription_status=row["subscription_status"],
         access_expires_at=row["access_expires_at"],
     )
+
+
+def customer_id_for(db: Client, user_id: str) -> str | None:
+    """The candidate's Stripe customer id, if they have ever begun checkout."""
+    rows = (
+        db.table("profiles")
+        .select("stripe_customer_id")
+        .eq("id", user_id)
+        .limit(1)
+        .execute()
+        .data
+    )
+    return rows[0]["stripe_customer_id"] if rows else None
+
+
+def apply_change(db: Client, change: Change) -> None:
+    """Write one entitlement change to profiles. Requires a service-role client.
+
+    Profiles is not candidate-writable (0005 revoked that privilege precisely so a
+    candidate cannot mark themselves paid). The writer of these columns is Stripe, speaking
+    through a webhook we have verified — so this bypasses row-level security by design, the
+    same trusted-writer footing as the ingestion worker, and never runs on behalf of a
+    candidate's own token.
+
+    A change that matches no profile row is logged, not raised: a webhook must answer 200
+    or Stripe retries it forever, and a mismatch means an event arrived for a customer we
+    have no record of — worth seeing in the logs, not worth wedging the webhook.
+    """
+    if isinstance(change, LinkCustomer):
+        result = (
+            db.table("profiles")
+            .update({"stripe_customer_id": change.customer_id})
+            .eq("id", change.user_id)
+            .execute()
+        )
+        _warn_if_unmatched(result, f"link customer to user {change.user_id}")
+        return
+
+    if isinstance(change, SetSubscription):
+        result = (
+            db.table("profiles")
+            .update({"subscription_status": change.status})
+            .eq("stripe_customer_id", change.customer_id)
+            .execute()
+        )
+        _warn_if_unmatched(result, f"set subscription for customer {change.customer_id}")
+        return
+
+    if isinstance(change, GrantPass):
+        result = (
+            db.table("profiles")
+            .update({"access_expires_at": change.expires_at.isoformat()})
+            .eq("stripe_customer_id", change.customer_id)
+            .execute()
+        )
+        _warn_if_unmatched(result, f"grant pass to customer {change.customer_id}")
+        return
+
+
+def _warn_if_unmatched(result: object, what: str) -> None:
+    if not getattr(result, "data", None):
+        logger.warning("billing change matched no profile row: %s", what)
 
 
 def as_subscription_required(exc: APIError) -> Exception:

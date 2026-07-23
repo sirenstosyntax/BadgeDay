@@ -62,6 +62,23 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     stripe_price_id_monthly: str = ""
     stripe_price_id_intensive_90day: str = ""
+    # Length of the one-time intensive pass. The price is set in Stripe; how long the pass
+    # it buys grants access is our decision, kept here so "90-day" is not welded into a
+    # timedelta at the point a webhook grants it.
+    intensive_pass_days: int = 90
+
+    # Where the browser app lives, used to build the URLs Stripe returns the candidate to
+    # after checkout or the billing portal. Not the API's own origin — the human ends up
+    # back in the web app, not on a JSON endpoint.
+    public_web_url: str = "http://localhost:5173"
+
+    @property
+    def stripe_configured(self) -> bool:
+        return bool(
+            self.stripe_secret_key
+            and self.stripe_price_id_monthly
+            and self.stripe_price_id_intensive_90day
+        )
 
     @field_validator("azure_docintel_endpoint")
     @classmethod
