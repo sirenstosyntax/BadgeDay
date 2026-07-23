@@ -24,7 +24,13 @@ function StatusPill({ status }: { status: DocumentStatus }) {
   return <span className={`rounded-full px-2 py-0.5 text-xs ${tone}`}>{LABELS[status]}</span>
 }
 
-export function Documents({ onPractise }: { onPractise: (documentId: string | null) => void }) {
+type DocumentsProps = {
+  entitled: boolean
+  onNeedsAccess: () => void
+  onPractise: (documentId: string | null) => void
+}
+
+export function Documents({ entitled, onNeedsAccess, onPractise }: DocumentsProps) {
   const [documents, setDocuments] = useState<DocumentRecord[]>([])
   const [coverage, setCoverage] = useState<Record<string, Coverage>>({})
   const [error, setError] = useState<string | null>(null)
@@ -63,9 +69,15 @@ export function Documents({ onPractise }: { onPractise: (documentId: string | nu
       await api.documents.upload(file)
       await refresh()
     } catch (caught) {
-      setError(
-        caught instanceof ApiError ? caught.message : 'That upload did not go through.',
-      )
+      // A lapsed plan is not an upload error to apologise for — it is the paywall. Hand it
+      // up rather than showing "that upload did not go through" over a billing problem.
+      if (caught instanceof ApiError && caught.status === 402) {
+        onNeedsAccess()
+      } else {
+        setError(
+          caught instanceof ApiError ? caught.message : 'That upload did not go through.',
+        )
+      }
     } finally {
       setUploading(false)
       if (fileInput.current) fileInput.current.value = ''
@@ -94,18 +106,44 @@ export function Documents({ onPractise }: { onPractise: (documentId: string | nu
             documents and cite them.
           </p>
         </div>
-        <label className="shrink-0 cursor-pointer rounded-lg bg-stone-900 px-3 py-2 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900">
-          {uploading ? 'Uploading…' : 'Add document'}
-          <input
-            ref={fileInput}
-            type="file"
-            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            onChange={upload}
-            disabled={uploading}
-            className="hidden"
-          />
-        </label>
+        {entitled ? (
+          <label className="shrink-0 cursor-pointer rounded-lg bg-stone-900 px-3 py-2 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900">
+            {uploading ? 'Uploading…' : 'Add document'}
+            <input
+              ref={fileInput}
+              type="file"
+              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={upload}
+              disabled={uploading}
+              className="hidden"
+            />
+          </label>
+        ) : (
+          // No file picker without a plan: opening one only to reject the upload with a 402
+          // wastes the candidate's time. Send them to the paywall instead.
+          <button
+            onClick={onNeedsAccess}
+            className="shrink-0 rounded-lg bg-stone-900 px-3 py-2 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900"
+          >
+            Add document
+          </button>
+        )}
       </div>
+
+      {!entitled && (
+        <div className="flex items-center justify-between gap-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          <span>
+            No active plan. You can still read and delete what you have uploaded; adding
+            documents and starting sessions need a subscription.
+          </span>
+          <button
+            onClick={onNeedsAccess}
+            className="shrink-0 font-medium underline underline-offset-2"
+          >
+            See plans
+          </button>
+        </div>
+      )}
 
       {error && (
         <p className="rounded-lg bg-red-50 p-3 text-sm text-red-900 dark:bg-red-950 dark:text-red-200">

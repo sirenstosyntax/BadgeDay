@@ -29,6 +29,24 @@ export type DocumentRecord = {
   updated_at: string
 }
 
+/**
+ * Entitlement as the app sees it. `entitled` is the only field a gate should read — it is
+ * the same OR the server computes (an active subscription, or an unexpired pass), so the
+ * browser never re-derives "are they allowed" from status and expiry and never disagrees
+ * with the server about it. `subscription_status` and `access_expires_at` are for telling
+ * the candidate *what* they have, not for deciding whether they may act.
+ */
+export type Account = {
+  id: string
+  email: string | null
+  entitled: boolean
+  subscription_status: 'none' | 'active' | 'past_due' | 'canceled'
+  access_expires_at: string | null
+}
+
+/** The two things a candidate can buy. Named, not priced — the price lives in Stripe. */
+export type Plan = 'monthly' | 'intensive_90day'
+
 export type QuestionType = 'multiple_choice' | 'true_false' | 'short_answer'
 
 export type QuizQuestion = {

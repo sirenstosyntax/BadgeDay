@@ -1,8 +1,10 @@
 import { supabase } from './supabase'
 import type {
+  Account,
   Coverage,
   DocumentRecord,
   NextQuestion,
+  Plan,
   PracticeSession,
   QuizQuestion,
   ReviewItem,
@@ -52,6 +54,22 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  account: {
+    me: () => request<Account>('/me'),
+  },
+
+  billing: {
+    // Both return a Stripe URL the browser navigates to. They are POSTs, not links,
+    // because each mints a fresh single-use session server-side against the candidate's
+    // token — there is no URL to hardcode.
+    checkout: (plan: Plan) =>
+      request<{ url: string }>('/billing/checkout', {
+        method: 'POST',
+        body: JSON.stringify({ plan }),
+      }),
+    portal: () => request<{ url: string }>('/billing/portal', { method: 'POST' }),
+  },
+
   documents: {
     list: () => request<DocumentRecord[]>('/documents'),
     get: (id: string) => request<DocumentRecord>(`/documents/${id}`),
