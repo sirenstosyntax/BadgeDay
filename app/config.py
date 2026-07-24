@@ -51,6 +51,17 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
+    # The one host every link, cookie and Stripe redirect should end up on. The alternates
+    # (www, the .app domain) exist so a misremembered address still lands, but they are
+    # redirected here rather than becoming second homes. Empty means no redirect at all —
+    # correct in development and on the raw Container Apps URL.
+    canonical_host: str = ""
+    redirect_hosts: str = ""
+
+    @property
+    def redirect_host_set(self) -> set[str]:
+        return {host.strip().lower() for host in self.redirect_hosts.split(",") if host.strip()}
+
     # --- Uploads -------------------------------------------------------------
     # Ceiling on a single uploaded document. A reading list is SOG packets and published
     # texts, which sit far below this; the cap exists so that one oversized or malicious

@@ -11,6 +11,7 @@ from app.api.documents import router as documents_router
 from app.api.health import router as health_router
 from app.api.practice import router as practice_router
 from app.config import get_settings
+from app.redirect import add_canonical_redirect
 from app.spa import mount_spa
 
 settings = get_settings()
@@ -34,6 +35,9 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+# Alternate domains (www, .app) redirect to the canonical host. A no-op until configured.
+add_canonical_redirect(app, settings)
 
 app.include_router(health_router)
 app.include_router(documents_router)
