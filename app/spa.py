@@ -1,0 +1,48 @@
+"""Serve the built single-page app from the API's own origin.
+
+In production the web build lands in web/dist and there is one service, so the browser app
+and the API share an origin — no CORS, one URL, one thing to deploy. In development this
+directory does not exist: Vite serves the app on its own port and the API is separate,
+which is what the CORS config in main.py is for. So this is all conditional on the build
+being present, and is a no-op without it.
+"""
+
+from pathlib import Path
+
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+_DIST = (Path(__file__).resolve().parent.parent / "web" / "dist").resolve()
+
+
+def _is_inside(path: Path) -> bool:
+    return path == _DIST or _DIST in path.parents
+
+
+def mount_spa(app: FastAPI) -> bool:
+    """Mount the SPA if it has been built. Returns whether it was mounted.
+
+    Called after every API router, so the catch-all below only ever handles the paths the
+    API did not already claim.
+    """
+    if not _DIST.is_dir():
+        return False
+
+    app.mount("/assets", StaticFiles(directory=_DIST / "assets"), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def serve_spa(full_path: str) -> FileResponse:
+        # A real file (favicon, icons) if the path names one and stays inside the build;
+        # otherwise index.html, because the app routes on the client. A URL like /account is
+        # not a server path — it is the SPA booting and reading the location itself.
+        #
+        # The containment check is the one that matters here: full_path comes straight from
+        # the URL, so without it a request for ../../something would resolve outside the
+        # build directory and hand back a file that has no business being served.
+        target = (_DIST / full_path).resolve()
+        if full_path and _is_inside(target) and target.is_file():
+            return FileResponse(target)
+        return FileResponse(_DIST / "index.html")
+
+    return True

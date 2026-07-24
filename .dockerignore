@@ -1,0 +1,32 @@
+# Keep the build context small and free of anything the image builds for itself or must
+# never contain.
+
+# Secrets — never in an image layer. Config comes from Container Apps env/secrets at runtime.
+.env
+.env.*
+web/.env
+web/.env.*
+
+# Rebuilt inside the image (node stage / editable install).
+web/node_modules
+web/dist
+.venv
+*.egg-info
+
+# Not needed at runtime.
+.git
+.github
+tests
+supabase
+scripts
+deploy
+*.md
+.pytest_cache
+.ruff_cache
+__pycache__
+*.pyc
+
+# No user or test documents in an image, ever.
+*.pdf
+*.docx
+uploads
