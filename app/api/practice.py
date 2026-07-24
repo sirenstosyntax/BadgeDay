@@ -7,14 +7,17 @@ that serves a question cannot see its answer even by mistake.
 """
 
 from fastapi import APIRouter, HTTPException, status
+from postgrest.exceptions import APIError
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUserDep, DbDep
+from app.storage.billing import SubscriptionRequired, as_subscription_required
 from app.storage.practice import (
     AlreadyAnswered,
     PracticeSession,
     QuestionNotFound,
     QuizQuestion,
+    ReviewItem,
     SessionNotFound,
     Verdict,
     complete_session,
@@ -69,7 +72,17 @@ def _session(db: DbDep, session_id: str) -> PracticeSession:
 def begin(user: CurrentUserDep, db: DbDep, body: StartSession | None = None) -> PracticeSession:
     """Start practising, either one document or a mix across all of them."""
     document_id = body.document_id if body else None
-    return start_session(db, user.id, document_id)
+    try:
+        return start_session(db, user.id, document_id)
+    except APIError as exc:
+        raised = as_subscription_required(exc)
+        if isinstance(raised, SubscriptionRequired):
+            raise HTTPException(
+                status.HTTP_402_PAYMENT_REQUIRED,
+                "A subscription is needed to start practising. Sessions you have already "
+                "completed are still there to review.",
+            ) from exc
+        raise
 
 
 @router.get("/sessions/{session_id}")
@@ -107,7 +120,7 @@ def answer(db: DbDep, session_id: str, body: Answer) -> Verdict:
 
 
 @router.get("/sessions/{session_id}/review")
-def review(db: DbDep, session_id: str) -> list[dict]:
+def review(db: DbDep, session_id: str) -> list[ReviewItem]:
     """Everything answered in this session, with the source section for each."""
     _session(db, session_id)
     return reviewable(db, session_id)

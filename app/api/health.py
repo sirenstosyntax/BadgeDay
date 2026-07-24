@@ -35,6 +35,6 @@ def ready(settings: SettingsDep) -> dict[str, object]:
             "anthropic": bool(settings.anthropic_api_key),
             "azure_document_intelligence": settings.azure_docintel_configured,
             "supabase": bool(settings.supabase_url and settings.supabase_service_role_key),
-            "stripe": bool(settings.stripe_secret_key),
+            "stripe": settings.stripe_configured,
         },
     }

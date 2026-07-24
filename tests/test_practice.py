@@ -18,7 +18,9 @@ from app.storage.practice import (
     AlreadyAnswered,
     Coverage,
     QuestionNotFound,
+    ReviewItem,
     SessionNotFound,
+    _citation,
     _translate,
     _verdict,
 )
@@ -92,6 +94,24 @@ def test_short_answer_carries_no_verdict_but_does_carry_the_model_answer() -> No
     )
     assert verdict.is_correct is None
     assert verdict.model_answer == "Continuous supply first."
+
+
+def test_a_review_item_cites_exactly_as_the_verdict_did() -> None:
+    """The candidate sees a citation twice: once on answering, once on review. If those
+    ever disagree, one of them is pointing at a section that is not where we said it was —
+    so both come from the same helper, and this fails if someone inlines one of them."""
+    row = _row()
+    item = ReviewItem.model_validate(
+        {
+            **row,
+            "citation": _citation(row),
+            "question_id": "q1",
+            "type": "multiple_choice",
+            "stem": "S",
+            "answered_at": "2026-07-22T12:00:00Z",
+        }
+    )
+    assert item.citation == _verdict(row).citation
 
 
 # --- Translating database errors ---------------------------------------------
