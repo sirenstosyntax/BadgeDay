@@ -97,25 +97,30 @@ done < "$ENV_FILE"
 
 ACR_PASS="$(az acr credential show --name "$ACR_NAME" --query 'passwords[0].value' -o tsv)"
 
-deploy_app() {  # $1=app name  $2=extra args...
-  local app="$1"; shift
+# $1 = app name; $2 = create-only args (a string, e.g. ingress config that `update` rejects);
+# the rest are args valid on both create and update (scale, --command). Splitting them this
+# way is the whole point: --ingress/--target-port are set once at create and are not valid on
+# update, while --command and the replica counts are.
+deploy_app() {
+  local app="$1" create_only="$2"; shift 2
   if az containerapp show --name "$app" --resource-group "$RESOURCE_GROUP" -o none 2>/dev/null; then
-    az containerapp update --name "$app" --resource-group "$RESOURCE_GROUP" \
-      --image "$IMAGE" --set-env-vars "${ENVREFS[@]}" "$@" -o none
     az containerapp secret set --name "$app" --resource-group "$RESOURCE_GROUP" \
       --secrets "${SECRETS[@]}" -o none
+    az containerapp update --name "$app" --resource-group "$RESOURCE_GROUP" \
+      --image "$IMAGE" --set-env-vars "${ENVREFS[@]}" "$@" -o none
   else
+    # shellcheck disable=SC2086
     az containerapp create --name "$app" --resource-group "$RESOURCE_GROUP" \
       --environment "$ENVIRONMENT_NAME" --image "$IMAGE" \
       --registry-server "${ACR_NAME}.azurecr.io" --registry-username "$ACR_NAME" \
       --registry-password "$ACR_PASS" \
-      --secrets "${SECRETS[@]}" --env-vars "${ENVREFS[@]}" "$@" -o none
+      --secrets "${SECRETS[@]}" --env-vars "${ENVREFS[@]}" $create_only "$@" -o none
   fi
 }
 
 # --- Web app (public) ------------------------------------------------------------------
 say "Web app ($WEB_APP)"
-deploy_app "$WEB_APP" --ingress external --target-port 8000 --min-replicas 1 --max-replicas 3
+deploy_app "$WEB_APP" "--ingress external --target-port 8000" --min-replicas 1 --max-replicas 3
 
 FQDN="$(az containerapp show --name "$WEB_APP" --resource-group "$RESOURCE_GROUP" \
   --query 'properties.configuration.ingress.fqdn' -o tsv)"
@@ -130,9 +135,11 @@ az containerapp update --name "$WEB_APP" --resource-group "$RESOURCE_GROUP" \
   --set-env-vars "PUBLIC_WEB_URL=secretref:public-web-url" -o none
 
 # --- Worker app (no ingress, runs the queue) -------------------------------------------
+# The command is the console script pip installed from pyproject (badgeday-worker), not
+# `python -m app.worker.runner`: az parses a leading-dash arg like -m as one of its own
+# flags, and the entry point sidesteps that entirely.
 say "Worker app ($WORKER_APP)"
-deploy_app "$WORKER_APP" --min-replicas 1 --max-replicas 1 \
-  --command "python" --args "-m" "app.worker.runner"
+deploy_app "$WORKER_APP" "" --min-replicas 1 --max-replicas 1 --command "badgeday-worker"
 
 # --- Done ------------------------------------------------------------------------------
 say "Deployed."
