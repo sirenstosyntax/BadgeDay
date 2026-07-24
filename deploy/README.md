@@ -45,13 +45,19 @@ usage, which are per-document and unchanged by this.
 
 1. **Stripe webhook.** The `STRIPE_WEBHOOK_SECRET` in `.env` is only the local `stripe listen`
    secret — it does **not** work in production. In the Stripe dashboard, add a webhook
-   endpoint at `https://<web-fqdn>/billing/webhook`, subscribe it to `checkout.session.completed`
+   endpoint at `https://app.badgeday.com/billing/webhook` (or, before the custom domain is
+   bound, `https://<web-fqdn>/billing/webhook`), subscribe it to `checkout.session.completed`
    and `customer.subscription.created/updated/deleted`, copy its **signing secret** into
    `.env` as `STRIPE_WEBHOOK_SECRET`, and re-run the deploy script.
-2. **Custom domain.** Map `badgeday.app` to the web app
-   (`az containerapp hostname add` + a managed certificate), then set `PUBLIC_WEB_URL` to
-   `https://badgeday.app` and re-run. Until then it runs on the `azurecontainerapps.io` URL
-   the script prints.
+2. **Custom domain.** The app's canonical host is **`app.badgeday.com`**. Map it to the web
+   app (`az containerapp hostname add` + a managed certificate), then set `PUBLIC_WEB_URL` to
+   `https://app.badgeday.com` and re-run. Until then it runs on the `azurecontainerapps.io`
+   URL the script prints.
+
+   Do **not** point `badgeday.com` at this app: `badgeday.com` is the separate
+   marketing/waitlist site (Netlify, permanent apex), and `badgeday.app` 301s to it at the
+   DNS/hosting layer (Hostinger) — neither belongs to the app. `CANONICAL_HOST` /
+   `REDIRECT_HOSTS` stay empty because the app answers on the single host above.
 3. **Going live.** Verification used Stripe **test** keys. To take real payments, put the
    `sk_live_…` secret, the live price IDs, and the live webhook signing secret in `.env`,
    then re-run. The script will warn you when it sees `sk_live`.
