@@ -22,6 +22,7 @@ ENVIRONMENT_NAME="${ENVIRONMENT_NAME:-badgeday-env}"
 WEB_APP="${WEB_APP:-badgeday-web}"
 WORKER_APP="${WORKER_APP:-badgeday-worker}"
 IMAGE_TAG="${IMAGE_TAG:-$(git rev-parse --short HEAD 2>/dev/null || echo latest)}"
+DEPLOY_ENVIRONMENT="${DEPLOY_ENVIRONMENT:-production}"  # ENVIRONMENT label for the hosted app
 ENV_FILE="${ENV_FILE:-.env}"                 # runtime secrets (backend)
 WEB_ENV_FILE="${WEB_ENV_FILE:-web/.env.local}"  # VITE_* build args (public)
 IMAGE="${ACR_NAME}.azurecr.io/badgeday:${IMAGE_TAG}"
@@ -133,6 +134,12 @@ az containerapp secret set --name "$WEB_APP" --resource-group "$RESOURCE_GROUP" 
   --secrets "public-web-url=${WEB_URL}" -o none
 az containerapp update --name "$WEB_APP" --resource-group "$RESOURCE_GROUP" \
   --set-env-vars "PUBLIC_WEB_URL=secretref:public-web-url" -o none
+
+# ENVIRONMENT is a plain label, not a secret, and it belongs to the deployment rather than
+# the shared .env (which stays "development" for a laptop). Override the hosted app to the
+# real environment name here.
+az containerapp update --name "$WEB_APP" --resource-group "$RESOURCE_GROUP" \
+  --set-env-vars "ENVIRONMENT=${DEPLOY_ENVIRONMENT}" -o none
 
 # --- Worker app (no ingress, runs the queue) -------------------------------------------
 # The command is the console script pip installed from pyproject (badgeday-worker), not
