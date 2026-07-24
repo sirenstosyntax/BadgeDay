@@ -1,4 +1,4 @@
--- BadgeDay Command — initial schema.
+-- BadgeDay Promote — initial schema.
 --
 -- Design notes that are not obvious from the DDL:
 --

@@ -10,10 +10,10 @@ two different career moments. Consumer brand — completely separate from DrillG
 
 BadgeDay has two parts. **They are architecturally different products sharing a brand, an
 account layer, and a billing layer.** Do not assume a pattern from one transfers to the
-other — in particular, the citation-grounding discipline that defines Command has no
-equivalent in Recruit, and the "we ship zero content" rule is Command-only.
+other — in particular, the citation-grounding discipline that defines Promote has no
+equivalent in Recruit, and the "we ship zero content" rule is Promote-only.
 
-### BadgeDay Command — promotional exam prep (V1, building now)
+### BadgeDay Promote — promotional exam prep (V1, building now)
 
 For serving firefighters testing for Lieutenant / Captain / Battalion Chief. The
 candidate uploads their department's announced promotional reading list (their own public
@@ -52,11 +52,11 @@ library of items, each needing review and each decaying as hiring practices shif
 Rubric-based critique means the reviewable asset is a bounded, stable set of rubrics and
 frameworks, and the candidate's own answer supplies the variable content.
 
-**Explicitly not the Command model:** Recruit must NOT be built to depend on the
+**Explicitly not the Promote model:** Recruit must NOT be built to depend on the
 candidate uploading department hiring materials. A pre-hire candidate has no such
 documents, and requiring them would gate the product on something its users do not have.
 
-## V1 scope — Command only (MVP — build only this)
+## V1 scope — Promote only (MVP — build only this)
 
 - **Auth + billing:** email auth, Stripe subscription (monthly ~$29 and a 90-day
   intensive ~$129 — exact pricing configurable, not hardcoded).
@@ -82,7 +82,7 @@ documents, and requiring them would gate the product on something its users do n
 - Voice / oral-board simulation (that's the V2 engine — do not scaffold it). Note this
   also defers Recruit's voice-based mock interviews; text-based interview practice is
   available sooner.
-- BadgeDay Recruit in any form (see Product family above — comes after Command V1)
+- BadgeDay Recruit in any form (see Product family above — comes after Promote V1)
 - Department/team accounts of ANY kind (see firewall below)
 - Native mobile apps (responsive web only)
 - Community features, leaderboards, content marketplace
@@ -106,7 +106,7 @@ documents, and requiring them would gate the product on something its users do n
 - **Privacy:** user documents are private per user, never shared across users, never used
   to improve prompts/models, hard-deletable.
 
-### Command only
+### Promote only
 
 - **Citation grounding:** no question ships without a traceable source location. If
   retrieval confidence is low, generate fewer questions, not ungrounded ones. This
@@ -116,12 +116,12 @@ documents, and requiring them would gate the product on something its users do n
 
 ### Recruit only
 
-- **Ships authored content by design.** The Command rules above do not apply: there is no
+- **Ships authored content by design.** The Promote rules above do not apply: there is no
   upload, no retrieval, and nothing to cite. This is a deliberate departure, not an
   oversight — Recruit's users have no department documents to supply.
 - **Expert review replaces citation grounding as the quality gate.** No Recruit item
   publishes without SME review. Since a candidate cannot check a Recruit question against
-  a source the way they can a Command question, review is the only thing standing behind
+  a source the way they can a Promote question, review is the only thing standing behind
   its accuracy.
 - **Never depends on user-uploaded department materials.** See Product family above.
 
