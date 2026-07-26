@@ -187,7 +187,10 @@ content is written rather than be quietly ignored:
   dimensions and candidate handbooks openly as part of a hiring announcement. Reading
   several and writing rubrics to what they have in common is legitimate grounding, costs
   nothing, and is a different act from tracking a commercial battery — which stays
-  prohibited. Same discipline DrillGround uses: public sources, original words.
+  prohibited. Same discipline DrillGround uses: public sources, original words. A first
+  pass over four departments is in **`recruit_oral_board_sources.md`**, along with the
+  screening rule it turned up: much of what a city publishes about its oral board was
+  written by a testing vendor and is off limits despite the `.gov` address.
 - **Do not let this block step 1.** Author the first rubric yourself and run the pipeline.
   A second reviewer is far easier to recruit against a finished, bounded artifact than
   against a blank page, and the rubric architecture is what makes that ask small — a fixed
