@@ -13,7 +13,7 @@ account layer, and a billing layer.** Do not assume a pattern from one transfers
 other — in particular, the citation-grounding discipline that defines Promote has no
 equivalent in Recruit, and the "we ship zero content" rule is Promote-only.
 
-### BadgeDay Promote — promotional exam prep (V1, building now)
+### BadgeDay Promote — promotional exam prep (built and deployed)
 
 For serving firefighters testing for Lieutenant / Captain / Battalion Chief. The
 candidate uploads their department's announced promotional reading list (their own public
@@ -26,10 +26,12 @@ tracks coverage until nothing on the list can surprise them.
 **Shape:** RAG over user-uploaded documents. BadgeDay ships zero content. Every question
 carries a citation resolvable to a stored chunk.
 
-### BadgeDay Recruit — pre-hire preparation (later; do not build during V1)
+### BadgeDay Recruit — pre-hire preparation (building now)
 
 For candidates who have not been hired yet and are working to become competitive: no
 department, no reading list. Formerly referred to as "BadgeDay Entry."
+
+Detailed scope, architecture decisions and build order: **`recruit_scope.md`**.
 
 Recruit helps candidates develop the attributes departments hire for — through practice
 tests, mock interviews, teaching of foundational principles common to all departments,
@@ -56,7 +58,18 @@ frameworks, and the candidate's own answer supplies the variable content.
 candidate uploading department hiring materials. A pre-hire candidate has no such
 documents, and requiring them would gate the product on something its users do not have.
 
-## V1 scope — Promote only (MVP — build only this)
+## What launch means — both modules
+
+**Decided 2026-07-26: BadgeDay does not go live with real payments until Promote and
+Recruit are both built.** The brand and the marketing site address both audiences, so
+shipping one alone advertises the other to a waitlist that cannot buy it. Stripe stays in
+**test mode** until both are ready.
+
+This supersedes the original "Promote only, do not build Recruit" scoping. Promote is
+built and deployed at app.badgeday.com; Recruit is the remaining work and is now on the
+critical path to any revenue.
+
+### Promote — built (what shipped)
 
 - **Auth + billing:** email auth, Stripe subscription (monthly ~$29 and a 90-day
   intensive ~$129 — exact pricing configurable, not hardcoded).
@@ -76,13 +89,27 @@ documents, and requiring them would gate the product on something its users do n
   citation + source section reference on review; flag/save questions; coverage tracker
   (% of each document's sections exercised).
 - **Account basics:** delete documents, delete account (hard-delete user content).
+- **Legal:** privacy policy and terms served at /privacy and /terms, linked from the
+  footer, the sign-in screen and the paywall.
 
-## Explicitly OUT of scope for V1
+Still open on Promote, none of it blocking Recruit: transactional email for magic links
+(Supabase's default sender is rate-limited and spam-prone), cost-per-document measured
+against a real SOG, alerting when a job exhausts its retries, and an in-app way to report
+a wrong question.
 
-- Voice / oral-board simulation (that's the V2 engine — do not scaffold it). Note this
-  also defers Recruit's voice-based mock interviews; text-based interview practice is
-  available sooner.
-- BadgeDay Recruit in any form (see Product family above — comes after Promote V1)
+### Recruit — to build
+
+Anchored on the oral board and on candidate-readiness gap analysis, per Product family
+above. Coaching against expert-authored rubrics, not a question bank. Scope, architecture
+decisions and build order live in **`recruit_scope.md`** — read that before writing
+Recruit code, and do not infer Recruit's shape from Promote's.
+
+## Explicitly OUT of scope
+
+- Voice / oral-board simulation (that's the V2 engine — do not scaffold it). Recruit's
+  oral board practice is **text-based** for now; voice comes later.
+- Written-exam practice in Recruit (most commoditized, worst risk-to-differentiation —
+  see Product family above). Last, if at all.
 - Department/team accounts of ANY kind (see firewall below)
 - Native mobile apps (responsive web only)
 - Community features, leaderboards, content marketplace
@@ -163,16 +190,21 @@ incidentally.
 
 ## Build order
 
-1. Scaffold: repo hygiene, FastAPI skeleton, health endpoint, config loading
-2. Ingestion as a CLI-first pipeline: file → Document Intelligence → outline-aware chunks
-   → stored with metadata (testable before any UI)
-3. Generation: prompt + JSON schema + validation + citation resolution; golden-file tests
-   with a synthetic SOG fixture
-4. Supabase schema: users, documents, chunks, questions, sessions, responses
-5. API endpoints wiring pipeline to storage
-6. Minimal frontend: upload → generate → quiz → review loop
-7. Stripe integration + gated access
-8. Deploy pipeline to Azure
+Promote — all eight complete, kept for the record of how it was built:
+
+1. ~~Scaffold: repo hygiene, FastAPI skeleton, health endpoint, config loading~~
+2. ~~Ingestion as a CLI-first pipeline: file → Document Intelligence → outline-aware chunks
+   → stored with metadata (testable before any UI)~~
+3. ~~Generation: prompt + JSON schema + validation + citation resolution; golden-file tests
+   with a synthetic SOG fixture~~
+4. ~~Supabase schema: users, documents, chunks, questions, sessions, responses~~
+5. ~~API endpoints wiring pipeline to storage~~
+6. ~~Minimal frontend: upload → generate → quiz → review loop~~
+7. ~~Stripe integration + gated access~~
+8. ~~Deploy pipeline to Azure~~
+
+Recruit — see `recruit_scope.md`. It shares this repo, this stack, and Promote's auth and
+billing layers, but nothing of its ingestion or retrieval architecture.
 
 ## Working style
 
