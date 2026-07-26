@@ -21,6 +21,7 @@ def client(tmp_path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     (dist / "index.html").write_text("<!doctype html><title>BadgeDay</title>")
     (dist / "assets" / "index.js").write_text("console.log('app')")
     (dist / "favicon.svg").write_text("<svg></svg>")
+    (dist / "privacy.html").write_text("<!doctype html><title>Privacy Policy</title>")
     monkeypatch.setattr(spa_module, "_DIST", dist)
 
     app = FastAPI()
@@ -55,6 +56,20 @@ def test_a_real_asset_is_served_as_itself(client: TestClient) -> None:
     response = client.get("/favicon.svg")
     assert response.status_code == 200
     assert "<svg>" in response.text
+
+
+def test_a_legal_page_is_served_at_a_clean_url(client: TestClient) -> None:
+    """/privacy is privacy.html, not the SPA. It has to render with no account and no JS."""
+    response = client.get("/privacy")
+    assert response.status_code == 200
+    assert "Privacy Policy" in response.text
+
+
+def test_the_html_fallback_does_not_fire_for_a_path_with_a_suffix(client: TestClient) -> None:
+    """A missing asset stays a missing asset — it must not resolve to a same-named page."""
+    response = client.get("/privacy.svg")
+    assert "Privacy Policy" not in response.text
+    assert "BadgeDay" in response.text
 
 
 def test_a_path_escaping_the_build_is_refused(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:

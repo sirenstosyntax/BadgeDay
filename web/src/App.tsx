@@ -4,6 +4,7 @@ import { useAccount } from './lib/account'
 import { signOut, useSession } from './lib/auth'
 import { Account } from './ui/Account'
 import { Documents } from './ui/Documents'
+import { LegalLinks } from './ui/LegalLinks'
 import { Paywall } from './ui/Paywall'
 import { Quiz } from './ui/Quiz'
 import { Review } from './ui/Review'
@@ -188,6 +189,10 @@ export default function App() {
           />
         )}
       </main>
+
+      <footer className="mx-auto max-w-3xl px-4 pb-10">
+        <LegalLinks />
+      </footer>
 
       {showPaywall && <Paywall onClose={() => setShowPaywall(false)} />}
     </div>

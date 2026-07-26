@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { sendMagicLink } from '../lib/auth'
+import { LegalLinks } from './LegalLinks'
 
 export function SignIn() {
   const [email, setEmail] = useState('')
@@ -64,6 +65,8 @@ export function SignIn() {
         )}
 
         {error && <p className="mt-4 text-sm text-red-700 dark:text-red-400">{error}</p>}
+
+        <LegalLinks className="mt-10" />
       </div>
     </div>
   )

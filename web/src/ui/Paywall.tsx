@@ -81,6 +81,24 @@ export function Paywall({ onClose }: { onClose: () => void }) {
           ))}
         </div>
 
+        {/* Said here rather than only in the terms: the refund policy and what renews are
+            the two things a candidate is entitled to know before they are handed to Stripe,
+            not after. The price itself still comes from Stripe on the next screen. */}
+        <p className="mt-4 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+          Monthly renews until you cancel; the 90-day intensive is a single payment and does
+          not renew. Payments are non-refundable — cancelling keeps your access to the end of
+          the period you have paid for. Choosing a plan takes you to Stripe, and means you
+          agree to the{' '}
+          <a href="/terms" className="underline">
+            Terms of Service
+          </a>{' '}
+          and{' '}
+          <a href="/privacy" className="underline">
+            Privacy Policy
+          </a>
+          .
+        </p>
+
         {error && (
           <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-900 dark:bg-red-950 dark:text-red-200">
             {error}
