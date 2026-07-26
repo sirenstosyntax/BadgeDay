@@ -50,9 +50,12 @@ usage, which are per-document and unchanged by this.
    and `customer.subscription.created/updated/deleted`, copy its **signing secret** into
    `.env` as `STRIPE_WEBHOOK_SECRET`, and re-run the deploy script.
 2. **Custom domain.** The app's canonical host is **`app.badgeday.com`**. Map it to the web
-   app (`az containerapp hostname add` + a managed certificate), then set `PUBLIC_WEB_URL` to
-   `https://app.badgeday.com` and re-run. Until then it runs on the `azurecontainerapps.io`
-   URL the script prints.
+   app (`az containerapp hostname add` + a managed certificate) and re-run the deploy script:
+   it checks whether that hostname is bound and, once it is, sets `PUBLIC_WEB_URL` to
+   `https://app.badgeday.com` itself. Until then the app runs on the `azurecontainerapps.io`
+   URL the script prints, and `PUBLIC_WEB_URL` stays pointed at that — the script says so when
+   it falls back. Deploying a different set of resources? Pass `CANONICAL_WEB_URL=…` (or `""`
+   to always use the ingress FQDN).
 
    Do **not** point `badgeday.com` at this app: `badgeday.com` is the separate
    marketing/waitlist site (Netlify, permanent apex), and `badgeday.app` 301s to it at the

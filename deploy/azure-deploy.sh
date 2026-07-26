@@ -23,6 +23,10 @@ WEB_APP="${WEB_APP:-badgeday-web}"
 WORKER_APP="${WORKER_APP:-badgeday-worker}"
 IMAGE_TAG="${IMAGE_TAG:-$(git rev-parse --short HEAD 2>/dev/null || echo latest)}"
 DEPLOY_ENVIRONMENT="${DEPLOY_ENVIRONMENT:-production}"  # ENVIRONMENT label for the hosted app
+# The app's canonical public host — where Stripe sends the candidate back after checkout.
+# Set to "" to use the raw azurecontainerapps.io ingress FQDN instead; the script falls back
+# to it anyway if this host is not actually bound to the web app.
+CANONICAL_WEB_URL="${CANONICAL_WEB_URL:-https://app.badgeday.com}"
 ENV_FILE="${ENV_FILE:-.env}"                 # runtime secrets (backend)
 WEB_ENV_FILE="${WEB_ENV_FILE:-web/.env.local}"  # VITE_* build args (public)
 IMAGE="${ACR_NAME}.azurecr.io/badgeday:${IMAGE_TAG}"
@@ -127,8 +131,24 @@ FQDN="$(az containerapp show --name "$WEB_APP" --resource-group "$RESOURCE_GROUP
   --query 'properties.configuration.ingress.fqdn' -o tsv)"
 WEB_URL="https://${FQDN}"
 
-# PUBLIC_WEB_URL is where Stripe returns the candidate after checkout, so it must be the
-# app's real public URL. Set it now that we know the FQDN, and update in place.
+# PUBLIC_WEB_URL is where Stripe returns the candidate after checkout, so it must be a host
+# that actually answers. Once the custom domain is bound, that is the canonical host and not
+# the ingress FQDN — but only if it is really bound, so a fresh deployment (or a copy of this
+# script pointed at other resources) still gets a URL that works. Ask Azure rather than trust
+# the default: a hostname the candidate lands on after paying is not the place to guess.
+if [[ -n "$CANONICAL_WEB_URL" ]]; then
+  # Compare and rebuild from the bare host, so a value given with a scheme or a trailing
+  # slash still matches Azure's hostname list and still yields a clean https:// origin.
+  canonical_host="${CANONICAL_WEB_URL#*://}"; canonical_host="${canonical_host%/}"
+  if az containerapp hostname list --name "$WEB_APP" --resource-group "$RESOURCE_GROUP" \
+       --query "[?name=='${canonical_host}']" -o tsv | grep -q .; then
+    WEB_URL="https://${canonical_host}"
+  else
+    echo "    Note: ${canonical_host} is not bound to $WEB_APP — using the ingress FQDN."
+    echo "          Bind it (see deploy/README.md) and re-run to switch Stripe's return URL."
+  fi
+fi
+
 say "Setting PUBLIC_WEB_URL=$WEB_URL"
 az containerapp secret set --name "$WEB_APP" --resource-group "$RESOURCE_GROUP" \
   --secrets "public-web-url=${WEB_URL}" -o none
@@ -155,4 +175,6 @@ echo
 echo "Next (one-time), see deploy/README.md:"
 echo "  • Point a Stripe webhook at ${WEB_URL}/billing/webhook and put its signing secret"
 echo "    in $ENV_FILE as STRIPE_WEBHOOK_SECRET, then re-run this script."
-echo "  • Map the custom domain (badgeday.app) and update PUBLIC_WEB_URL to it."
+echo "  • Map the custom domain (app.badgeday.com) to $WEB_APP. Once it is bound, re-running"
+echo "    this script points PUBLIC_WEB_URL at it on its own — nothing to edit by hand."
+echo "    Do not point badgeday.com here; that is the separate marketing site."
