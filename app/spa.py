@@ -41,8 +41,22 @@ def mount_spa(app: FastAPI) -> bool:
         # the URL, so without it a request for ../../something would resolve outside the
         # build directory and hand back a file that has no business being served.
         target = (_DIST / full_path).resolve()
-        if full_path and _is_inside(target) and target.is_file():
-            return FileResponse(target)
+        if full_path and _is_inside(target):
+            if target.is_file():
+                return FileResponse(target)
+
+            # /privacy and /terms are static pages rather than app views, and they are the
+            # one part of this product that has to render for someone with no account and
+            # no JavaScript — a Stripe reviewer following a link, a candidate deciding
+            # whether to hand us their department's documents. They live in web/public as
+            # .html files, so an extensionless path gets one more chance to name one before
+            # falling through to the app. Guarded on there being no suffix already, or a
+            # request for a missing thing.png would go looking for thing.html.
+            if not target.suffix:
+                page = target.with_name(f"{target.name}.html")
+                if _is_inside(page) and page.is_file():
+                    return FileResponse(page)
+
         return FileResponse(_DIST / "index.html")
 
     return True

@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy — BadgeDay</title>
+    <meta
+      name="description"
+      content="How BadgeDay handles the documents you upload, what we store, and who processes it."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/legal.css" />
+  </head>
+  <body>
+    <header>
+      <div class="bar">
+        <a class="wordmark" href="/">BadgeDay</a>
+        <nav>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <h1>Privacy Policy</h1>
+      <p class="dates">
+        BadgeDay, a product of Sirens to Syntax LLC<br />
+        Effective date: July 26, 2026 · Last updated: July 26, 2026
+      </p>
+
+      <div class="summary">
+        <h2>The short version</h2>
+        <p>
+          You upload your department's documents. We turn them into practice questions for
+          you, and that is the only thing we do with them. Your documents are private to
+          your account, are never pooled with anyone else's, and are never used to train
+          anybody's model. We hold your email address so you can sign in, and a link to
+          your Stripe customer record so we know you have paid — we never see your card.
+          We run no analytics on this app, no advertising trackers, and no cross-site
+          tracking of any kind. You can delete any document, or your entire account and
+          everything in it, from inside the app at any time.
+        </p>
+        <p>The rest of this document explains that in more detail.</p>
+      </div>
+
+      <h2>Who we are</h2>
+      <p>
+        Sirens to Syntax LLC is a Nebraska limited liability company. BadgeDay is our
+        product for firefighters preparing for promotional examinations.
+      </p>
+      <p>
+        This policy covers the BadgeDay application at
+        <strong>app.badgeday.com</strong>. Our marketing site and email list are covered by
+        a separate policy at
+        <a href="https://sirenstosyntax.com/privacy">sirenstosyntax.com</a>; if you joined a
+        waitlist rather than an account, that is the policy that applies to you.
+      </p>
+      <p>Questions, requests, or corrections: grant@sirenstosyntax.com</p>
+
+      <h2>What we collect</h2>
+
+      <h3>Your email address</h3>
+      <p>
+        You give this to us to create an account. BadgeDay signs you in with a link emailed
+        to that address — there is no password, so there is no password for us to store or
+        for anyone to steal. We use your address to send sign-in links, to answer you if you
+        write to us, and to send you the occasional message about the service itself, such
+        as a change to these terms or a problem with your account.
+      </p>
+
+      <h3>The documents you upload</h3>
+      <p>
+        This is the heart of the product and the most sensitive thing we hold, so it is worth
+        being precise about what happens to it. When you upload a document, we store:
+      </p>
+      <ul>
+        <li>the file itself, in private storage scoped to your account;</li>
+        <li>its filename and page count;</li>
+        <li>
+          the text extracted from it, broken into sections and stored with the section
+          number, section title, and page range each piece came from;
+        </li>
+        <li>
+          the practice questions generated from those sections, each carrying the location
+          it came from.
+        </li>
+      </ul>
+      <p>
+        The extracted text is stored in full, because the citation on every question has to
+        resolve back to the exact passage it was drawn from. That is the whole point of the
+        product, and it is not achievable without keeping the text.
+      </p>
+
+      <h3>Your practice</h3>
+      <p>
+        We record which questions you were asked, what you answered — including the text you
+        type for short-answer questions — whether it was right, which questions you saved,
+        and how much of each document you have covered. This is what the coverage tracker
+        and the review screen are built from. It is yours; we do not analyze it across
+        users.
+      </p>
+
+      <h3>Your billing relationship</h3>
+      <p>
+        Payments are handled entirely by Stripe on Stripe's own checkout pages.
+        <strong>Your card number, expiry, and security code never touch our servers.</strong>
+        What we store is the identifier Stripe gives us for your customer record, whether
+        your access is currently active, and when it expires. When you open the billing
+        portal to change or cancel a plan, you are on Stripe's site, not ours.
+      </p>
+
+      <h3>Technical records</h3>
+      <p>
+        Our hosting and database providers keep standard server logs — the kind every web
+        service produces — which may include IP address, request time, and error details.
+        We use them to keep the service running and to work out what went wrong when
+        something breaks. We do not use them to build a picture of you.
+      </p>
+
+      <h2>What we do not collect</h2>
+      <p>
+        The BadgeDay app runs <strong>no analytics</strong>. There is no PostHog, no Google
+        Analytics, no product-analytics tool of any kind in the application. There are no
+        advertising trackers or pixels, no cross-site tracking, and no third-party fonts or
+        scripts loaded from anyone else's servers when you use the app — the whole thing is
+        served from one origin.
+      </p>
+      <p>
+        This is a deliberate difference from our marketing site, which does use analytics.
+        Once you are signed in and working with your department's documents, we would rather
+        know nothing than know something we did not need.
+      </p>
+
+      <h2>What we never do with your documents</h2>
+      <p>These are commitments, not current practice we might quietly change:</p>
+      <ul>
+        <li>
+          <strong>We never share your documents with other users.</strong> Access is enforced
+          at the database itself, not by application code that could be bypassed — a query
+          made with your account's credentials can only ever return your own rows.
+        </li>
+        <li>
+          <strong>We never pool your documents into a shared library.</strong> BadgeDay ships
+          zero content of its own and builds no question bank out of what users upload. Your
+          department's SOGs do not become another candidate's practice material.
+        </li>
+        <li>
+          <strong>We never use your documents, your answers, or your questions to train or
+          improve any model</strong>, ours or anyone else's, and we do not use them to tune
+          the prompts we send.
+        </li>
+        <li>
+          <strong>We never sell or rent any of it</strong>, and we do not share it with
+          advertisers or data brokers.
+        </li>
+      </ul>
+
+      <h2>Who processes it, and why</h2>
+      <p>
+        Producing cited questions from a PDF means the text passes through a small number of
+        companies. You are entitled to know which, so here is the whole path: the file goes
+        to our storage; the text is extracted by Microsoft Azure's document analysis service;
+        the extracted sections are sent to Anthropic to draft questions from; the questions
+        come back and are stored against your account. Nothing else is done with it at any
+        stage.
+      </p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Provider</th>
+              <th>What they handle</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Supabase</td>
+              <td>
+                Database, sign-in, and file storage. Your documents and everything derived
+                from them live here, and your sign-in emails are sent from here.
+              </td>
+            </tr>
+            <tr>
+              <td>Microsoft Azure</td>
+              <td>
+                Application hosting, and the Document Intelligence service that reads the
+                text and layout out of your uploads.
+              </td>
+            </tr>
+            <tr>
+              <td>Anthropic</td>
+              <td>
+                Receives the extracted sections in order to draft questions from them. Under
+                Anthropic's commercial terms this material is not used to train its models.
+              </td>
+            </tr>
+            <tr>
+              <td>Stripe</td>
+              <td>
+                Payments, subscriptions, and the billing portal. They hold your payment
+                details; we do not.
+              </td>
+            </tr>
+            <tr>
+              <td>Google Workspace</td>
+              <td>Our business email, if you write to us.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        These providers process this material on our behalf and are not permitted to use it
+        for their own purposes. Our infrastructure is located in the United States.
+      </p>
+      <p>
+        We may also disclose information if legally required to do so — for example, in
+        response to a valid subpoena or court order. If Sirens to Syntax LLC is ever sold or
+        merged, account information may transfer as part of that transaction, and we will
+        notify account holders by email before the transfer takes effect.
+      </p>
+
+      <h2>Cookies and browser storage</h2>
+      <p>
+        The app sets <strong>no analytics or advertising cookies</strong>. When you sign in,
+        your browser stores a session token locally so that you stay signed in and do not
+        have to request a new link on every visit. That token is what makes the app work;
+        clearing your browser storage signs you out, and nothing else is kept there.
+      </p>
+
+      <h2>How long we keep it</h2>
+      <p>
+        We keep your documents and your practice history for as long as your account exists,
+        including through periods when you are not subscribed. A candidate who tests, misses,
+        and comes back for the next cycle should find their reading list where they left it.
+        We do not delete your material on our own schedule.
+      </p>
+      <p>
+        You are in charge of removing it. Deleting a document removes the file, its extracted
+        text, and every question generated from it. Deleting your account removes all of
+        that, your practice history, your saved questions, and your sign-in identity, and
+        cancels your billing with Stripe first so that nothing continues to charge you.
+        Both are immediate and neither asks us to do it for you.
+      </p>
+      <p>
+        After a deletion, some information persists briefly in routine encrypted backups and
+        in server logs before it ages out. Stripe separately retains a record of the
+        transaction, as payment processors are required to for tax and anti-fraud purposes.
+        We keep a suppression record of an unsubscribed email address so that we do not
+        email you again by mistake; write to us if you would like that removed too.
+      </p>
+
+      <h2>Your rights</h2>
+      <p>Regardless of where you live, you may:</p>
+      <ul>
+        <li>access the information we hold about you;</li>
+        <li>correct it if it is wrong;</li>
+        <li>delete it;</li>
+        <li>get a copy of it in a portable format;</li>
+        <li>stop receiving non-essential email from us.</li>
+      </ul>
+      <p>
+        Deletion is built into the app and needs nothing from us. For anything else, email
+        grant@sirenstosyntax.com. We will respond within 30 days. We will not charge you, and
+        we will not treat you differently for asking.
+      </p>
+      <p>
+        Depending on where you live you may have additional rights under laws such as the
+        California Consumer Privacy Act or the EU/UK General Data Protection Regulation. We
+        honor the rights above for everyone rather than sorting account holders by
+        jurisdiction. We do not sell or share personal information as those terms are defined
+        under the CCPA/CPRA, and we have not done so in the preceding twelve months.
+      </p>
+
+      <h2>Do Not Track</h2>
+      <p>
+        Some browsers send a "Do Not Track" signal. There is no agreed industry standard for
+        how sites should interpret it, and we do not respond to it. In this app the question
+        does not really arise: there is nothing here that tracks you.
+      </p>
+
+      <h2>Security</h2>
+      <p>
+        Access to your documents is enforced by the database itself through row-level
+        security, so a request made with your credentials cannot reach another account's
+        material even if application code were to ask it to. Uploaded files are stored under
+        a per-account prefix with the same restriction. The answers to practice questions are
+        withheld at the database rather than by the interface — the app cannot show you an
+        answer before you have committed one, because it cannot read it. Our service
+        credentials are held as managed secrets and are not present in application images.
+      </p>
+      <p>
+        No method of transmission or storage is completely secure, and we cannot guarantee
+        absolute security. If we become aware of a breach affecting your information, we will
+        notify you as required by applicable law.
+      </p>
+
+      <h2>Children</h2>
+      <p>
+        BadgeDay is a paid product for working fire service professionals and is not directed
+        at children. We do not knowingly collect information from anyone under 18. If you
+        believe a minor has provided us information, contact us and we will delete it.
+      </p>
+
+      <h2>Changes to this policy</h2>
+      <p>
+        If we change this policy we will update the "last updated" date above. If the change
+        is significant — a new category of information, a new provider in the path your
+        documents take, or a new use for what we hold — we will email account holders before
+        it takes effect.
+      </p>
+
+      <h2>Contact</h2>
+      <address>
+        Sirens to Syntax LLC<br />
+        1433 201st Drive<br />
+        Seward, NE 68434<br /><br />
+        grant@sirenstosyntax.com
+      </address>
+      <p>
+        We read every message sent to that address. Email is the fastest way to reach us.
+      </p>
+    </main>
+
+    <footer>
+      <div class="bar">
+        <span>© 2026 Sirens to Syntax LLC</span>
+        <a href="/terms">Terms of Service</a>
+        <a href="/">Back to the app</a>
+      </div>
+    </footer>
+  </body>
+</html>
