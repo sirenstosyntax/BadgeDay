@@ -193,10 +193,14 @@ Promote's pipeline was CLI-testable before it had a frontend.
    trivially verifiable and worth preferring where it applies. The gate must also reject
    points that supply language to the candidate. Golden-file tests against fixture
    answers: a strong one, a weak one, an off-topic one, an empty one.
-   - **Before this step: measure the scorer's noise floor.** Run one answer through the
-     scorer ~20 times and look at the spread. If run-to-run variance exceeds plausible
-     monthly improvement, the progress display is noise and could show a candidate
-     regressing when he improved. Ten minutes of work, and it gates step 7's progress view.
+   - ~~**Before this step: measure the scorer's noise floor.**~~ **Run 2026-07-27**
+     (`scripts/recruit_noise_floor.py`). Perfectly stable on unambiguous answers — twenty
+     runs, twenty identical scores. At the 3/4B boundary it moves by one anchor on a
+     quarter of runs, and the disagreement is a specific ambiguity in the rubric's
+     *"something to show for it"* clause rather than model noise. Full result in
+     `recruit_design_decisions.md` §7. It does not block this step; it confirms that
+     progress must be reported as behaviors rather than a score, and it hands Criterion 2
+     one anchor to tighten.
 3. **SME judgment on the output.** Grant reads real critiques of real answers and says
    whether they are good enough to ship. *This is a decision gate, not a step.* If the
    answer is no, the rubric or the prompt changes and we repeat — no UI gets built on top
