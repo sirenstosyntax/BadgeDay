@@ -83,6 +83,25 @@ actually matters. So, yeah. I've got the certs, I'm testing everywhere I can, an
 trying to get on somewhere.
 """
 
+# The 4B case under the tightened boundary: a step past the list he *can* account for, but
+# pursuit aimed at qualifying rather than at becoming good at the work. This fixture exists
+# to catch the failure mode of the tightening itself — a boundary that is stable because
+# nothing can reach it is not fixed, it is closed.
+BOUNDARY_4B = """
+So I got my EMT-B in 2023 and finished the academy — the certificate program — last year.
+Uh, I also did the wildland pack test and got my red card, which isn't on the posting here,
+I just figured more certs makes me more competitive.
+
+I've done four ride-alongs, three with one department and one here. And honestly the first
+one changed what I thought this job was. I went in picturing fires and, uh, we ran eleven
+calls that shift and one was a fire. The rest was medical, a lift assist, a car alarm. I
+came out of that and signed up for more EMT clinical hours, because I realised that's the
+actual job and I'd been preparing for the wrong one.
+
+So that's where I'm at. I've got the certs, I've got the red card, I test everywhere I can,
+and I think I'm a stronger candidate than I was two years ago.
+"""
+
 CLEAR_TWO = """
 Yeah, so I took an EMT class, uh, that would have been back in 2021 I think. Maybe 2020.
 I passed it. I was going to do the academy but then my hours got picked up at work and it
@@ -179,9 +198,14 @@ def main() -> None:
     model, effort = settings.generation_model, settings.generation_effort
     print(f"scorer: {model}, effort={effort}, adaptive thinking, rubric = Criterion 2")
 
-    run("BOUNDARY (3/4 territory)", BOUNDARY, 20, client, model, effort, system)
-    run("CLEAR 2 (stale preparation)", CLEAR_TWO, 10, client, model, effort, system)
-    run("CLEAR 5 (continuous, other-focused)", CLEAR_FIVE, 10, client, model, effort, system)
+    fixtures = [
+        ("BOUNDARY (past the list, cannot account for it)", BOUNDARY, 20),
+        ("BOUNDARY 4B (past the list, can account for it)", BOUNDARY_4B, 20),
+        ("CLEAR 2 (stale preparation)", CLEAR_TWO, 10),
+        ("CLEAR 5 (continuous, other-focused)", CLEAR_FIVE, 10),
+    ]
+    for label, answer, n in fixtures:
+        run(label, answer, n, client, model, effort, system)
 
 
 if __name__ == "__main__":

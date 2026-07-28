@@ -59,9 +59,14 @@ Working as hard as circumstances allow and chasing every exposure available to h
 **4B — Evidence strong, drive shallower.**
 Holds the qualifications and went past what was required rather than stopping at it — can point to something he pursued that nobody asked for, and say what it changed. But the pursuit reads as aimed at *qualifying* rather than at becoming good at the work. Competent, prepared, and not relentless.
 
-Boundary against 3: any real step past the eligibility list, with something to show for it, is a 4B. Stopping exactly at the list is a 3.
+**Boundary against 3.** The test is not whether he did something extra. It is whether he can say what it did to him.
 
-> **Open — this boundary is the rubric's least settled clause.** A noise-floor run of one boundary answer scored it 3 fifteen times and 4B five times, and the split traces entirely to this sentence: is a ride-along the candidate cannot say anything about *a real step past the list* (4B), or a step with nothing *to show for it* (3)? Both readings are faithful to the text as written. Deciding it — most likely by saying explicitly what "something to show for it" requires a candidate to be able to say — should settle the boundary. See `recruit_design_decisions.md` §7; re-run `scripts/recruit_noise_floor.py` after any change here.
+A step past the eligibility list counts toward 4B only when he can say **what it changed** — what he learned, what it corrected, what he does differently because of it. A step he can name but not account for does not clear the boundary. Stopping exactly at the list is a 3, and so is going past it with nothing to report from the trip.
+
+- Two ride-alongs he mentions and says nothing further about: **3**. He has been somewhere; he has not brought anything back.
+- One ride-along he can say changed what he thought the job was: **4B**.
+
+Deliberately the same test the level 5 anchor applies to qualifications — *can say what it changed, not merely that he holds it* — and the mirror of the level 3 anchor's *can state qualifications, cannot say what any of them changed*. What separates 4B from 5 is not this test but what the pursuit was aimed at: qualifying for the job, or becoming good at it.
 
 ### 3 — Qualified, willing, and stopped there
 

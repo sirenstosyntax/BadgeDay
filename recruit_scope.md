@@ -199,8 +199,9 @@ Promote's pipeline was CLI-testable before it had a frontend.
      quarter of runs, and the disagreement is a specific ambiguity in the rubric's
      *"something to show for it"* clause rather than model noise. Full result in
      `recruit_design_decisions.md` §7. It does not block this step; it confirms that
-     progress must be reported as behaviors rather than a score, and it hands Criterion 2
-     one anchor to tighten.
+     progress must be reported as behaviors rather than a score, and it handed Criterion 2
+     one anchor to tighten. **Tightened and re-run 2026-07-28: 60 runs, zero variance, with
+     the 4B band still reachable.** One case the tightening does not cover is logged there.
 3. **SME judgment on the output.** Grant reads real critiques of real answers and says
    whether they are good enough to ship. *This is a decision gate, not a step.* If the
    answer is no, the rubric or the prompt changes and we repeat — no UI gets built on top
