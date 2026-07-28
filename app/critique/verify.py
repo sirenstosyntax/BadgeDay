@@ -289,15 +289,26 @@ def verify_point(
             "missing, not the number.",
         )
 
-    # 6. Prescription, on development points only. An answer point telling him to name what
-    #    a teammate did is fine; a development point telling him which certification to buy
-    #    is a different act with a different cost.
-    if draft.improvement == "candidate":
+    # 6. An inventory point is a fork put to the candidate, so it has to actually ask
+    #    something. Without the question it is just an assertion about his life — which is
+    #    the guess the inventory classification exists to avoid making.
+    if draft.improvement == "inventory" and not (draft.ask or "").strip():
+        return Rejection(
+            "inventory_point_asks_nothing",
+            "an inventory point must ask whether he has a better instance, and say what "
+            "follows if he does not. Without the question it asserts something about his "
+            "history rather than letting him settle it.",
+        )
+
+    # 7. Prescription, on the branches that give development advice. An answer point telling
+    #    him to name what a teammate did is fine; telling him which certification to buy is
+    #    a different act with a different cost.
+    if draft.improvement in ("candidate", "inventory"):
         match = _PRESCRIBES_REMEDY.search(prose)
         if match:
             return Rejection(
                 "prescribes_remedy",
-                f"development point contains {match.group(0)!r}, which prescribes a "
+                f"point contains {match.group(0)!r}, which prescribes a "
                 "specific remedy rather than naming what is absent. Say what his "
                 "experience does not yet contain and leave the route to it open.",
             )

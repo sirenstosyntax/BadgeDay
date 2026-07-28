@@ -75,6 +75,25 @@ The second is the more valuable finding and was the one being thrown away. Both 
 Consequences:
 
 - **Every critique point is classified** as improving the answer, improving the candidate, or recording something that worked. The classification is a routing signal, not a claim the gate can verify.
+
+**[SETTLED] Most gaps do not get classified — they fork, and the candidate resolves them.** (Grant, 2026-07-28.)
+
+The first cut asked the model to decide whether a gap was in the telling or in the man. That was the wrong question to put to it. Deciding requires knowing what is in his life, and all it has is one answer — so it was inferring his history from a single story and asserting the inference confidently to someone who cannot check it. The exact failure this module is built to avoid, arrived at from a new direction.
+
+**He can settle it instantly and we cannot.** So the point says both branches and asks:
+
+> Think about whether there is a better story that would show this. If it is not there, go and pursue the opportunity to get one.
+
+Either branch makes him better, which is why the fork costs nothing. A better story found is the board skill; an experience gone and got is the firefighter. There is no wrong answer to hand him, only a wrong guess for us to make.
+
+This is the same insight as §4's *"the underlying trainable skill is inventory and retrieval, not composition"* — strong interviewees carry eight to ten real incidents and map the asked question onto the best fit. **"Is there a better instance of this?" is that drill**, run against the candidate's own life. §4 was marked provisional; this is a second route to it and it should be read as strengthening it.
+
+Consequences:
+
+- **A third classification, `inventory`, and it is the default for a gap.** `candidate` narrows to the case where the answer *positively establishes* the material is absent — he said he has never done it. `answer` narrows to the case where the material is visibly present in the answer and merely mishandled. Everything between those, which is most of it, forks.
+- **An inventory point is a question by construction**, so it must carry an ask, and the ask must carry the consequence of a no. The gate can check the first of those.
+- **The prescription guard extends to the no-branch**, since "go and get it" is development advice wearing a different hat.
+- **The classifier's risk drops.** It no longer has to be right about a life it cannot see; it only has to be right that something is missing from *this answer*, which is checkable against the transcript.
 - **Development gaps are the bridge between the two pillars.** The oral board practice produces exactly the evidence the readiness gap analysis needs, and until now nothing carried it across.
 - **Progress reporting needs a second set of behaviours.** The list in §4 — did the answer contain a specific incident, did he name what he would do differently, did he stop when finished — is entirely answer-construction. None of it tracks whether the candidate is becoming someone a department wants. That set is unwritten.
 - **This raises the stakes on an open question rather than answering it.** How prescriptive the development advice gets is open question 1 in `recruit_scope.md`, still unanswered, and it now gates more than it did. Naming a gap is low risk. Naming the programme that fills it is career advice with a cost in time and money, delivered to someone who cannot check it — the failure mode this product was built to avoid, and it bites harder here than anywhere in the answer track. **Interim default until Grant sets the line: a development point names what is absent and may name the category; it does not prescribe a specific certification, programme or provider.**
@@ -125,6 +144,46 @@ Consequences:
 > same clause — so a "contested" clause may be two distinct findings rather than one
 > ambiguous one, and `c2.anchor.5`'s 50/50 split looks like exactly that on inspection. The
 > per-clause figure is a proxy for ambiguity, not a measurement of it.
+
+> **Classification re-run 2026-07-28, after the fork.** Same harness, same fixtures.
+>
+> | Fixture | runs | inventory | answer | candidate | worked |
+> |---|---|---|---|---|---|
+> | c3 / weak *(was 0 / 0 / 74 / 17)* | 20 | **61** | 14 | **0** | 7 |
+> | c3 / off-topic *(was 0 / 33 / 5 / 1)* | 10 | **35** | 0 | 0 | 0 |
+> | c2 / weak *(was 0 / 2 / 36 / 9)* | 10 | **27** | 2 | 6 | 5 |
+>
+> **The verdict about his life is gone.** Development gaps on the weak teamwork answer went
+> from 74 to zero — the pipeline no longer tells a man his history lacks something it cannot
+> see. That was the point, and it holds across every run.
+>
+> **It did not simply relabel everything.** `answer` went from 0 to 14 on the same fixture,
+> so narrowing the definitions moved points in both directions: some gaps really are visibly
+> in the answer, and the model now says so where it can point at the sentence. The remaining
+> `candidate` labels are on the c2 weak answer, where the candidate says outright that the
+> academy plan *"got away from me"* — an explicit statement of not having done it, which is
+> what that label is now reserved for.
+>
+> **The real gain is not the labelling, it is what the system no longer claims.** Before, it
+> asserted a fact about a life it had one paragraph of evidence about. Now it asserts only
+> that something is missing from *this answer* — checkable against the transcript — and puts
+> the rest to the man who knows. The class of unsupportable claims got smaller, which matters
+> more than the distribution did.
+>
+> **`c2.anchor.2` got worse and should be split.** *Preparation is real but stale* now splits
+> four ways across 22 points — inventory 11, candidate 6, worked 4, answer 1. A finer
+> distinction did not resolve a mixed anchor, it exposed it further. The anchor asserts a
+> credit and a fault in one sentence and the pipeline cannot tell which it is being asked to
+> report.
+>
+> **Rejections rose from 6 to 14 across all runs**, which is the new gate check (an inventory
+> point that asks nothing) and the prescription guard now covering the *go and get it*
+> branch. They are caught and retried rather than shipped; single CLI runs still complete on
+> one attempt.
+>
+> The standing caveat is unchanged — consistency is not correctness, and a stable filing can
+> still be the wrong filing. But the exposure is smaller than it was, because the filings the
+> system now makes are ones the transcript can support.
 
 **[SETTLED] Critique identifies gaps; it never supplies content.**
 It may name what is missing and ask for the candidate's own material. It may not provide a model answer, sample language, or an example response.
@@ -416,8 +475,8 @@ Proposed as a reliability fix — pairwise comparison is more stable than absolu
 | Criterion 1 anchors | Scope settled (see below), anchors unwritten |
 | Criterion 1 naming | "Communication" overclaims what audio can see. "Answer Construction" plus a separate delivery sub-score is the candidate. **[OPEN]** |
 | Criterion 3 | **Drafted 2026-07-28 by Claude, unreviewed** — `recruit_rubric_c3_teamwork.md`. The qualified-self-focused anchor exists and fires 20/20. Needs SME review before it is anything more than a proposal; the anchors represent nobody's judgment yet. |
-| **Is the weak teamwork answer really all development?** | 20 runs, 74 development gaps, zero answer gaps, no variance. The classifier is certain and the harness cannot say whether it is right. Highest-value open item — it decides whether the module routes its best output correctly. |
-| c2.anchor.2 — mixed anchor | *Preparation is real but stale* splits 73/27 between a development gap and something that worked. Decide which it is, or split the anchor. |
+| ~~Is the weak teamwork answer really all development?~~ | **Dissolved by Grant 2026-07-28.** It was the wrong question to put to the model. Ask the candidate: is there a better story, and if not, that is the thing to go and get. Development verdicts on that fixture went 74 to zero. |
+| c2.anchor.2 — mixed anchor | *Preparation is real but stale* now splits **four ways** across 22 points. A finer distinction exposed it rather than resolving it: the anchor asserts a credit and a fault in one sentence. Split it. |
 | C3 — where the unfalsifiable-claim flag lands | Scoring note 4 flags *"I've always gotten along with everyone"* as a tell but no anchor says whether it pulls an answer to 2 or is just noise on a 3. Found by the harness. |
 | C3 — what counts as "an action" at the 4 boundary | A teammate answering *"things are fine"* when asked was read as a named other person taking an action, putting a borderline answer at 4A. The boundary says an action is required and does not say what one is. |
 | C3 — a real but too-thin offer | Scoring note 3 says score what he offers; it does not say what to do when the offer is one dismissed clause. Splits three ways between 3, not-assessable, and 2. |
