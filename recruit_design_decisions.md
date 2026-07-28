@@ -43,7 +43,7 @@ The failure is one of fit, and it is scored where it occurs. He may legitimately
 **[SETTLED] Panels are partly subjective, and the rubric says so.**
 A rubric clean enough to be fully objective would describe something that does not happen in the room. Anchors stay behavioral so they can be verified; the human reaction to those behaviors is acknowledged where it bears on the score.
 
-**[SETTLED] The rubric is not total. Every criterion carries a not-assessable outcome, and it is not a low score.** (2026-07-28, Grant.)
+**[SETTLED] The rubric is not total. Every criterion carries a not-assessable outcome, and it is not a low score.** (Raised by Grant 2026-07-28; implementation and wording confirmed by him the same day.)
 
 A criterion-referenced instrument assumes the candidate's life supplies the material the criterion asks about. Not every life does. The clearest case is Teamwork: a candidate who has genuinely never worked alongside anyone — solo trades, long-haul, night shift, self-employment, obligations that kept him out of crews — cannot produce a story about how he treats a crew. He is not thereby unfit for one. **He cannot be expected to talk about people who were never there.**
 
