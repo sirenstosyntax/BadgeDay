@@ -54,6 +54,19 @@ PointKind = Literal["rubric", "measurement"]
 # answer is not his history.
 Improvement = Literal["inventory", "answer", "candidate", "none"]
 
+# What the criterion could conclude from this answer. Three states rather than two,
+# because "his life lacks this" and "this answer told us nothing" are opposite epistemic
+# positions and collapsing them lets a man who simply did not answer be told something
+# about his history that nobody established.
+#
+# - "scored"         — enough to apply an anchor.
+# - "not_assessable" — the answer positively establishes the material is absent from his
+#                      life. A conclusion, and it has to be earned: the gate requires a
+#                      quote of the words that establish it.
+# - "not_answered"   — silence, refusal, a pivot elsewhere. No basis either way, so the
+#                      honest output asks him. The inventory fork, one level up.
+Outcome = Literal["scored", "not_assessable", "not_answered"]
+
 
 class Metric(BaseModel):
     """A deterministic measurement of delivery, computed in our own code.
@@ -136,14 +149,16 @@ class DraftPoint(BaseModel):
 class DraftCritique(BaseModel):
     """The top-level shape the model is constrained to emit."""
 
-    assessable: bool = Field(
+    outcome: Outcome = Field(
         description=(
-            "False when the candidate's history does not contain the material this "
-            "criterion asks about. Not a low score — the absence of a measurement."
+            "'scored' when an anchor applies. 'not_assessable' only when the answer says "
+            "outright that his life does not contain this material — you must be able to "
+            "quote him. 'not_answered' when he gave nothing to judge either way: silence, "
+            "a refusal, a request to repeat, or a pivot to another subject."
         )
     )
     internal_score: int = Field(
-        ge=0, le=5, description="The anchor the answer lands on, or 0 when not assessable."
+        ge=0, le=5, description="The anchor the answer lands on, or 0 when not scored."
     )
     route: Literal["4A", "4B", "n/a"] = "n/a"
     points: list[DraftPoint] = Field(default_factory=list)
@@ -178,12 +193,16 @@ class Critique(BaseModel):
 
     criterion_id: str
     criterion_name: str
-    assessable: bool
+    outcome: Outcome
     internal_score: int
     route: str
     points: list[Point]
 
     model_config = {"arbitrary_types_allowed": True}
+
+    @property
+    def scored(self) -> bool:
+        return self.outcome == "scored"
 
     @property
     def rubric_points(self) -> list[Point]:

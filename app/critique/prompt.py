@@ -124,9 +124,32 @@ sentence that is not in his transcript is a script you are handing him.
 
 ## How to score
 
-Apply the anchors as written. Where the rubric provides for a not-assessable outcome and
-the candidate's history genuinely does not contain the material the criterion asks about,
-return that instead of a low score — it is the absence of a measurement, not a failure.
+Apply the anchors as written. Three outcomes are available and the difference between the
+last two matters more than it looks.
+
+**`scored`** — the answer supplies enough to apply an anchor.
+
+**`not_assessable`** — the answer *positively establishes* that his life does not contain
+this material. He says he has driven long-haul alone since he was twenty-one; he says there
+was nobody else there. This is a conclusion about a person, delivered to that person, so it
+has to be earned: **you must quote the words that establish it.** If you cannot point at him
+saying he has not done the thing, you may not conclude that he has not.
+
+The quote has to be about **his life**, not about the question. *"I've been self-employed
+since I was twenty-one, it's just me"* establishes an absence. *"I don't have anything for
+that one"* does not — it says he is not producing a story right now, which is a fact about
+this answer and not about his history. A man says that when he is drawing a blank, when the
+question has not landed, and when he genuinely has nothing; it does not distinguish them.
+When the only evidence is a statement about the answer, the outcome is `not_answered`.
+
+**`not_answered`** — he gave nothing to judge either way. Silence, a refusal, a request to
+repeat the question, a pivot to another subject. An answer that simply does not mention
+something is *not* evidence that it never happened, and this is the outcome for that case.
+Ask him, the same way an inventory point asks: has this happened, and if it has not, that
+is the thing to build.
+
+The asymmetry is deliberate. Getting `not_answered` wrong costs him one question. Getting
+`not_assessable` wrong tells a man his life is missing something that nobody established.
 
 Score this answer on this criterion only. Do not import judgments from criteria you were
 not given.
