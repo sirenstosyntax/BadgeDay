@@ -137,6 +137,43 @@ Score accuracy is expensive to establish and not what the product claims. Testab
 **[SETTLED] Measure the scorer's noise floor before building any progress display.**
 Run one answer through the scorer ~20 times and examine the spread. If run-to-run variance exceeds plausible monthly improvement, the progress chart is noise and may show a candidate regressing when he improved. Ten minutes of work. Do it before step 2.
 
+> **Run 2026-07-27** — `scripts/recruit_noise_floor.py`, Criterion 2 anchors, scorer
+> `claude-sonnet-5` at effort `high` with adaptive thinking. Three synthetic answers.
+>
+> | Fixture | n | Distribution | Spread | σ |
+> |---|---|---|---|---|
+> | Boundary (3/4 territory) | 20 | 3×15, 4B×5 | 1 | 0.43 |
+> | Unambiguous 2 | 10 | 2×10 | 0 | 0.00 |
+> | Unambiguous 5 | 10 | 5×10 | 0 | 0.00 |
+>
+> **Away from a boundary the scorer is perfectly stable** — twenty runs across two
+> unambiguous answers produced twenty identical scores. All instability is at the
+> boundary, it never exceeds one anchor, and it is one-directional: the boundary answer
+> came back 3 or 4B, never 2 or 5. Where a 4 was awarded the route tag was 4B all five
+> times, so the 4A/4B split held.
+>
+> **The variance is not noise — it is a specific rubric ambiguity, and it is legible.**
+> The deciding-criterion output shows the two camps disagreeing about exactly one thing:
+> the 4B boundary rule reads *"any real step past the eligibility list, with something to
+> show for it, is a 4B."* The runs scoring 4B treat two unelaborated ride-alongs as a real
+> step past the list. The runs scoring 3 accept that they are past the list but hold that
+> *something to show for it* is unmet, because the candidate never says what the
+> ride-alongs changed. Both readings are faithful to the text. **Tighten that clause and
+> the variance should collapse** — the fix is in the anchor, not the model.
+>
+> **Consequence for the progress display:** it confirms the §4 decision rather than
+> overturning it. A score-over-time chart would have been noise-dominated precisely where
+> most candidates sit — a candidate genuinely parked between 3 and 4 would appear to
+> oscillate 3 → 4 → 3 with nothing about him changing, while a real month of movement on
+> this criterion (enrol in something, finish it, be able to say what it changed) is often
+> worth less than the one anchor the scorer wobbles by. Progress stays on
+> question-independent behaviors. **Those behaviors have not been measured for stability
+> and should be, before step 8** — being nearer to binary, they ought to be steadier, but
+> that is an expectation rather than a result.
+>
+> Re-run after any anchor change. The number is a property of the rubric at least as much
+> as of the model.
+
 **[SETTLED] Competitive context is now part of the step 3 decision.**
 stationvisit.com ships AI-scored mock firefighter oral boards across five dimensions with a rubric attributed to experienced firefighters, free first interview, subscription thereafter. Step 3 is therefore not "is Recruit worth building" in the abstract but "do critiques generated from these anchors read as materially better than what already exists" — a cheaper question, answerable before the pipeline is built.
 
@@ -184,8 +221,10 @@ Proposed as a reliability fix — pairwise comparison is more stable than absolu
 | Criterion 1 naming | "Communication" overclaims what audio can see. "Answer Construction" plus a separate delivery sub-score is the candidate. **[OPEN]** |
 | Criteria 3, 4, 5 | Unwritten. Teamwork first, and within it the qualified-braggart anchor first. |
 | Metrics spec | Pause classification, band definitions, stall threshold. Definitions matter more than they look. |
-| Noise floor test | Not yet run. Blocks the progress display. |
-| 4A/4B split | Came out of a single pass. Wants a second panelist before it is settled. |
+| ~~Noise floor test~~ | **Run 2026-07-27** — see §7. Stable away from boundaries; ±1 anchor at the 3/4B boundary, 25% of runs. |
+| **3/4B boundary anchor** | The one thing the noise-floor run turned up. *"Something to show for it"* is doing all the work and is untested — decide whether an unelaborated ride-along clears it. Then re-run the measurement. |
+| Behavior-stability check | The progress display rests on question-independent behaviors, whose run-to-run stability is assumed, not measured. Same harness, before step 8. |
+| 4A/4B split | Came out of a single pass. Wants a second panelist before it is settled. The scorer applied it consistently (5/5 runs tagged 4B), which says the split is legible — not that it is right. |
 | Question bank | Size and rotation policy undetermined; the novel-question design makes bank depth a hard requirement rather than a nice-to-have. |
 
 **Criterion 1 scope, settled:**

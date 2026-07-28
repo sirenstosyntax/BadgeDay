@@ -61,6 +61,8 @@ Holds the qualifications and went past what was required rather than stopping at
 
 Boundary against 3: any real step past the eligibility list, with something to show for it, is a 4B. Stopping exactly at the list is a 3.
 
+> **Open — this boundary is the rubric's least settled clause.** A noise-floor run of one boundary answer scored it 3 fifteen times and 4B five times, and the split traces entirely to this sentence: is a ride-along the candidate cannot say anything about *a real step past the list* (4B), or a step with nothing *to show for it* (3)? Both readings are faithful to the text as written. Deciding it — most likely by saying explicitly what "something to show for it" requires a candidate to be able to say — should settle the boundary. See `recruit_design_decisions.md` §7; re-run `scripts/recruit_noise_floor.py` after any change here.
+
 ### 3 — Qualified, willing, and stopped there
 
 Holds what the posting required and completed it in good faith; the willingness to do the work is real. But preparation maps exactly to the eligibility list with nothing past it. Can state qualifications; cannot say what any of them changed. Reasons for wanting the job are correct and general — public service, helping people, every day is different — with no incident behind them. Meeting the requirement reads, to him, as being finished.
