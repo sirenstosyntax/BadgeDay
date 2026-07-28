@@ -43,6 +43,22 @@ The failure is one of fit, and it is scored where it occurs. He may legitimately
 **[SETTLED] Panels are partly subjective, and the rubric says so.**
 A rubric clean enough to be fully objective would describe something that does not happen in the room. Anchors stay behavioral so they can be verified; the human reaction to those behaviors is acknowledged where it bears on the score.
 
+**[SETTLED] The rubric is not total. Every criterion carries a not-assessable outcome, and it is not a low score.** (2026-07-28, Grant.)
+
+A criterion-referenced instrument assumes the candidate's life supplies the material the criterion asks about. Not every life does. The clearest case is Teamwork: a candidate who has genuinely never worked alongside anyone — solo trades, long-haul, night shift, self-employment, obligations that kept him out of crews — cannot produce a story about how he treats a crew. He is not thereby unfit for one. **He cannot be expected to talk about people who were never there.**
+
+Forcing that answer onto an anchor is the failure mode. It produces a confident low score that measures his history rather than his fitness, and it does so with a demographic shape — it will land hardest on the young, the rural, and the candidate who has been working alone since he was twenty-one.
+
+So every criterion needs a third outcome alongside the 1–5: **insufficient evidence to assess.** Distinct from a low score, reported as its own thing, and never averaged in as a zero. Rules:
+
+- **Establish the material is genuinely absent, not merely unmentioned.** Most candidates who say they have no team experience are wrong about it — they hear "team" as "paid work crew" and discount military service, sport, a kitchen, a church or community group, caregiving, raising siblings. Surfacing that is a coaching win and consistent with the no-content rule: we ask a better question, we do not supply the story.
+- **Where it is genuinely absent, say so plainly and route it.** To the candidate: this is a part of the board that has to be worked on with a person, and here is what would generate the material. To pillar 2 — no team history is a real gap, and a fixable one on the 6–18 month horizon, which is exactly what the readiness gap analysis is for.
+- **Do not let it become an escape hatch for the candidate the rubric is meant to catch.** The self-focused candidate *had* a crew and wrote them out of the story. That is a 2. Not-assessable requires that there was no crew.
+
+The general principle behind it, which was already the stated position on Criterion 1's unscoreable half: **there has to be a place for human judgment, and the honest thing is to name where it goes rather than let the rubric quietly cover for its absence.** A model applying a rubric should be able to return "this does not fit," and the product should say so rather than dress a guess up as a score.
+
+Implemented in Criterion 3. Criterion 2 should get the same treatment on review — it bites less hard there, since every candidate has some account of why he wants the job, but the rule is rubric-wide.
+
 ---
 
 ## 3. Critique generation constraints
@@ -243,6 +259,54 @@ Run one answer through the scorer ~20 times and examine the spread. If run-to-ru
 > a drafted anchor can be checked for without an SME in the room. Everything else waits for
 > review.
 
+> **Criterion 3 re-run 2026-07-28, after adding the not-assessable outcome.** Two fixtures
+> added for the no-team-history case. **The fix works on the case it was written for and
+> made the neighbouring boundary worse.** Both halves are the result.
+>
+> | Fixture | n | Outcome | Spread | σ |
+> |---|---|---|---|---|
+> | No team history, genuinely nobody there | 10 | **not assessable ×10** | — | — |
+> | No team history, material undersold | 20 | not assessable ×3, 3×15, 2×2 | 1 | 0.32 |
+> | Between 2 and 3 *(was 3×19, 2×1)* | 20 | 3×17, 2×2, **4A×1** | 2 | 0.38 |
+> | Qualified, self-focused | 20 | 2×20 | 0 | 0.00 |
+> | Generic, no incident | 10 | 3×10 | 0 | 0.00 |
+> | Changed by a named person | 10 | 5×10 | 0 | 0.00 |
+>
+> **The escape hatch fires cleanly on the clean case.** Ten of ten on the one-man-shop
+> candidate, and the reasoning cites scoring note 3 rather than reaching for a low anchor.
+> The candidate who has genuinely never worked alongside anyone is no longer scored 2 for a
+> history he could not help. That was the point, and it holds.
+>
+> **The undersold case splits three ways, and the gap is nameable.** Note 3 says *score what
+> he offers and note that he undersold it* — but this candidate offers raising his brothers
+> in one clause and immediately discounts it. Three defensible readings followed: it is
+> enough to score (3), too thin to score (not assessable), or self-focused within itself
+> (2 — one run held that even in the brothers story the siblings are beneficiaries rather
+> than agents). **The note does not say what to do when the offer is real but too thin to
+> score.** That is the same shape of defect as the 3/4B clause and it wants the same fix.
+>
+> **The 2/3 boundary regressed: σ 0.22 → 0.38, spread 1 → 2, and a 4A appeared.** The 4
+> reasoning held that a teammate saying *"things are fine"* when asked is a named other
+> person taking an action, which clears the level 4 boundary. That reading was available
+> before and did not surface before. The plausible mechanism — **unproven** — is that note
+> 3's instruction to hunt for undersold team material primes the scorer to find agency in
+> thin places, and the level 4 boundary does not say what counts as an action. Worth stating
+> plainly: **fixing the false negative cost stability at the adjacent boundary.** A rubric is
+> not a set of independent clauses, and this is the second time an edit here has moved
+> something it was not aimed at.
+>
+> **Stopping the iteration here, deliberately.** The remaining fixes — what counts as an
+> action at the 4 boundary, what to do with a too-thin offer — are the same self-referential
+> loop as before: Claude tuning Claude's rubric against Claude's fixtures. Each round makes
+> the draft more internally consistent without making it more correct, and increases the
+> risk of over-fitting to fixtures nobody else wrote. The draft has done its job when it
+> gives a reviewer something specific to disagree with, and it now does.
+>
+> *Harness note:* roughly 3–5% of calls return generation garbage appended to the free-text
+> field, and occasionally unparseable JSON. Not truncation — output runs ~280 tokens against
+> a 16k cap and stops on `end_turn`. Scores parse correctly throughout, so distributions are
+> unaffected; a single retry was added so a hard failure does not quietly shrink n.
+
 **[SETTLED] Competitive context is now part of the step 3 decision.**
 stationvisit.com ships AI-scored mock firefighter oral boards across five dimensions with a rubric attributed to experienced firefighters, free first interview, subscription thereafter. Step 3 is therefore not "is Recruit worth building" in the abstract but "do critiques generated from these anchors read as materially better than what already exists" — a cheaper question, answerable before the pipeline is built.
 
@@ -289,7 +353,10 @@ Proposed as a reliability fix — pairwise comparison is more stable than absolu
 | Criterion 1 anchors | Scope settled (see below), anchors unwritten |
 | Criterion 1 naming | "Communication" overclaims what audio can see. "Answer Construction" plus a separate delivery sub-score is the candidate. **[OPEN]** |
 | Criterion 3 | **Drafted 2026-07-28 by Claude, unreviewed** — `recruit_rubric_c3_teamwork.md`. The qualified-self-focused anchor exists and fires 20/20. Needs SME review before it is anything more than a proposal; the anchors represent nobody's judgment yet. |
-| C3 — where the unfalsifiable-claim flag lands | Scoring note 3 flags *"I've always gotten along with everyone"* as a tell but no anchor says whether it pulls an answer to 2 or is just noise on a 3. Found by the harness; it is the one place the draft moved. |
+| C3 — where the unfalsifiable-claim flag lands | Scoring note 4 flags *"I've always gotten along with everyone"* as a tell but no anchor says whether it pulls an answer to 2 or is just noise on a 3. Found by the harness. |
+| C3 — what counts as "an action" at the 4 boundary | A teammate answering *"things are fine"* when asked was read as a named other person taking an action, putting a borderline answer at 4A. The boundary says an action is required and does not say what one is. |
+| C3 — a real but too-thin offer | Scoring note 3 says score what he offers; it does not say what to do when the offer is one dismissed clause. Splits three ways between 3, not-assessable, and 2. |
+| Not-assessable outcome on other criteria | Implemented on C3. Criterion 2 should get it on review; the rule is rubric-wide even though it bites hardest on Teamwork. |
 | Criteria 4, 5 | Unwritten. |
 | Metrics spec | Pause classification, band definitions, stall threshold. Definitions matter more than they look. |
 | ~~Noise floor test~~ | **Run 2026-07-27** — see §7. Stable away from boundaries; ±1 anchor at the 3/4B boundary, 25% of runs. |
