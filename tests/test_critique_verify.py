@@ -348,3 +348,29 @@ def test_rejections_carry_enough_detail_to_regenerate_from(rubric, metrics):
     )
     _, rejections = verify_critique(draft, rubric, TRANSCRIPT, metrics)
     assert "c3.anchor.9" in rejections[0].detail
+
+
+def test_spliced_quote_rejection_points_at_the_divergence(rubric, metrics):
+    """The rejection text feeds the retry loop, so it must name the part that failed.
+
+    A quote stitched from two things the candidate said separately matches perfectly for
+    its opening words. An earlier message showed only those opening words, telling the
+    model a passage does not appear while quoting back a passage that does.
+    """
+    spliced = "I took his section on top of mine and he thanked me for it afterwards"
+    result = verify_point(point(answer_quote=spliced), rubric, TRANSCRIPT, metrics)
+    assert isinstance(result, Rejection)
+    assert result.code == "quote_not_in_answer"
+    assert "i took his section on top of mine" in result.detail
+    assert "thanked me" in result.detail
+
+
+def test_wholly_invented_quote_says_so_plainly(rubric, metrics):
+    result = verify_point(
+        point(answer_quote="Nothing about this sentence was ever spoken"),
+        rubric,
+        TRANSCRIPT,
+        metrics,
+    )
+    assert isinstance(result, Rejection)
+    assert "does not appear in the transcript at all" in result.detail

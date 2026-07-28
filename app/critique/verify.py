@@ -49,6 +49,10 @@ from app.critique.rubric import Rubric
 # one that is not in his transcript is a scripted sentence.
 MAX_FOREIGN_QUOTE_WORDS = 4
 
+# Shortest matching head that counts as evidence a quote *began* as real speech rather
+# than coinciding by accident. Below this, report the quote as simply absent.
+MIN_DIVERGENCE_PREFIX_CHARS = 20
+
 # Handing the candidate words. Deliberately blunt: the cost of a false positive is one
 # regenerated point, and the cost of a false negative is the product's central prohibition
 # quietly failing.
@@ -147,6 +151,44 @@ def _foreign_quotes(text: str, transcript: str) -> list[str]:
     return foreign
 
 
+def _quote_divergence(quote: str, transcript: str) -> str:
+    """Say *where* a quote stops matching, not just that it failed.
+
+    The first version of this message showed the quote's opening 60 characters, which on a
+    spliced quote are the part that matched perfectly — so it told the reader (and the
+    retry loop, which is fed this text) that a passage does not appear while showing them
+    a passage that does. Pointing at the divergence makes the rejection actionable: a
+    quote that stitches together two things the candidate said separately is the common
+    case, and it is invisible from the opening words.
+    """
+    haystack = _normalize(transcript)
+    needle = _normalize(quote)
+
+    low, high = 0, len(needle)
+    while low < high:
+        middle = (low + high + 1) // 2
+        if needle[:middle] in haystack:
+            low = middle
+        else:
+            high = middle - 1
+
+    # A prefix of one or two characters matches almost any transcript, so a short match is
+    # not evidence of splicing — it is noise, and reporting it would point the retry loop
+    # at a meaningless fragment. Only a substantial matching head means "this began as
+    # something he really said".
+    if low < MIN_DIVERGENCE_PREFIX_CHARS:
+        return (
+            f"answer_quote {quote[:80]!r} does not appear in the transcript at all; the "
+            "point is about something the candidate did not say."
+        )
+    return (
+        f"answer_quote stops matching the transcript after {needle[:low]!r}. The rest of "
+        f"the quote ({needle[low:][:80]!r}) is not in the answer — it looks like two "
+        "separate things the candidate said, joined into one quotation. Quote a single "
+        "continuous passage, or drop the quote and describe what is missing."
+    )
+
+
 def verify_point(
     draft: DraftPoint,
     rubric: Rubric,
@@ -201,8 +243,7 @@ def verify_point(
         if _normalize(quote) not in _normalize(transcript):
             return Rejection(
                 "quote_not_in_answer",
-                f"answer_quote {quote[:60]!r} does not appear in the transcript; the point "
-                "is about something the candidate did not say.",
+                _quote_divergence(quote, transcript),
             )
 
     # 4. Internal-state attribution.
