@@ -198,6 +198,21 @@ Two consequences:
 - **The harness stops flagging a clause as contested for mixing a credit with a fault.** Contest is measured across the gap labels only. A clause that sometimes credits and sometimes faults is doing its job.
 - **What worked is required where it exists, not offered where convenient.** The prompt had *"lead with what the answer did, where there is anything to lead with"*, which invites skipping it. Across twenty runs of the weak teamwork answer only seven points recorded anything positive — roughly one in three critiques said nothing at all about what the man did right, to a man about to be told several things he did wrong.
 
+**[SETTLED] Development advice offers possible ways to meet the gap — plural, and never one.** (Grant, 2026-07-28. Settles open question 1.)
+
+Naming a gap and leaving him to work out what to do about it is unhelpfully austere. Naming the single thing he must do is career advice we cannot stand behind. The line is **possible ways**: here are routes people take to build this, pick the one that fits your life.
+
+The plural is the whole safeguard, and it does three things at once. It does not presume his circumstances — a man with a mortgage and two children cannot do what a nineteen-year-old can. It leaves the choice where the fork already leaves it, with the person who knows his own constraints. And it is far harder to be badly wrong with a menu than with an instruction: if one route does not fit, another may, whereas a single prescription that does not fit is simply bad advice delivered confidently.
+
+Rules:
+
+- **More than one route, always.** A single route stated on its own is a prescription wearing different clothes. So is *"the best way to…"* — definite framing smuggles the singular back in.
+- **Routes, not providers.** A category is durable and safe: volunteering with a district, riding along, taking work that puts him on a crew, a certification. A named academy, vendor or programme is an endorsement, it dates, and we have no basis for it.
+- **Span the cost and access range deliberately.** This is where it would quietly fail. Offer three routes that all cost money and free weekends and the candidate the *effort relative to opportunity* note exists to protect has been handed a list he cannot act on — and told, in effect, that the answer is to be someone with more money. At least one route should cost nothing but time.
+- **Still never supply the words.** Unchanged and unrelated. Ways to build experience are fine; sentences to say at the board are not.
+
+Mechanically the gate narrows rather than opens. It keeps rejecting the directive forms — *you should*, *you need to*, *I recommend*, *go get your…* — and stops rejecting the neutral naming of a route, which is what a menu is made of.
+
 **[SETTLED] Critique identifies gaps; it never supplies content.**
 It may name what is missing and ask for the candidate's own material. It may not provide a model answer, sample language, or an example response.
 

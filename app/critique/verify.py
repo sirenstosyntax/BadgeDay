@@ -99,26 +99,28 @@ _SCORE_DISCLOSURE = re.compile(
     re.I | re.X,
 )
 
-# Prescribing a remedy rather than naming a gap. Applies to development points only —
-# where the finding is that the candidate's *life* lacks the material, not his telling.
+# Prescribing *the* remedy rather than offering possible ways to meet a gap.
 #
-# Naming a gap is low risk. Naming the programme that fills it is career advice with a cost
-# in time and money, delivered to someone who cannot check it, and it is the same failure
-# this product was built around — worse here than in the answer track, because a candidate
-# can verify a claim about his own answer and cannot verify a claim about his future.
+# The settled line (`recruit_design_decisions.md` §3) is **possible ways, plural**: name
+# routes people take and let him pick the one his life allows. Naming the single thing he
+# must do is career advice with a cost in time and money, delivered to someone who cannot
+# check it — and a menu is far harder to be badly wrong with than an instruction.
 #
-# How prescriptive this should be is open question 1 in `recruit_scope.md` and is Grant's
-# to settle. Until then the conservative reading holds: name the absence, not the cure.
+# So this guard is narrower than it looks. It targets the *directive* forms — second-person
+# imperatives and first-person recommendations — and the definite singular, which smuggles
+# the one-true-route back in under a different phrasing. It deliberately does **not** block
+# the neutral naming of a route, because that is what a menu is made of: an earlier version
+# rejected "join a volunteer department" outright, which made offering options impossible.
 _PRESCRIBES_REMEDY = re.compile(
     r"""
     \b(
-        (?:go\s+)?(?:get|obtain|earn|acquire)\s+(?:your|an?|the)\s+
-            (?:emt|emr|paramedic|cpr|ffi|ff1|cdl|certificat|licen|degree|associate)
-      | enrol{1,2}\s+in | sign\s+up\s+for | you\s+should\s+(?:take|join|volunteer|apply|enrol)
-      | take\s+(?:a|an|the)\s+(?:course|class|academy|programme|program)\b
-      | join\s+(?:a|an|the)\s+(?:volunteer|department|academy|programme|program)\b
-      | apply\s+to\s+(?:a|an|the)\s+(?:academy|programme|program)\b
-      | i\s+recommend | we\s+recommend | you\s+need\s+to\s+(?:get|take|join|enrol)
+        you\s+(?:should|need\s+to|have\s+to|must|ought\s+to)\s+
+            (?:get|take|join|enrol|enroll|apply|volunteer|sign|start|find|do)
+      | (?:i|we)\s+(?:recommend|suggest|advise)
+      | (?:go|go\s+and)\s+(?:get|join|enrol|enroll|sign\s+up|apply)\b
+      | the\s+(?:best|right|only|obvious)\s+way\s+to
+      | what\s+you\s+need\s+(?:to\s+do\s+)?is
+      | your\s+next\s+step\s+(?:is|should\s+be)\b
     )
     """,
     re.I | re.X,
@@ -308,9 +310,10 @@ def verify_point(
         if match:
             return Rejection(
                 "prescribes_remedy",
-                f"point contains {match.group(0)!r}, which prescribes a "
-                "specific remedy rather than naming what is absent. Say what his "
-                "experience does not yet contain and leave the route to it open.",
+                f"point contains {match.group(0)!r}, which tells him the one thing "
+                "to do. Offer possible ways the gap could be met instead — more than one, "
+                "as routes rather than named providers, and spanning what they cost in "
+                "money and time so a candidate without either can still act on one.",
             )
 
     return Point(

@@ -296,7 +296,9 @@ either way.
 
 ## Open questions — these need Grant
 
-1. **How prescriptive is the gap analysis?** Naming specific certifications and programs
+1. ~~**How prescriptive is the gap analysis?**~~ **Settled 2026-07-28: offer possible ways the improvement could be met — plural, routes not providers, spanning the cost and access range.** See `recruit_design_decisions.md` §3. Original text follows.
+
+   *(original)* **How prescriptive is the gap analysis?** Naming specific certifications and programs
    is far more useful to a candidate and carries more accuracy risk than general
    categories. Where is the line? **This now gates more than it did.** The critique step
    classifies every point as improving the answer or improving the candidate
