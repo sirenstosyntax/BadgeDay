@@ -34,6 +34,7 @@ dev = [
 
 [project.scripts]
 badgeday-ingest = "app.ingest.cli:main"
+badgeday-critique = "app.critique.cli:main"
 badgeday-worker = "app.worker.runner:main"
 
 [build-system]
