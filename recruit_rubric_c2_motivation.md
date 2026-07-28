@@ -12,6 +12,9 @@
 
 ---
 
+<!-- scorer:start — everything to scorer:end is what the scorer sees. Keep meta-commentary
+     about authorship and grounding outside it, in Provenance, so it cannot sway a score. -->
+
 ## Scoring notes
 
 These govern how the anchors below are applied. They are part of the criterion, not commentary on it.
@@ -89,7 +92,9 @@ Nothing done since deciding, and no account of why. Cannot name a class, a ride-
 **Prepared but self-focused → Criterion 3 (Teamwork & Interpersonal).**
 The candidate with a strong file whose every answer returns to himself is **not** penalized here. He may legitimately score 4 or 5 on Motivation & Preparation. The failure is one of fit, and it is scored where it occurs.
 
-> **Open risk:** until Teamwork carries an explicit anchor for the *qualified* self-focused candidate, this candidate passes through the rubric unpenalized. Author that anchor first when Criterion 3 is written.
+> **Open risk — closed in draft 2026-07-28.** `recruit_rubric_c3_teamwork.md` level 2 is the anchor this called for: *qualified, and the crew is missing from his own stories.* Until Criterion 3 is SME-reviewed, that candidate is caught by a drafted anchor rather than an authored one, so treat the gap as closed provisionally.
+
+<!-- scorer:end -->
 
 ---
 
