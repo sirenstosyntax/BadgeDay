@@ -185,6 +185,19 @@ Consequences:
 > still be the wrong filing. But the exposure is smaller than it was, because the filings the
 > system now makes are ones the transcript can support.
 
+**[SETTLED] One answer can earn a credit and a fault from the same criterion, and should report both.** (Grant, 2026-07-28.)
+
+A critique is not a verdict to be reached, so nothing has to resolve to a single finding. *Preparation is real but stale* is two true things about one answer: the EMT was earned and that is worth saying, and nothing has happened in four years and that is worth saying too. Reporting only the fault tells him half of what is true about him; reporting only the credit tells him the other half.
+
+So the critique carries **what you did well** and **what you could work on** as its top-level shape, and one rubric clause may legitimately produce a point in each.
+
+This corrects a reading error, recorded because the error is instructive. The classification harness showed `c2.anchor.2` producing four different labels across 22 points and it was written up as a defect — a mixed anchor the pipeline could not resolve, with a recommendation to split it. **That recommendation is withdrawn.** The same write-up already carried the caveat that undoes it: grouping by clause conflates one ambiguous clause with two distinct findings that share a citation. It was applied to `c2.anchor.5` and not to `c2.anchor.2`, where the split was mostly credit-versus-fault rather than disagreement about the same finding.
+
+Two consequences:
+
+- **The harness stops flagging a clause as contested for mixing a credit with a fault.** Contest is measured across the gap labels only. A clause that sometimes credits and sometimes faults is doing its job.
+- **What worked is required where it exists, not offered where convenient.** The prompt had *"lead with what the answer did, where there is anything to lead with"*, which invites skipping it. Across twenty runs of the weak teamwork answer only seven points recorded anything positive — roughly one in three critiques said nothing at all about what the man did right, to a man about to be told several things he did wrong.
+
 **[SETTLED] Critique identifies gaps; it never supplies content.**
 It may name what is missing and ask for the candidate's own material. It may not provide a model answer, sample language, or an example response.
 
@@ -476,7 +489,7 @@ Proposed as a reliability fix — pairwise comparison is more stable than absolu
 | Criterion 1 naming | "Communication" overclaims what audio can see. "Answer Construction" plus a separate delivery sub-score is the candidate. **[OPEN]** |
 | Criterion 3 | **Drafted 2026-07-28 by Claude, unreviewed** — `recruit_rubric_c3_teamwork.md`. The qualified-self-focused anchor exists and fires 20/20. Needs SME review before it is anything more than a proposal; the anchors represent nobody's judgment yet. |
 | ~~Is the weak teamwork answer really all development?~~ | **Dissolved by Grant 2026-07-28.** It was the wrong question to put to the model. Ask the candidate: is there a better story, and if not, that is the thing to go and get. Development verdicts on that fixture went 74 to zero. |
-| c2.anchor.2 — mixed anchor | *Preparation is real but stale* now splits **four ways** across 22 points. A finer distinction exposed it rather than resolving it: the anchor asserts a credit and a fault in one sentence. Split it. |
+| ~~c2.anchor.2 — mixed anchor~~ | **Withdrawn 2026-07-28.** Not a defect: the anchor is two true things about one answer, and the critique should report both. See §3. |
 | C3 — where the unfalsifiable-claim flag lands | Scoring note 4 flags *"I've always gotten along with everyone"* as a tell but no anchor says whether it pulls an answer to 2 or is just noise on a 3. Found by the harness. |
 | C3 — what counts as "an action" at the 4 boundary | A teammate answering *"things are fine"* when asked was read as a named other person taking an action, putting a borderline answer at 4A. The boundary says an action is required and does not say what one is. |
 | C3 — a real but too-thin offer | Scoring note 3 says score what he offers; it does not say what to do when the offer is one dismissed clause. Splits three ways between 3, not-assessable, and 2. |

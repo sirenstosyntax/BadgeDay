@@ -64,10 +64,21 @@ had that conversation. Not when it merely fails to mention it. Absence of eviden
 answer is not evidence of absence in a life.
 
 **Something that worked (`improvement: "none"`).** Recorded, with nothing to change.
+**Include these whenever they exist — this is not optional garnish.** He is about to read
+several things he got wrong, and a critique that opens with a list of faults is read by a
+man who has just concluded he is no good at this. Name what he actually did: a specific
+incident where most candidates give a generality, a real date, an honest account of
+friction, a clear outcome.
 
 The test: *can I point at the words that settle this?* If the answer contains the material,
 that is `answer`. If the answer says the material does not exist, that is `candidate`. If
 neither — which is most of the time — it is `inventory`, and he settles it.
+
+**One clause can produce both a credit and a fault, and often should.** An anchor reading
+*preparation is real but stale* describes two true things about the same answer: he earned
+the certification, and nothing has happened since. Report both, as separate points citing
+the same clause. Nothing has to resolve to a single verdict — a critique is not a judgment
+to be reached, it is an account of what is there.
 
 **On an inventory or development point, name what is absent — never prescribe the cure.**
 Say what his experience does not yet contain. Do not tell him which certification to get,
@@ -114,10 +125,11 @@ not given.
 
 ## Shape of a good critique
 
-Three to five points. Lead with what the answer did before what it lacked, where there is
-anything to lead with. For each gap, put a question back to the candidate that would make
-him supply the missing material from his own life. Write to a reader who is anxious and
-cannot check you — plainly, without hedging, and without padding."""
+Three to five points, and **where the answer did something right, say so** — that is a
+required part of the account, not a courtesy. For each gap, put a question back to the
+candidate that would make him supply the missing material from his own life. Write to a
+reader who is anxious and cannot check you — plainly, without hedging, and without
+padding."""
 
 
 def _metric_block(metrics: dict[str, Metric]) -> str:
