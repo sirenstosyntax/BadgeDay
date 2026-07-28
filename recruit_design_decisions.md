@@ -79,6 +79,53 @@ Consequences:
 - **Progress reporting needs a second set of behaviours.** The list in §4 — did the answer contain a specific incident, did he name what he would do differently, did he stop when finished — is entirely answer-construction. None of it tracks whether the candidate is becoming someone a department wants. That set is unwritten.
 - **This raises the stakes on an open question rather than answering it.** How prescriptive the development advice gets is open question 1 in `recruit_scope.md`, still unanswered, and it now gates more than it did. Naming a gap is low risk. Naming the programme that fills it is career advice with a cost in time and money, delivered to someone who cannot check it — the failure mode this product was built to avoid, and it bites harder here than anywhere in the answer track. **Interim default until Grant sets the line: a development point names what is absent and may name the category; it does not prescribe a specific certification, programme or provider.**
 
+> **Classification spread, run 2026-07-28** — `scripts/recruit_classification_spread.py`.
+> Whether the answer/candidate filing is stable, and whether the skew on the weak teamwork
+> answer was real or a one-run artifact.
+>
+> | Fixture | runs | answer | candidate | worked | candidate share |
+> |---|---|---|---|---|---|
+> | c3 / weak | 20 | **0** | 74 | 17 | 100%, sd 0.00 |
+> | c3 / off-topic | 10 | 33 | 5 | 1 | 12%, range 0–50% |
+> | c2 / weak | 10 | 2 | 36 | 9 | 95%, range 75–100% |
+>
+> **The skew is real and total.** Twenty runs of the weak teamwork answer produced 74
+> development gaps and **not one** answer gap, with zero variance. It is not a sampling
+> artifact and it does not wobble.
+>
+> **It is also not a global bias**, which is the more useful finding. The off-topic answer
+> inverts it — 88% answer gaps — so the classifier discriminates rather than defaulting.
+> The pattern it has settled on is defensible: an answer that tells a detailed story
+> revealing the candidate never asked *why* exposes something missing from his life; an
+> answer that talks about deadlifts when asked about teammates exposes a failure to answer
+> the question, which retelling would fix.
+>
+> **Which means the harness has done all it can, and the remaining question is the one it
+> cannot touch.** Perfect consistency on a wrong filing is indistinguishable from perfect
+> consistency on a right one. Concretely, on the point I read as misfiled —
+>
+> > *[c3.anchor.3] The answer closes on a self-description asserting team orientation, but
+> > the incident just given shows him working alone around a problem rather than with
+> > anyone on it.* → *Can you think of a moment where the team, not just you, was the one
+> > who made something work?*
+>
+> — that ask is fishing for material he may well have, which reads to me like an answer
+> gap. The model filed it **candidate 5 times out of 5**. One of us is wrong and the
+> harness has no opinion. **This is a fire captain's call and it is the highest-value
+> thing outstanding**, because it decides whether the module's most valuable output is
+> being routed correctly.
+>
+> **One rubric finding fell out of it.** `c2.anchor.2` — *preparation is real but stale* —
+> split 73% development-gap and 27% *something that worked*. It is a mixed anchor, and the
+> model sometimes credits the "real" and sometimes flags the "stale". Worth deciding which
+> it is, or splitting it.
+>
+> **A limitation of the measurement, stated so the number is not over-read.** The
+> per-clause split groups by clause, but two genuinely different observations can cite the
+> same clause — so a "contested" clause may be two distinct findings rather than one
+> ambiguous one, and `c2.anchor.5`'s 50/50 split looks like exactly that on inspection. The
+> per-clause figure is a proxy for ambiguity, not a measurement of it.
+
 **[SETTLED] Critique identifies gaps; it never supplies content.**
 It may name what is missing and ask for the candidate's own material. It may not provide a model answer, sample language, or an example response.
 
@@ -369,6 +416,8 @@ Proposed as a reliability fix — pairwise comparison is more stable than absolu
 | Criterion 1 anchors | Scope settled (see below), anchors unwritten |
 | Criterion 1 naming | "Communication" overclaims what audio can see. "Answer Construction" plus a separate delivery sub-score is the candidate. **[OPEN]** |
 | Criterion 3 | **Drafted 2026-07-28 by Claude, unreviewed** — `recruit_rubric_c3_teamwork.md`. The qualified-self-focused anchor exists and fires 20/20. Needs SME review before it is anything more than a proposal; the anchors represent nobody's judgment yet. |
+| **Is the weak teamwork answer really all development?** | 20 runs, 74 development gaps, zero answer gaps, no variance. The classifier is certain and the harness cannot say whether it is right. Highest-value open item — it decides whether the module routes its best output correctly. |
+| c2.anchor.2 — mixed anchor | *Preparation is real but stale* splits 73/27 between a development gap and something that worked. Decide which it is, or split the anchor. |
 | C3 — where the unfalsifiable-claim flag lands | Scoring note 4 flags *"I've always gotten along with everyone"* as a tell but no anchor says whether it pulls an answer to 2 or is just noise on a 3. Found by the harness. |
 | C3 — what counts as "an action" at the 4 boundary | A teammate answering *"things are fine"* when asked was read as a named other person taking an action, putting a borderline answer at 4A. The boundary says an action is required and does not say what one is. |
 | C3 — a real but too-thin offer | Scoring note 3 says score what he offers; it does not say what to do when the offer is one dismissed clause. Splits three ways between 3, not-assessable, and 2. |
