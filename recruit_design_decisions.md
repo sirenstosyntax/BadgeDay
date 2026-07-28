@@ -63,6 +63,22 @@ Implemented in Criterion 3. Criterion 2 should get the same treatment on review 
 
 ## 3. Critique generation constraints
 
+**[SETTLED] The advice matters more than the grade, and there are two kinds of it.** (Grant, 2026-07-28.)
+
+The score is instrumental and always was. What the product is actually for is helping a candidate improve **his answers** and **himself as a recruit** — and those are different things that the critique had been collapsing into one.
+
+- **An answer gap.** He has the material and did not deploy it: a real incident buried under a general claim, a specific thing he did that he never got to. The fix is in the telling, and it is available to him today.
+- **A development gap.** He does not have the material. On the weak teamwork fixture the candidate covered a man's section for six weeks and never asked him why. No amount of retelling fixes that. The fix is in his life, on the 6–18 month horizon, and it is what pillar 2 exists for.
+
+The second is the more valuable finding and was the one being thrown away. Both were rendered as the same kind of bullet, so a gap requiring him to *go and do something* read like a note about phrasing.
+
+Consequences:
+
+- **Every critique point is classified** as improving the answer, improving the candidate, or recording something that worked. The classification is a routing signal, not a claim the gate can verify.
+- **Development gaps are the bridge between the two pillars.** The oral board practice produces exactly the evidence the readiness gap analysis needs, and until now nothing carried it across.
+- **Progress reporting needs a second set of behaviours.** The list in §4 — did the answer contain a specific incident, did he name what he would do differently, did he stop when finished — is entirely answer-construction. None of it tracks whether the candidate is becoming someone a department wants. That set is unwritten.
+- **This raises the stakes on an open question rather than answering it.** How prescriptive the development advice gets is open question 1 in `recruit_scope.md`, still unanswered, and it now gates more than it did. Naming a gap is low risk. Naming the programme that fills it is career advice with a cost in time and money, delivered to someone who cannot check it — the failure mode this product was built to avoid, and it bites harder here than anywhere in the answer track. **Interim default until Grant sets the line: a development point names what is absent and may name the category; it does not prescribe a specific certification, programme or provider.**
+
 **[SETTLED] Critique identifies gaps; it never supplies content.**
 It may name what is missing and ask for the candidate's own material. It may not provide a model answer, sample language, or an example response.
 

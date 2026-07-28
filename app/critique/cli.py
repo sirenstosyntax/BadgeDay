@@ -130,7 +130,7 @@ def _render(critique: Critique, draft: bool) -> None:
         route = f" ({critique.route})" if critique.route != "n/a" else ""
         print(f"\n  [internal, never shown to a candidate: {critique.internal_score}{route}]")
 
-    for point in critique.points:
+    def show(point) -> None:
         anchor = point.clause.clause_id if point.clause else f"metric:{point.metric.name}"
         print(f"\n  • [{anchor}] {point.anchor_label()}")
         if point.answer_quote:
@@ -138,6 +138,25 @@ def _render(critique: Critique, draft: bool) -> None:
         print(f"      {point.observation}")
         if point.ask:
             print(f"      → {point.ask}")
+
+    # Grouped rather than listed, because the difference is the point. A gap that requires
+    # him to go and do something must not sit in the same run of bullets as a note about
+    # how he told the story — read as one list, the expensive finding reads like the cheap
+    # one. See recruit_design_decisions.md §3.
+    groups = [
+        ("WHAT WORKED", critique.worked),
+        ("IMPROVE THE ANSWER — you have this; it did not come through", critique.answer_gaps),
+        (
+            "IMPROVE THE CANDIDATE — retelling this will not close it",
+            critique.development_gaps,
+        ),
+    ]
+    for heading, points in groups:
+        if not points:
+            continue
+        print(f"\n  {heading}")
+        for point in points:
+            show(point)
 
 
 def _run_one(label: str, transcript: str, rubric, client, settings, draft: bool) -> bool:
