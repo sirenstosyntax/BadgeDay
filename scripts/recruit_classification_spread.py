@@ -44,6 +44,9 @@ from app.critique.critiquer import critique_answer
 POOL_SIZE = 4
 # Below this, a clause's filing is treated as contested rather than settled.
 STABLE_SHARE = 0.8
+# Fewer gap labels than this and a "split" is arithmetic on a handful of points, not
+# evidence of an ambiguous clause. Two labels out of three reads as 67% and means nothing.
+MIN_CONTEST_N = 6
 
 RUNS = [("c3", "weak", 20), ("c3", "off_topic", 10), ("c2", "weak", 10)]
 
@@ -100,15 +103,29 @@ def report(tag: str, results: list[dict]) -> None:
             + (f", sd {statistics.pstdev(shares):.2f}" if len(shares) > 1 else "")
         )
 
-    print("\n  per-clause filing (the diagnostic one):")
+    # Contest is measured across the gap labels only. A clause that sometimes credits an
+    # answer and sometimes faults it is not unstable — an anchor like "preparation is real
+    # but stale" describes two true things about one answer, and reporting both is correct.
+    # Flagging that as ambiguity is what produced a withdrawn recommendation to split it.
+    print("\n  per-clause filing (contest measured across gap labels only):")
     contested = []
     for clause, counts in sorted(per_clause.items(), key=lambda kv: -sum(kv[1].values())):
         seen = sum(counts.values())
-        top, top_n = counts.most_common(1)[0]
-        share = top_n / seen
-        flag = "" if share >= STABLE_SHARE else "   <-- CONTESTED"
+        gaps_only = {k: v for k, v in counts.items() if k != "none"}
+        if not gaps_only:
+            print(f"    {clause:<16} n={seen:<3} {dict(counts)}  credit only")
+            continue
+        gap_n = sum(gaps_only.values())
+        top, top_n = Counter(gaps_only).most_common(1)[0]
+        share = top_n / gap_n
+        if share >= STABLE_SHARE:
+            flag = ""
+        elif gap_n < MIN_CONTEST_N:
+            flag = f"   (split, but only {gap_n} gap labels — too few to read)"
+        else:
+            flag = "   <-- CONTESTED"
         print(f"    {clause:<16} n={seen:<3} {dict(counts)}  {top} {share:.0%}{flag}")
-        if share < STABLE_SHARE:
+        if share < STABLE_SHARE and gap_n >= MIN_CONTEST_N:
             contested.append(clause)
 
     for clause in contested:

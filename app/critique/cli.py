@@ -139,25 +139,31 @@ def _render(critique: Critique, draft: bool) -> None:
         if point.ask:
             print(f"      → {point.ask}")
 
-    # Grouped rather than listed, because the difference is the point. A gap that requires
-    # him to go and do something must not sit in the same run of bullets as a note about
-    # how he told the story — read as one list, the expensive finding reads like the cheap
-    # one. See recruit_design_decisions.md §3.
-    groups = [
-        ("WHAT WORKED", critique.worked),
-        ("IMPROVE THE ANSWER — it is in here already, handled badly", critique.answer_gaps),
+    # Two sections, because that is how feedback is read: what he did, then what to work
+    # on. The routing distinction sits underneath the second rather than beside the first —
+    # a man reading four headings, three of them faults, has been handed a verdict. One
+    # clause can appear in both sections, and often should.
+    if critique.worked:
+        print("\n  WHAT YOU DID WELL")
+        for point in critique.worked:
+            show(point)
+
+    work = [
+        ("it is already in this answer, handled badly", critique.answer_gaps),
         (
-            "OVER TO YOU — is there a better story? if not, that is the thing to go and get",
+            "is there a better story? if not, that is the thing to go and get",
             critique.inventory_gaps,
         ),
-        ("YOU SAID YOU HAVE NOT DONE THIS", critique.development_gaps),
+        ("you said you have not done this", critique.development_gaps),
     ]
-    for heading, points in groups:
-        if not points:
-            continue
-        print(f"\n  {heading}")
-        for point in points:
-            show(point)
+    if any(points for _, points in work):
+        print("\n  WHAT YOU COULD WORK ON")
+        for note, points in work:
+            if not points:
+                continue
+            print(f"\n    — {note}")
+            for point in points:
+                show(point)
 
 
 def _run_one(label: str, transcript: str, rubric, client, settings, draft: bool) -> bool:
