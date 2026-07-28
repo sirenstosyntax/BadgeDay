@@ -145,11 +145,12 @@ def _render(critique: Critique, draft: bool) -> None:
     # one. See recruit_design_decisions.md §3.
     groups = [
         ("WHAT WORKED", critique.worked),
-        ("IMPROVE THE ANSWER — you have this; it did not come through", critique.answer_gaps),
+        ("IMPROVE THE ANSWER — it is in here already, handled badly", critique.answer_gaps),
         (
-            "IMPROVE THE CANDIDATE — retelling this will not close it",
-            critique.development_gaps,
+            "OVER TO YOU — is there a better story? if not, that is the thing to go and get",
+            critique.inventory_gaps,
         ),
+        ("YOU SAID YOU HAVE NOT DONE THIS", critique.development_gaps),
     ]
     for heading, points in groups:
         if not points:

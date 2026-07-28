@@ -452,3 +452,71 @@ def test_a_critique_separates_the_two_kinds(rubric, metrics):
     assert len(critique.answer_gaps) == 1
     assert len(critique.development_gaps) == 1
     assert critique.development_gaps[0].ask == "When have you had that conversation?"
+
+
+# --- 7. The fork: most gaps are the candidate's to resolve, not ours to guess ---
+
+
+def test_an_inventory_point_must_actually_ask_something(rubric, metrics):
+    """Without the question it is an assertion about a life we cannot see."""
+    result = verify_point(point(improvement="inventory", ask=None), rubric, TRANSCRIPT, metrics)
+    assert isinstance(result, Rejection)
+    assert result.code == "inventory_point_asks_nothing"
+
+
+def test_an_inventory_point_carrying_the_fork_survives(rubric, metrics):
+    result = verify_point(
+        point(
+            improvement="inventory",
+            answer_quote=None,
+            observation="Nothing here shows you asking why somebody was falling behind.",
+            ask=(
+                "Is there another time you did ask? If there isn't, that is the thing "
+                "worth going after."
+            ),
+        ),
+        rubric,
+        TRANSCRIPT,
+        metrics,
+    )
+    assert not isinstance(result, Rejection), getattr(result, "detail", "")
+    assert result.improvement == "inventory"
+
+
+def test_the_prescription_guard_covers_the_no_branch_of_a_fork(rubric, metrics):
+    """'Go and get it' is development advice whichever label it travels under."""
+    result = verify_point(
+        point(
+            improvement="inventory",
+            ask="Is there a better example? If not, join a volunteer department this year.",
+        ),
+        rubric,
+        TRANSCRIPT,
+        metrics,
+    )
+    assert isinstance(result, Rejection)
+    assert result.code == "prescribes_remedy"
+
+
+def test_the_four_groups_are_separable(rubric, metrics):
+    draft = DraftCritique(
+        assessable=True,
+        internal_score=2,
+        route="n/a",
+        points=[
+            point(improvement="none", observation="You gave a specific, dated incident."),
+            point(improvement="answer", observation="The outcome is buried at the end."),
+            point(
+                improvement="inventory", ask="Have you a better instance? If not, that is the gap."
+            ),
+            point(
+                improvement="candidate",
+                answer_quote=None,
+                observation="You said you have never had that conversation.",
+            ),
+        ],
+    )
+    critique, rejections = verify_critique(draft, rubric, TRANSCRIPT, metrics)
+    assert not rejections, [r.detail for r in rejections]
+    assert (len(critique.worked), len(critique.answer_gaps)) == (1, 1)
+    assert (len(critique.inventory_gaps), len(critique.development_gaps)) == (1, 1)

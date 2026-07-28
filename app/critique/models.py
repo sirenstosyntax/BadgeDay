@@ -35,16 +35,24 @@ PointKind = Literal["rubric", "measurement"]
 # What a point asks the candidate to change. The score is instrumental; this is the part
 # of a critique that does the work, and the two kinds are not interchangeable.
 #
-# - "answer"    — he has the material and did not deploy it. The fix is in the telling and
-#                 he can act on it today.
-# - "candidate" — he does not have the material. He covered a man's section for six weeks
-#                 and never asked him why; no retelling fixes that. The fix is in his life,
-#                 and this is what the readiness gap analysis is for.
-# - "none"      — the point records something the answer did, with nothing to change.
+# - "inventory" — the default, and most gaps are this. The answer does not show the thing,
+#                 and we cannot tell from here whether he has a better instance in his life
+#                 or none at all. He can tell in five seconds and we cannot tell at all, so
+#                 the point asks him: is there a better story for this, and if there is not,
+#                 that is the thing to go and get. Either branch makes him better, which is
+#                 why the fork is free.
+# - "answer"    — the material is visibly present in this answer and merely mishandled: the
+#                 outcome buried, the specific thing said and dropped. No guess required.
+# - "candidate" — the answer positively establishes the absence — he said he has never done
+#                 it. Narrow on purpose; inferring it is how we would end up asserting
+#                 things about a life we cannot see.
+# - "none"      — the point records something that worked, with nothing to change.
 #
-# Collapsing the first two is what this field exists to prevent: rendered as one kind of
-# bullet, a gap that requires going and doing something reads like a note about phrasing.
-Improvement = Literal["answer", "candidate", "none"]
+# The distinction this field exists to protect: a gap that needs him to go and do something
+# must not render as a note about phrasing. The reason most gaps carry "inventory" instead
+# of a verdict is that deciding between the last two requires knowing his history, and one
+# answer is not his history.
+Improvement = Literal["inventory", "answer", "candidate", "none"]
 
 
 class Metric(BaseModel):
@@ -96,10 +104,12 @@ class DraftPoint(BaseModel):
     )
     improvement: Improvement = Field(
         description=(
-            "'answer' when he has the material and did not deploy it — the fix is in the "
-            "telling. 'candidate' when the material is missing from his life and no "
-            "retelling would produce it — the fix is something he has to go and do. "
-            "'none' when the point records something that worked."
+            "'inventory' — the default for a gap. The answer does not show the thing and "
+            "you cannot tell whether he has a better instance or none; ask him, and say "
+            "what follows if the answer is no. 'answer' only when the material is visibly "
+            "in this answer and merely mishandled. 'candidate' only when the answer states "
+            "outright that he has never done it. 'none' when it records something that "
+            "worked."
         )
     )
     observation: str = Field(
@@ -114,9 +124,11 @@ class DraftPoint(BaseModel):
         default=None,
         description=(
             "A question putting the gap back to the candidate, so he supplies his own "
-            "material. Never a suggested answer. On a 'candidate' point this names what is "
-            "absent from his experience; it does not prescribe a specific certification, "
-            "programme or provider."
+            "material. Never a suggested answer. Required on an 'inventory' point, where "
+            "it asks whether he has a better instance AND says what to do if he does not. "
+            "On 'inventory' and 'candidate' points it names what is absent from his "
+            "experience; it never prescribes a specific certification, programme or "
+            "provider."
         ),
     )
 
@@ -144,7 +156,7 @@ class Point(BaseModel):
     """A critique point that passed the gate."""
 
     kind: PointKind
-    improvement: Improvement = "answer"
+    improvement: Improvement = "inventory"
     clause: Clause | None = None  # rubric points
     metric: Metric | None = None  # measurement points
     answer_quote: str | None = None
@@ -180,6 +192,16 @@ class Critique(BaseModel):
     @property
     def measurement_points(self) -> list[Point]:
         return [point for point in self.points if point.kind == "measurement"]
+
+    @property
+    def inventory_gaps(self) -> list[Point]:
+        """The default, and the drill: has he a better instance, and if not that is the gap.
+
+        These are the points that decline to guess at his history. Each one routes itself
+        once he answers it — a better story found is board skill, an experience gone and got
+        is the firefighter — which is why forking costs nothing.
+        """
+        return [point for point in self.points if point.improvement == "inventory"]
 
     @property
     def answer_gaps(self) -> list[Point]:
