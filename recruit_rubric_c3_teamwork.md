@@ -19,7 +19,7 @@
 
 | | |
 |---|---|
-| Scale | 1–5 |
+| Scale | 1–5, **plus a not-assessable outcome** — see scoring note 3 |
 | Structure | Generic frame, drafted anchors |
 | Anchor authorship | **Claude — draft, unreviewed** |
 | Anchor status | Draft. Level 2 written first, per the open risk carried by Criterion 2. |
@@ -75,7 +75,45 @@ how it came out — is evidence. An answer that describes how he generally belie
 behaves is a claim. Score the first; note the absence of it in the second. This is the most
 common real failure and it is reliably observable.
 
-**3. Do not score the teammate.**
+**3. Some candidates have no team history. That is not a low score — it is a different outcome.**
+
+This criterion measures how other people figure in a candidate's account of his own life,
+and it assumes there is such an account to measure. Not every candidate has one. A man who
+has driven long-haul since he was twenty-one, worked nights alone, or run a one-man shop
+cannot produce what the anchors below ask for. **He cannot be expected to talk about people
+who were never there**, and scoring him 2 or 1 measures his history rather than his fitness
+for a crew. He may be entirely suited to one.
+
+Two steps before concluding it, in order.
+
+**First, check whether the material is genuinely absent or merely unmentioned.** Most
+candidates who say they have no team experience are wrong about it. They hear "team" as
+"paid work crew" and discount everything else: military service, sport, a restaurant
+kitchen, a church or community group, caring for a relative, raising younger siblings, a
+band, a build with friends that took a year. Any setting where his conduct affected other
+people and theirs affected him is admissible evidence, and a candidate who volunteers one
+of these and then dismisses it — *"if that counts"*, *"but that's not a job"* — is telling
+you where to look. Score what he offers, and note in critique that he undersold it.
+
+> **Open — a real offer that is too thin to score.** The harness split three ways on a
+> candidate who mentions raising his brothers in one clause and immediately discounts it:
+> enough to score (3), too thin to score (not assessable), or self-focused within the story
+> itself (2, on the reading that the siblings are beneficiaries rather than agents). This
+> note says *score what he offers* and does not say what to do when the offer is a single
+> dismissed sentence. Decide, and put it here.
+
+**Second, where it is genuinely absent, return insufficient evidence.** Not a 1, not a 2 —
+its own outcome, reported as its own thing. The honest position is that this criterion
+cannot be applied to this answer, that a real panel would form a judgment here that this
+rubric cannot, and that it is a part of the board to work on with a person. It is also a
+concrete and fixable gap: get into something with a crew in it, and it stops being one.
+
+**This is not an escape hatch for the candidate at level 2.** He *had* a crew and wrote
+them out of his own story. The distinction is factual and checkable: was anybody else there?
+If other people were present in the setting he describes and absent from his account of it,
+that is a 2. Insufficient evidence requires that there was genuinely nobody there.
+
+**4. Do not score the teammate.**
 A candidate who worked with someone genuinely difficult is not penalised for having had a
 difficult teammate, and a candidate with an easy history is not credited for luck. Score
 what he did and how he tells it. A candidate who describes a real problem honestly is doing
@@ -90,13 +128,13 @@ answer is usually not true, and is sometimes a bigger flag than the problem woul
 > is a level 2 tell in its own right, or a thing to note in critique that does not move the
 > score, and put the answer in the anchor rather than here.
 
-**4. Two axes: wanting to, and being able to.**
+**5. Two axes: wanting to, and being able to.**
 Wanting to work with people and being able to work with people are different, and a
 candidate can have either without the other. Level 4 is high on one and short on the other,
 so the score carries a route tag (4A / 4B) and critique must address the axis that is
 short. Feedback keyed to the number will tell him to do more of what he is already doing.
 
-**5. Critique voice constraint.**
+**6. Critique voice constraint.**
 Generated critique may state how an answer is **likely to read to a panel**, tied to a
 specific observable behaviour. It may not assert a score the candidate received, or
 attribute an internal state.
@@ -108,12 +146,12 @@ The distinction bites harder here than on Criterion 2. Almost every failure in t
 criterion is one a candidate would experience as a claim about his character, and the
 rubric's job is to keep the feedback on what he said.
 
-**6. Red flags are not contained.**
+**7. Red flags are not contained.**
 A flag raised here is reported to shape interpretation of subsequent answers rather than
 being scored in isolation. Panel behaviour is not answer-independent, and a crew-fit
 concern in particular colours everything a panel hears afterwards.
 
-**7. This criterion is partly subjective, and that is not a defect.**
+**8. This criterion is partly subjective, and that is not a defect.**
 More so than Criterion 2. Panels react to candidates, and reaction is much of what this
 dimension measures. The anchors stay behavioural so they can be verified; the reaction to
 those behaviours is named where it bears on the score.
@@ -159,6 +197,12 @@ who takes an action.** A general account of how he gets along with people, howev
 convincing, is a 3 no matter how good it sounds. Stopping at "I work well with everyone" is
 a 3.
 
+> **Open — "takes an action" is undefined, and the harness walked through the gap.** One
+> run placed a borderline answer at 4A on the grounds that a teammate replying *"things are
+> fine"* when asked was a named other person taking an action. Nothing here rules that out.
+> Decide what clears the bar — plausibly, the other person must do something that changes
+> the situation, not merely respond when spoken to — and say so.
+
 Boundary against 5: 4 handles people or wants them. 5 was **changed** by one.
 
 ### 3 — Says the right things; the team stays generic
@@ -181,6 +225,11 @@ He is not unaware that teamwork matters — he will use the word, and will asser
 team player, often early and confidently. He may be thoroughly prepared and score 4 or 5 on
 Motivation & Preparation. The failure is not ignorance of the value; it is that **the value
 does not appear in his own account of his life.**
+
+**This anchor presupposes there was a crew.** It describes a candidate who had people
+around him and left them out, and it does not reach a candidate who was genuinely working
+alone — that is scoring note 3, and a different outcome entirely. Before applying anything
+below, establish that somebody else was actually there.
 
 The tells, which are behavioural and countable:
 

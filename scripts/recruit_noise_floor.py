@@ -55,8 +55,10 @@ The candidate answered aloud; what follows is a transcript, so expect the disflu
 speech rather than the shape of written prose. Do not penalise an answer for sounding
 spoken.
 
-Return the score, the route tag where the rubric calls for one, and the single criterion
-or scoring note that most determined the score.
+Return the outcome the rubric directs — a score, or, where the rubric provides for it, a
+determination that the criterion cannot be assessed from this answer. Include the route tag
+where the rubric calls for one, and the single criterion or scoring note that most
+determined the outcome.
 
 --- RUBRIC: {name} ---
 
@@ -65,12 +67,25 @@ or scoring note that most determined the score.
 
 
 class Scoring(BaseModel):
-    score: int = Field(ge=1, le=5, description="The 1-5 anchor the answer lands on.")
+    assessable: bool = Field(
+        description=(
+            "False when the answer gives no basis to apply this criterion at all — the "
+            "candidate's history does not contain the material the criterion asks about. "
+            "This is not a low score; it is the absence of a measurement."
+        )
+    )
+    score: int = Field(
+        ge=0,
+        le=5,
+        description="The 1-5 anchor the answer lands on, or 0 when assessable is false.",
+    )
     route: Literal["4A", "4B", "n/a"] = Field(
         description="Route tag. '4A' or '4B' only when the score is 4; otherwise 'n/a'."
     )
     deciding_criterion: str = Field(
-        description="The one anchor or scoring note that most determined this score. One sentence."
+        description=(
+            "The one anchor or scoring note that most determined this outcome. One sentence."
+        )
     )
 
 
@@ -212,6 +227,35 @@ references.
 """
 
 
+# No paid team history, but he volunteers material and dismisses it ("if that counts", "but
+# that's not a job"). Scoring note 3 says that is the tell to look for — the material is
+# unmentioned rather than absent. The interesting question is whether the scorer finds it.
+C3_NO_TEAM_UNDERSOLD = """
+Uh, honestly? I don't have a great example for that. I've mostly worked by myself. I did
+five years driving long-haul, which is, you're alone in the truck. Before that I was doing
+overnight stocking at a grocery warehouse and there were other people there but we weren't
+really, we didn't work together — you just had your aisle.
+
+I've got two younger brothers I helped raise after my mom got sick, if that counts. But
+that's not a job.
+
+I know that's probably not what you're looking for. I'm not trying to dodge the question, I
+just don't want to make something up. I think I'd be alright on a crew, I get on with people
+fine, but I can't point to a time it was actually tested the way you're asking.
+"""
+
+# Genuinely nobody there, and nothing offered. This is the case the not-assessable outcome
+# exists for — the failure mode being that he falls to a 2 for a history he cannot help.
+C3_NO_TEAM_EMPTY = """
+Um. I mean, I haven't really had that come up. I've been self-employed since I was
+twenty-one — small engine repair, out of my own shop, so it's just me. Customer brings the
+thing in, I fix it, they pick it up.
+
+I don't have anybody I've had a conflict with at work because I don't really have anybody at
+work. I'm not sure what to tell you there.
+"""
+
+
 RUBRICS = {
     "c2": {
         "name": "Criterion 2 — Motivation & Preparation",
@@ -228,6 +272,8 @@ RUBRICS = {
         "path": Path("recruit_rubric_c3_teamwork.md"),
         "fixtures": [
             ("Qualified, self-focused (the target anchor)", C3_SELF_FOCUSED, 20),
+            ("No team history, material undersold", C3_NO_TEAM_UNDERSOLD, 20),
+            ("No team history, genuinely nobody there", C3_NO_TEAM_EMPTY, 10),
             ("Between 2 and 3 (asked, but crew undifferentiated)", C3_BOUNDARY_2_3, 20),
             ("Generic, correct, no incident", C3_GENERIC, 10),
             ("Changed by a named person", C3_CHANGED_BY_SOMEONE, 10),
@@ -251,22 +297,35 @@ def scorer_region(path: Path) -> str:
     return body.split("-->", 1)[1].strip()
 
 
-def score_once(client: Anthropic, model: str, effort: str, system: str, answer: str):
-    """One scoring pass. Returns None on failure — a dropped run is not a zero."""
-    try:
-        response = client.messages.parse(
-            model=model,
-            max_tokens=MAX_TOKENS,
-            system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-            messages=[{"role": "user", "content": f"Candidate's answer:\n\n{answer.strip()}"}],
-            thinking={"type": "adaptive"},
-            output_config={"effort": effort},
-            output_format=Scoring,
-        )
-    except Exception as exc:  # noqa: BLE001 - a measurement; surface it and keep going
-        print(f"    call failed: {type(exc).__name__}: {exc}")
-        return None
-    return response.parsed_output
+def score_once(
+    client: Anthropic, model: str, effort: str, system: str, answer: str, tries: int = 2
+):
+    """One scoring pass. Returns None if every attempt failed — a dropped run is not a zero.
+
+    A small share of calls (~3-5%) come back with generation garbage appended to the
+    free-text field, and occasionally with unparseable JSON. It is not truncation: output
+    runs ~280 tokens against a 16k cap and stops on `end_turn`. Scores themselves parse
+    correctly, so the distributions are unaffected; the retry exists so a hard failure does
+    not quietly shrink n and make a run look cleaner than it was.
+    """
+    for attempt in range(tries):
+        try:
+            response = client.messages.parse(
+                model=model,
+                max_tokens=MAX_TOKENS,
+                system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
+                messages=[{"role": "user", "content": f"Candidate's answer:\n\n{answer.strip()}"}],
+                thinking={"type": "adaptive"},
+                output_config={"effort": effort},
+                output_format=Scoring,
+            )
+        except Exception as exc:  # noqa: BLE001 - a measurement; surface it and keep going
+            if attempt == tries - 1:
+                print(f"    call failed after {tries} attempts: {type(exc).__name__}")
+                return None
+            continue
+        return response.parsed_output
+    return None
 
 
 def run(label: str, answer: str, n: int, client: Anthropic, model: str, effort: str, system: str):
@@ -279,17 +338,29 @@ def run(label: str, answer: str, n: int, client: Anthropic, model: str, effort: 
             pool.map(lambda _: score_once(client, model, effort, system, answer), range(n - 1))
         )
 
-    scored = [r for r in results if r is not None]
-    if not scored:
+    returned = [r for r in results if r is not None]
+    if not returned:
         print("  every call failed")
+        return
+
+    # Not-assessable is a distinct outcome, never a zero. Averaging it in would reintroduce
+    # exactly the error the outcome exists to prevent.
+    scored = [r for r in returned if r.assessable and r.score > 0]
+    unassessable = len(returned) - len(scored)
+
+    print(f"  n            : {len(returned)} of {n}")
+    if unassessable:
+        share = unassessable / len(returned)
+        print(f"  NOT ASSESSABLE: {unassessable}/{len(returned)} = {share:.0%}")
+    if not scored:
+        print("  no run returned a score")
         return
 
     scores = [r.score for r in scored]
     dist = Counter(scores)
     modal, modal_n = dist.most_common(1)[0]
 
-    print(f"  n            : {len(scores)} of {n}")
-    print(f"  distribution : {dict(sorted(dist.items()))}")
+    print(f"  distribution : {dict(sorted(dist.items()))} (of the {len(scores)} scored)")
     print(f"  range        : {min(scores)} - {max(scores)}  (spread {max(scores) - min(scores)})")
     print(f"  mean         : {statistics.mean(scores):.2f}")
     if len(scores) > 1:
@@ -301,12 +372,14 @@ def run(label: str, answer: str, n: int, client: Anthropic, model: str, effort: 
         print(f"  route tags at 4: {dict(routes)}")
 
     seen = set()
-    print("  deciding criterion, first sighting of each distinct score:")
-    for r in scored:
-        if r.score in seen:
+    print("  deciding criterion, first sighting of each distinct outcome:")
+    for r in returned:
+        key = "n/a" if not r.assessable or r.score == 0 else r.score
+        if key in seen:
             continue
-        seen.add(r.score)
-        tag = f"{r.score}{r.route if r.route != 'n/a' else ''}"
+        seen.add(key)
+        route = r.route if r.route != "n/a" else ""
+        tag = "NOT ASSESSABLE" if key == "n/a" else f"{r.score}{route}"
         print(f"    [{tag}] {r.deciding_criterion.strip()}")
 
 
