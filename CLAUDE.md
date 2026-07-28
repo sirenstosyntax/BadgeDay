@@ -31,14 +31,17 @@ carries a citation resolvable to a stored chunk.
 For candidates who have not been hired yet and are working to become competitive: no
 department, no reading list. Formerly referred to as "BadgeDay Entry."
 
-Detailed scope, architecture decisions and build order: **`recruit_scope.md`**.
+Detailed scope and build order: **`recruit_scope.md`**. Settled design decisions and the
+reasoning behind them: **`recruit_design_decisions.md`** — that file is authoritative
+where the two disagree.
 
 Recruit helps candidates develop the attributes departments hire for — through practice
 tests, mock interviews, teaching of foundational principles common to all departments,
 and the common traps that keep candidates from getting hired.
 
 **Shape:** coaching and feedback against expert-authored rubrics — not a question bank.
-There is no user upload, no retrieval, and no citation chain.
+The candidate answers a question aloud and the answer is transcribed. There is no user
+upload, no retrieval, and no citation chain.
 
 **Anchor the product on the oral board and on candidate-readiness gap analysis.** That is
 where candidates are actually eliminated: most who reach the oral board have already
@@ -107,14 +110,21 @@ a wrong question.
 ### Recruit — to build
 
 Anchored on the oral board and on candidate-readiness gap analysis, per Product family
-above. Coaching against expert-authored rubrics, not a question bank. Scope, architecture
-decisions and build order live in **`recruit_scope.md`** — read that before writing
-Recruit code, and do not infer Recruit's shape from Promote's.
+above. Coaching against expert-authored rubrics, not a question bank. Scope and build
+order live in **`recruit_scope.md`**; settled decisions live in
+**`recruit_design_decisions.md`**. Read both before writing Recruit code, and do not infer
+Recruit's shape from Promote's.
 
 ## Explicitly OUT of scope
 
-- Voice / oral-board simulation (that's the V2 engine — do not scaffold it). Recruit's
-  oral board practice is **text-based** for now; voice comes later.
+- **Real-time or conversational voice** — streaming ASR, a simulated panelist that talks
+  back, avatars, follow-up questioning. Still V2; do not scaffold it. Recruit V1 records a
+  spoken answer and transcribes it in batch. Recording an answer is in scope; holding a
+  conversation is not. (Reversal of the earlier "text-based only" line, 2026-07-27 —
+  see `recruit_design_decisions.md` §5.)
+- **Voice-based confidence or emotion scoring.** Not a schedule decision — a permanent
+  one. Unreliable, and biased by accent, gender, and first language. See the binding
+  constraints at the end of this file.
 - Written-exam practice in Recruit (most commoditized, worst risk-to-differentiation —
   see Product family above). Last, if at all.
 - Department/team accounts of ANY kind (see firewall below)
@@ -145,7 +155,10 @@ Recruit code, and do not infer Recruit's shape from Promote's.
   with original items is fine; tracking a specific published battery's structure or
   content is not.
 - **Privacy:** user documents are private per user, never shared across users, never used
-  to improve prompts/models, hard-deletable.
+  to improve prompts/models, hard-deletable. The same applies to Recruit's voice
+  recordings, which are additionally **transcribed, measured, and discarded** unless the
+  candidate opts in to keeping them for self-review — voice is sensitive in a way typed
+  answers are not, and several states regulate it specifically.
 
 ### Promote only
 
@@ -165,6 +178,8 @@ Recruit code, and do not infer Recruit's shape from Promote's.
   a source the way they can a Promote question, review is the only thing standing behind
   its accuracy.
 - **Never depends on user-uploaded department materials.** See Product family above.
+- **Further binding constraints** on scoring, critique generation and the practice loop
+  are listed at the end of this file, with rationale in `recruit_design_decisions.md`.
 
 ## Tech stack (use this; ask before deviating)
 
@@ -173,6 +188,10 @@ Recruit code, and do not infer Recruit's shape from Promote's.
 - **Doc processing:** Azure Document Intelligence (existing resource: `sts-docintel` in
   resource group `sts-examgen-rg`)
 - **LLM:** Anthropic API (see Architecture decisions below for the model)
+- **Speech-to-text (Recruit):** batch ASR with word-level timestamps and preserved
+  disfluencies. Provider not yet chosen — read the implementation warnings in
+  `recruit_design_decisions.md` §5 before selecting one; both requirements are commonly
+  unmet by default.
 - **Payments:** Stripe on the web (subscriptions + one-time 90-day pass). **Inside the
   phone apps, the store's own billing** — Play Billing and StoreKit — because both stores
   require it for a digital subscription sold in-app. Same two products, same entitlement,
@@ -235,3 +254,17 @@ billing layers, but nothing of its ingestion or retrieval architecture.
   recommendation before implementing.
 - Flag anything that drifts toward the out-of-scope list or the hard constraints instead
   of building it.
+
+## Recruit — binding constraints
+
+Read `recruit_design_decisions.md` before changing scoring, critique
+generation, or the practice loop. Rationale and superseded decisions
+are recorded there.
+
+- Never generate model answers, sample language, or example responses.
+  Critique names what is missing and asks for the candidate's own material.
+- Every practice session uses a question the candidate has not seen.
+  No preview, no re-record.
+- Do not score answers independently and sum them.
+- Do not build voice-based confidence or emotion detection.
+- Scores are internal. Report progress as behaviors acquired, not as a number.

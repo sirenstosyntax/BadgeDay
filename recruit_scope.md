@@ -4,6 +4,14 @@
 hard constraints, and the stack. Drafted 2026-07-26; the open questions at the bottom are
 unanswered and some of them block build order.*
 
+> **Revised 2026-07-27.** A working session settled the practice loop, the input medium,
+> and the critique constraints, and reversed three things this document originally
+> specified: text input became audio, the retry-the-same-question loop became a novel
+> question every session, and critique lost the ability to describe a stronger answer.
+> Those sections below are updated. **`recruit_design_decisions.md` is authoritative
+> where it and this file disagree** — it carries the rationale and the record of what was
+> rejected, so read it before reopening any of them.
+
 ## What Recruit is
 
 Preparation for candidates who have **not been hired yet** and are working to become
@@ -43,21 +51,40 @@ advice about somebody's career.
 
 Three pillars, in the order they matter.
 
-### 1. Oral board practice (text-based)
+### 1. Oral board practice (spoken, recorded)
 
 The core loop, and the reason someone subscribes.
 
-- The candidate is given a scenario or question drawn from an SME-authored set.
-- They type an answer. (Voice is V2 — do not scaffold it. Text-based practice is
-  genuinely useful sooner and is a fraction of the work.)
-- They get a structured critique **against the rubric for that question type**: what the
-  panel is listening for, which criteria their answer hit, which it missed, and what a
-  stronger answer would have covered. Each point names its criterion.
-- They can retry the same question and see the two attempts side by side, because
-  improvement between attempts is the product working.
+- The candidate is given a scenario or question drawn from an SME-authored set. **It is a
+  question he has not seen. No preview, no browsing the bank.**
+- He answers **aloud**, on a clock. The browser captures audio; batch ASR returns a
+  transcript with word-level timestamps; delivery metrics are computed from those
+  timestamps in our own code. **No re-record.**
+- He gets a structured critique **against the rubric for that question type**: what the
+  panel is listening for, which criteria the answer hit, which it missed, and what is
+  absent that the candidate would need to supply. Each point names its criterion or the
+  metric it came from.
+- Progress is shown across **different** questions over time — behaviors that held up and
+  behaviors that drop out under pressure — not two attempts at one question side by side.
 
-Not a score out of 100. A criterion-referenced critique, because a number invites the
-candidate to optimize the number and tells them nothing about what to say differently.
+Not a score out of 100, and not a score shown at all. A 1–5 score exists to structure the
+critique and stays internal; the candidate sees criterion-referenced feedback and
+behaviors acquired. A surfaced number invites him to optimize the number and tells him
+nothing about what to say differently.
+
+**Why not text, and why not a retry** — this reverses the original scoping and the
+reasoning is in `recruit_design_decisions.md` §4–5. In short: the skill a board tests is
+constructing an answer to something you have not seen, right now. Repeating a question
+trains a candidate to be excellent at that one question and leaves him back at square one
+on the next; allowing a re-record converts construction into rehearsal, so the skill never
+gets exercised. And text cannot see pace, fluency, hesitation, or length — a real part of
+what a panel is reacting to.
+
+**What the critique may not do:** supply content. It names what is missing and asks for
+the candidate's own material; it never provides a model answer, sample language, or an
+example response. The level 3 anchor is the clone answer — correct, generic,
+indistinguishable — and a coaching tool that hands out language manufactures clone answers
+at scale. This is the most-requested feature that must not be built.
 
 ### 2. Readiness gap analysis
 
@@ -82,7 +109,15 @@ product itself.
 
 ### Explicitly out of scope for Recruit V1
 
-- **Voice / oral board simulation.** V2.
+- **Real-time or conversational voice.** Streaming ASR, a panelist that talks back,
+  avatars, follow-up questioning. V2. Recording a spoken answer and transcribing it in
+  batch is **in** scope as of 2026-07-27; holding a conversation is not.
+- **Voice-based confidence or emotion scoring.** Permanently out, not deferred —
+  unreliable and biased by accent, gender, and first language.
+- **Retrying a question the candidate has already answered.** See §1 and
+  `recruit_design_decisions.md` §4. Rehearsal is the failure mode, not the feature.
+- **Any critique that supplies language for the candidate to use.** Model answers, sample
+  phrasing, example responses.
 - **Written-exam practice.** Most commoditized part of the market, worst
   risk-to-differentiation ratio, and where the copyrighted commercial batteries live.
   Last, if at all.
@@ -120,7 +155,10 @@ Decisions I am making by default. Change them deliberately.
 | Where it lives | Same repo, same FastAPI app, same Supabase project, same React app | Shared auth and billing is the entire reason these are one brand. Two deployments would double the operations for no user-visible gain. Module selection is a UI concern. |
 | Data model | New tables — rubrics, scenarios, attempts, critiques, assessments | Do **not** reuse `documents` / `chunks` / `questions`. Different shape, different lifecycle, different quality gate. Reuse there would couple two products that only share a login. |
 | Content storage | Version-controlled files in the repo, published into the database | SME review needs diffs, history, and a record of who approved what. A rubric typed straight into a table has no reviewable form. Mirrors how DrillGround handles its library. |
-| Critique execution | The existing Postgres job queue, with the client polling | A critique is 10–30 seconds of model time — long enough to risk an ingress timeout on a plain request, short enough that the candidate waits on the screen. The queue is built, tested, and already handles retry and failure; adding a second async mechanism would be the mistake. |
+| Critique execution | The existing Postgres job queue, with the client polling | A critique is 10–30 seconds of model time — longer now that transcription precedes it — which risks an ingress timeout on a plain request but is short enough that the candidate waits on the screen. The queue is built, tested, and already handles retry and failure; adding a second async mechanism would be the mistake. |
+| Audio path | Browser capture → batch ASR with word-level timestamps → deterministic metrics computed in our own code → transcript **and** metrics into the critique step | No streaming, no real-time; a mock board does not need sub-second latency. Most of the delivery signal is arithmetic on timestamps — words per minute, time-to-first-word, pause count and position, filler rate, longest unbroken stretch — not audio ML. Deterministic, zero run-to-run variance, comparable across sessions. See `recruit_design_decisions.md` §5–6. |
+| Audio retention | Transcribe, compute, discard. Retained only on explicit opt-in for self-review. | Voice is sensitive in a way typed answers are not and several states regulate it specifically. Playback of a candidate's own answer is likely a strong feature, but it is opt-in, not a reason to keep everything. |
+| Scoring shape | Answers are **not** scored independently and summed | Real panels build a picture: a flag raised early shapes how later answers are read. A pipeline that scores each answer in isolation and adds them up will not reproduce board behavior. |
 | Model role | Applies a rubric to an answer. Never authors a rubric that reaches a candidate unreviewed. | The bounded-reviewable-asset argument only holds if the asset stays bounded. A model may *draft* rubric candidates for SME review — that is generation into the review chain, not publication. |
 | Entitlement | **Per-module.** A new `entitlements` table keyed on (user, module), replacing the single `subscription_status` / `access_expires_at` pair on `profiles` | Recruit is a separate plan (decided 2026-07-26), so one entitlement per account no longer expresses what a candidate has bought. A table beats adding `promote_*` / `recruit_*` column pairs: a third module would need another migration and every gate would need editing, where a row does not. Keep the service-role-only write rule from migration 0005 — a candidate must not be able to grant themselves either module. |
 | Stripe mapping | Price ID → module, resolved server-side from config | Recruit needs its own price IDs alongside `STRIPE_PRICE_ID_MONTHLY` / `STRIPE_PRICE_ID_INTENSIVE_90DAY`. The webhook must decide *which module* a completed checkout grants, and that mapping belongs in config next to the price IDs, never inferred from the checkout's metadata alone. |
@@ -142,27 +180,49 @@ rubric produces feedback a fire captain would put his name to**. Everything else
 plumbing we have already proven once. So test that first, before any UI, exactly the way
 Promote's pipeline was CLI-testable before it had a frontend.
 
-1. **One rubric, authored and SME-approved.** A single oral board question type. Hand
-   authored by the SME, in the repo, reviewed. Nothing generated.
-2. **The critique pipeline, CLI-first.** Answer text + rubric in, criterion-referenced
-   critique out. Structured JSON, schema-validated, with a verification gate that
-   **rejects any critique point not tied to a criterion** — the direct analog of Promote's
-   citation verification. Golden-file tests against fixture answers: a strong one, a weak
-   one, an off-topic one, an empty one.
+1. ~~**One rubric, authored and SME-approved.**~~ **Done 2026-07-27** — Criterion 2,
+   Motivation & Preparation, in `recruit_rubric_c2_motivation.md`. Hand-authored anchors,
+   1–5, with a 4A/4B route split. Criteria 1 and 3–5 remain unwritten; Criterion 3
+   (Teamwork) is next, and within it the anchor for the *qualified* self-focused candidate
+   comes first — until it exists that candidate passes the rubric unpenalized.
+2. **The critique pipeline, CLI-first.** Transcript + metrics + rubric in,
+   criterion-referenced critique out. Structured JSON, schema-validated, with a
+   verification gate that **rejects any critique point not tied to a criterion or to a
+   computed metric** — the direct analog of Promote's citation verification. Two classes
+   of point flow through it: rubric-anchored and measurement-anchored, the second being
+   trivially verifiable and worth preferring where it applies. The gate must also reject
+   points that supply language to the candidate. Golden-file tests against fixture
+   answers: a strong one, a weak one, an off-topic one, an empty one.
+   - **Before this step: measure the scorer's noise floor.** Run one answer through the
+     scorer ~20 times and look at the spread. If run-to-run variance exceeds plausible
+     monthly improvement, the progress display is noise and could show a candidate
+     regressing when he improved. Ten minutes of work, and it gates step 7's progress view.
 3. **SME judgment on the output.** Grant reads real critiques of real answers and says
    whether they are good enough to ship. *This is a decision gate, not a step.* If the
    answer is no, the rubric or the prompt changes and we repeat — no UI gets built on top
    of feedback the SME would not give.
+   - The bar is now comparative, not absolute: **stationvisit.com** already ships
+     AI-scored mock firefighter oral boards across five dimensions, free first interview
+     and subscription thereafter. So the question is not "is Recruit worth building" but
+     "do critiques from these anchors read as materially better than what exists" — a
+     cheaper question, answerable before the pipeline is finished.
 4. **Content set.** Enough scenarios and rubrics across question types to make a practice
-   session worth having, each through review.
-5. **Schema and API.** Tables, RLS on the same per-user pattern as Promote, endpoints for
-   attempt → critique → retry.
-6. **Readiness gap analysis.** Intake, scoring against its rubric, the time-phased plan.
-7. **Frontend.** Module selection, the practice loop, attempt history, the plan view.
-8. **Entitlement wiring**, per whatever the packaging decision turns out to be.
+   session worth having, each through review. The novel-question-every-session rule makes
+   **bank depth a hard requirement**, not a nice-to-have: size and rotation policy are
+   undetermined and need settling here.
+5. **Audio capture and transcription.** Browser recording, batch ASR with word-level
+   timestamps, the deterministic metrics computed in our code, opt-in retention. Verify
+   disfluency preservation on our own audio first — most ASR strips "um" and "uh" by
+   default, which is the most likely silent failure in the feature.
+6. **Schema and API.** Tables, RLS on the same per-user pattern as Promote, endpoints for
+   question issue → attempt → critique. No retry endpoint.
+7. **Readiness gap analysis.** Intake, scoring against its rubric, the time-phased plan.
+8. **Frontend.** Module selection, the practice loop, attempt history, the plan view,
+   progress reported as behaviors acquired rather than a rising number.
+9. **Entitlement wiring**, per the packaging decision (separate plan — see Settled).
 
-Steps 1–3 are small, cheap, and answer the question that decides whether the other five
-are worth doing.
+Steps 2–3 are small, cheap, and answer the question that decides whether the rest are
+worth doing.
 
 ## Settled
 
@@ -195,7 +255,13 @@ content is written rather than be quietly ignored:
   A second reviewer is far easier to recruit against a finished, bounded artifact than
   against a blank page, and the rubric architecture is what makes that ask small — a fixed
   set of rubrics is a weekend of someone's attention, where an ever-growing question bank
-  would be a standing commitment nobody would accept.
+  would be a standing commitment nobody would accept. *Done — Criterion 2 exists, and it
+  is the artifact to recruit a second reviewer against.* The remedy for single-panelist
+  bias is **more panelists, not more web content**: two or three captains from departments
+  with differing board formats, scoring against these anchors independently. Agreement
+  indicates trade-wide judgment; disagreement gets documented as a split rather than
+  averaged away. The 4A/4B route split in particular came out of a single pass and wants a
+  second panelist before it is settled.
 - **Claim exactly what is true.** Content authored by a fire captain with over twenty
   years in the service is real credibility and is worth saying plainly. It is not a
   department's scoring sheet and must never be presented as one.
@@ -207,8 +273,17 @@ either way.
 
 1. **How prescriptive is the gap analysis?** Naming specific certifications and programs
    is far more useful to a candidate and carries more accuracy risk than general
-   categories. Where is the line? Needed before step 6, not before step 1.
+   categories. Where is the line? Needed before step 7, and untouched by the 2026-07-27
+   session — which settled the oral board pillar and left this one where it was.
 2. **Does Recruit launch with all three pillars or with the oral board alone?** Launch now
    gates all revenue, so this is the schedule question. My recommendation: oral board plus
    a thin gap analysis, with principles and traps growing after launch — the first two are
    the product, the third is what makes it feel complete.
+3. **What does Criterion 1 get called?** "Communication" overclaims what audio can see.
+   "Answer Construction" plus a separate delivery sub-score is the candidate. Its scope is
+   settled — scored across the whole board rather than on one designated question, so its
+   anchors cannot reference a specific answer — but the name is not. See
+   `recruit_design_decisions.md` §10.
+4. **Question bank size and rotation policy.** A hard requirement now rather than a detail,
+   because a novel question every session means the bank has to outlast a subscription.
+   Needed at step 4.
