@@ -189,7 +189,23 @@ Promote's pipeline was CLI-testable before it had a frontend.
      out of 20. That gap is therefore closed *in draft only*. Drafting into the review chain
      is permitted; publishing without SME review is not, so this changes nothing about step
      3's gate. Criteria 1, 4 and 5 remain unwritten.
-2. **The critique pipeline, CLI-first.** Transcript + metrics + rubric in,
+2. ~~**The critique pipeline, CLI-first.**~~ **Built 2026-07-28** — `app/critique/`,
+   exercisable now with `badgeday-critique --rubric c3 --all-fixtures`. Rubric clauses are
+   parsed out of the markdown rather than kept beside it, so a point cites `c3.anchor.2`
+   the way a Promote question cites a section number, and the gate checks that clause
+   actually exists. Five checks: anchoring, supplied language, grounding in the transcript,
+   internal-state attribution, score disclosure. 43 tests. The measurement seam exists but
+   nothing computes metrics yet — that is step 5.
+   - **First live run: 8/8 fixtures across both rubrics produced verified critiques**, one
+     attempt each, no rejections. It also found a false positive in the gate — apostrophes
+     in contractions were being read as quote delimiters, so *"a policy change he'd make …
+     what you've learned"* was rejected as a scripted phrase. Fixed, with the failing string
+     pinned as a regression test. Worth noting the shape: the gate's *false* rejections cost
+     as much as its misses, because each one either loses a sound point or spends a retry.
+   - **Two runs disagreed about an off-topic answer** — not assessable once, 1 the other
+     time. Logged as an open item; see below. The original spec text follows.
+
+   *(original)* Transcript + metrics + rubric in,
    criterion-referenced critique out. Structured JSON, schema-validated, with a
    verification gate that **rejects any critique point not tied to a criterion or to a
    computed metric** — the direct analog of Promote's citation verification. Two classes
