@@ -403,20 +403,41 @@ def test_development_point_may_name_what_is_absent(rubric, metrics):
 @pytest.mark.parametrize(
     "ask",
     [
-        "Get your EMT-B and volunteer somewhere for six months.",
-        "Enroll in a fire academy programme this year.",
-        "You should join a volunteer department.",
-        "Take a course in conflict resolution.",
-        "I recommend you find a crew environment before testing again.",
+        "You should get your EMT-B before testing again.",
+        "I recommend you find a crew environment first.",
+        "Go and join a volunteer department.",
+        "The best way to build this is a season with a volunteer district.",
+        "Your next step is the academy.",
     ],
 )
-def test_development_point_prescribing_a_remedy_is_rejected(rubric, metrics, ask):
-    """Naming a gap is cheap to be wrong about; naming the cure costs him a year and a fee."""
+def test_telling_him_the_one_thing_to_do_is_rejected(rubric, metrics, ask):
+    """The line is possible ways, plural. A single instruction is what we cannot stand behind."""
     result = verify_point(
         point(improvement="candidate", answer_quote=None, ask=ask), rubric, TRANSCRIPT, metrics
     )
     assert isinstance(result, Rejection)
     assert result.code == "prescribes_remedy"
+
+
+@pytest.mark.parametrize(
+    "ask",
+    [
+        "If there isn't one, that turns up in volunteer crews, in any job where you are "
+        "responsible for someone else's output, or in coaching.",
+        "Ways people build that include riding along, taking work with a crew, or a "
+        "committee where somebody else has to deliver.",
+    ],
+)
+def test_offering_possible_ways_is_allowed(rubric, metrics, ask):
+    """Grant, 2026-07-28: offer possible ways the improvement could be met.
+
+    An earlier guard rejected the neutral naming of a route outright, which made a menu
+    impossible to write — the very thing the settled rule requires.
+    """
+    result = verify_point(
+        point(improvement="candidate", answer_quote=None, ask=ask), rubric, TRANSCRIPT, metrics
+    )
+    assert not isinstance(result, Rejection), getattr(result, "detail", "")
 
 
 def test_the_prescription_guard_does_not_apply_to_answer_points(rubric, metrics):
@@ -488,7 +509,7 @@ def test_the_prescription_guard_covers_the_no_branch_of_a_fork(rubric, metrics):
     result = verify_point(
         point(
             improvement="inventory",
-            ask="Is there a better example? If not, join a volunteer department this year.",
+            ask="Is there a better example? If not, you should join a volunteer department.",
         ),
         rubric,
         TRANSCRIPT,
