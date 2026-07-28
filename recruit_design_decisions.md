@@ -174,6 +174,37 @@ Run one answer through the scorer ~20 times and examine the spread. If run-to-ru
 > Re-run after any anchor change. The number is a property of the rubric at least as much
 > as of the model.
 
+> **Re-run 2026-07-28, after tightening the 3/4B boundary.** The clause now states the
+> test explicitly — a step past the eligibility list counts toward 4B only when he can say
+> **what it changed** — which is the test the level 4B and level 3 anchors already applied.
+> The boundary sentence was the outlier, not the anchors. A fourth fixture was added at the
+> same time: a candidate who *can* account for his step past the list but whose pursuit is
+> aimed at qualifying rather than at becoming good at the work.
+>
+> | Fixture | n | Distribution | Spread | σ |
+> |---|---|---|---|---|
+> | Past the list, cannot account for it | 20 | 3×20 | 0 | 0.00 |
+> | Past the list, can account for it | 20 | 4B×20 | 0 | 0.00 |
+> | Unambiguous 2 | 10 | 2×10 | 0 | 0.00 |
+> | Unambiguous 5 | 10 | 5×10 | 0 | 0.00 |
+>
+> **Sixty runs, zero variance, and the 4B band is still reachable** — twenty of twenty on
+> the new fixture, every one tagged 4B. That second fixture is the one that matters: a
+> boundary made stable by becoming unreachable is closed, not fixed, and this shows the
+> tightening did not close it. The 4B reasoning also separated the two questions cleanly,
+> clearing the boundary on *what it changed* and then placing the answer at 4B rather than
+> 5 on *what the pursuit was aimed at*.
+>
+> **Caveat, and it is not a small one.** The tightened clause carries two worked examples,
+> and both fixtures sit close to them — one run cited the example by name. So this
+> measures whether the scorer can apply a worked example to roughly the case the example
+> was written from, which is easier than the general problem, and some of the zero is that
+> rather than a genuinely sharper rubric. The honest read: **the clause is no longer
+> ambiguous on the case that split it**, which is what it was asked to fix. Whether it is
+> unambiguous generally is untested. The next fixture worth writing is one neither example
+> reaches — a partial account, where he says something about what the step changed but not
+> much. That is where the boundary will next be soft, and it is not covered here.
+
 **[SETTLED] Competitive context is now part of the step 3 decision.**
 stationvisit.com ships AI-scored mock firefighter oral boards across five dimensions with a rubric attributed to experienced firefighters, free first interview, subscription thereafter. Step 3 is therefore not "is Recruit worth building" in the abstract but "do critiques generated from these anchors read as materially better than what already exists" — a cheaper question, answerable before the pipeline is built.
 
@@ -222,7 +253,8 @@ Proposed as a reliability fix — pairwise comparison is more stable than absolu
 | Criteria 3, 4, 5 | Unwritten. Teamwork first, and within it the qualified-braggart anchor first. |
 | Metrics spec | Pause classification, band definitions, stall threshold. Definitions matter more than they look. |
 | ~~Noise floor test~~ | **Run 2026-07-27** — see §7. Stable away from boundaries; ±1 anchor at the 3/4B boundary, 25% of runs. |
-| **3/4B boundary anchor** | The one thing the noise-floor run turned up. *"Something to show for it"* is doing all the work and is untested — decide whether an unelaborated ride-along clears it. Then re-run the measurement. |
+| ~~3/4B boundary anchor~~ | **Tightened 2026-07-28**, re-run clean at 60/60. The test is now *can he say what it changed* — the same test the 4B and 3 anchors already applied. |
+| Partial-account fixture | The untested case the tightening leaves behind: he says *something* about what a step changed, but thinly. Neither worked example reaches it, and it is where the boundary will next be soft. |
 | Behavior-stability check | The progress display rests on question-independent behaviors, whose run-to-run stability is assumed, not measured. Same harness, before step 8. |
 | 4A/4B split | Came out of a single pass. Wants a second panelist before it is settled. The scorer applied it consistently (5/5 runs tagged 4B), which says the split is legible — not that it is right. |
 | Question bank | Size and rotation policy undetermined; the novel-question design makes bank depth a hard requirement rather than a nice-to-have. |
