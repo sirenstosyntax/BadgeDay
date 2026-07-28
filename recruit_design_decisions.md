@@ -55,6 +55,21 @@ So every criterion needs a third outcome alongside the 1–5: **insufficient evi
 - **Where it is genuinely absent, say so plainly and route it.** To the candidate: this is a part of the board that has to be worked on with a person, and here is what would generate the material. To pillar 2 — no team history is a real gap, and a fixable one on the 6–18 month horizon, which is exactly what the readiness gap analysis is for.
 - **Do not let it become an escape hatch for the candidate the rubric is meant to catch.** The self-focused candidate *had* a crew and wrote them out of the story. That is a 2. Not-assessable requires that there was no crew.
 
+**Not assessable is a finding, and a non-answer is not evidence for it.** (2026-07-28, closing the gap the pipeline exposed.)
+
+Two runs of the same empty answer came back *not assessable* once and *1* the other, and the instability was in the rule rather than the model. *Not assessable* had been doing two jobs: reporting that a candidate's life lacks the material, and reporting that an answer gave us nothing to go on. Those are opposite epistemic positions — the first is a conclusion, the second is the absence of one — and collapsing them means a man who simply did not answer gets told something about his history that nobody established.
+
+Three outcomes, not two:
+
+- **Scored.** The answer supplies enough to apply an anchor.
+- **Not assessable.** The answer *positively establishes* that his life does not contain the material — he says he has driven alone since he was twenty-one, that there was nobody else there. A conclusion, and it must be earned.
+- **Not answered.** Silence, a refusal, a request to repeat the question, a pivot to something else. No basis either way. **This is the fork again, one level up**: we cannot tell and he can, so the honest output asks him rather than concluding anything.
+
+The gate enforces the asymmetry mechanically, because the two errors do not cost the same. A wrong *not answered* costs him one question. A wrong *not assessable* tells a man his life is missing something on evidence nobody has:
+
+- **A not-assessable outcome must quote the words that establish it.** If the model cannot point at him saying he has not done the thing, it may not conclude that he has not. This is the same discipline as citation grounding, applied to a claim about a person rather than a claim about a document.
+- **A not-answered outcome must ask.** Without the question it is just a low score with better manners.
+
 The general principle behind it, which was already the stated position on Criterion 1's unscoreable half: **there has to be a place for human judgment, and the honest thing is to name where it goes rather than let the rubric quietly cover for its absence.** A model applying a rubric should be able to return "this does not fit," and the product should say so rather than dress a guess up as a score.
 
 Implemented in Criterion 3. Criterion 2 should get the same treatment on review — it bites less hard there, since every candidate has some account of why he wants the job, but the rule is rubric-wide.
@@ -509,7 +524,7 @@ Proposed as a reliability fix — pairwise comparison is more stable than absolu
 | C3 — what counts as "an action" at the 4 boundary | A teammate answering *"things are fine"* when asked was read as a named other person taking an action, putting a borderline answer at 4A. The boundary says an action is required and does not say what one is. |
 | C3 — a real but too-thin offer | Scoring note 3 says score what he offers; it does not say what to do when the offer is one dismissed clause. Splits three ways between 3, not-assessable, and 2. |
 | Not-assessable outcome on other criteria | Implemented on C3. Criterion 2 should get it on review; the rule is rubric-wide even though it bites hardest on Teamwork. |
-| **Not assessable vs. did not answer** | Surfaced by the first live pipeline run. An off-topic answer — the candidate talks about department budgets instead of his own motivation — came back not-assessable on one run and 1 on another. These are different things and the rule does not yet separate them: not-assessable is for a life that does not contain the material, whereas an off-topic answer is a *failure to produce* material he may well have. Conflating them lets a non-answer escape scoring, which is the same hole the level 2 escape-hatch clause was written to close. Needs a sentence saying so. |
+| ~~Not assessable vs. did not answer~~ | **Fixed 2026-07-28.** Three outcomes: scored, not assessable (a conclusion, must quote the words that establish it), not answered (no basis either way — ask him). See §2. |
 | Criteria 4, 5 | Unwritten. |
 | Metrics spec | Pause classification, band definitions, stall threshold. Definitions matter more than they look. |
 | ~~Noise floor test~~ | **Run 2026-07-27** — see §7. Stable away from boundaries; ±1 anchor at the 3/4B boundary, 25% of runs. |

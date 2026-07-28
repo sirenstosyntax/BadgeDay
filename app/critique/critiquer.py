@@ -101,9 +101,9 @@ def critique_answer(
         outcome.critique = critique
         outcome.rejections.extend(rejections)
 
-        # A not-assessable outcome legitimately carries few points: there is no anchor to
+        # A not-scored outcome legitimately carries few points: there is no anchor to
         # apply, and the honest report is short.
-        enough = len(critique.points) >= (1 if not critique.assessable else MIN_POINTS)
+        enough = len(critique.points) >= (MIN_POINTS if critique.scored else 1)
         if enough and not rejections:
             break
         if attempt == max_attempts:

@@ -327,6 +327,33 @@ def verify_point(
     )
 
 
+def _verify_outcome(draft: DraftCritique, points: list[Point]) -> Rejection | None:
+    """Check the criterion-level conclusion, which is where the costly error lives.
+
+    The two ways of declining to score are not symmetric. Saying *he did not answer* costs
+    him one question. Saying *his life does not contain this* is a claim about a person,
+    made to that person, on the strength of one paragraph — so it has to be earned the same
+    way a Promote question is: by pointing at the words that support it.
+    """
+    if draft.outcome == "not_assessable" and not any(p.answer_quote for p in points):
+        return Rejection(
+            "unsupported_not_assessable",
+            "the critique concludes his history does not contain this material but quotes "
+            "nothing that establishes it. The quote must be about his life ('it's just me', "
+            "'I've worked alone since'), not about the question ('I don't have anything for "
+            "that one') — the second says he is not producing a story now, which is not "
+            "evidence he never has. Quote him on his history, or return 'not_answered' and "
+            "ask.",
+        )
+    if draft.outcome == "not_answered" and not any(p.ask for p in points):
+        return Rejection(
+            "not_answered_asks_nothing",
+            "a not-answered outcome must ask him for the material. Without the question it "
+            "is a low score with better manners.",
+        )
+    return None
+
+
 def verify_critique(
     draft: DraftCritique,
     rubric: Rubric,
@@ -350,11 +377,15 @@ def verify_critique(
         else:
             points.append(result)
 
+    outcome_problem = _verify_outcome(draft, points)
+    if outcome_problem is not None:
+        rejections.append(outcome_problem)
+
     critique = Critique(
         criterion_id=rubric.criterion_id,
         criterion_name=rubric.name,
-        assessable=draft.assessable,
-        internal_score=draft.internal_score if draft.assessable else 0,
+        outcome=draft.outcome,
+        internal_score=draft.internal_score if draft.outcome == "scored" else 0,
         route=draft.route,
         points=points,
     )

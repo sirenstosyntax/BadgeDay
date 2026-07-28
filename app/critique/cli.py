@@ -109,6 +109,17 @@ A lot of guys wash out of the academy because they can't hold up physically. Tha
 part I've made sure I'm ready for.
 """,
         "empty": "I don't really have anything for that one.",
+        # The case not-assessable exists for: he explains a genuinely solitary working
+        # life. The distinction from "empty" is the whole point — one establishes an
+        # absence, the other establishes nothing.
+        "no_history": """
+Um. I mean, I haven't really had that come up. I've been self-employed since I was
+twenty-one — small engine repair, out of my own shop, so it's just me. Customer brings the
+thing in, I fix it, they pick it up.
+
+I don't have anybody I've had a conflict with at work because I don't really have anybody
+at work. I'm not sure what to tell you there.
+""",
     },
 }
 
@@ -118,10 +129,14 @@ def _render(critique: Critique, draft: bool) -> None:
     if draft:
         print("    (DRAFT RUBRIC — anchors are unreviewed; critique shown for inspection only)")
 
-    if not critique.assessable:
-        print("\n  NOT ASSESSABLE from this answer.")
-        print("  This is not a low score. The criterion asks about material this answer")
-        print("  does not contain.")
+    if critique.outcome == "not_assessable":
+        print("\n  NOT ASSESSABLE — this answer establishes the material is not in his history.")
+        print("  Not a low score. A finding, and one the points below have to support by")
+        print("  quoting him.")
+    elif critique.outcome == "not_answered":
+        print("\n  NOT ANSWERED — nothing here to judge either way.")
+        print("  Not a low score and not a finding about his life. He was silent on it,")
+        print("  which is not the same as never having done it. The points below ask.")
     else:
         # The score is internal and deliberately not rendered. It is printed here behind a
         # label that says so, because this is an inspection tool for the SME rather than a
