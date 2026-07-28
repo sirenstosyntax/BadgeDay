@@ -53,6 +53,7 @@ def point(**overrides) -> DraftPoint:
         "kind": "rubric",
         "source_id": "c3.anchor.2",
         "answer_quote": "I took his section on top of mine",
+        "improvement": "answer",
         "observation": "The teammate never acts in this account; only you do.",
         "ask": "What did he say when you asked him about it?",
     }
@@ -374,3 +375,80 @@ def test_wholly_invented_quote_says_so_plainly(rubric, metrics):
     )
     assert isinstance(result, Rejection)
     assert "does not appear in the transcript at all" in result.detail
+
+
+# --- 6. Two kinds of improvement, and the guard on the expensive one ---------
+
+
+def test_development_point_may_name_what_is_absent(rubric, metrics):
+    """The permitted form: says what his experience lacks, leaves the route to it open."""
+    result = verify_point(
+        point(
+            improvement="candidate",
+            answer_quote=None,
+            observation=(
+                "Nothing in your account shows you asking someone why they were "
+                "struggling. That is not something you can add to this story later."
+            ),
+            ask="When have you had to find out what was behind somebody's drop-off?",
+        ),
+        rubric,
+        TRANSCRIPT,
+        metrics,
+    )
+    assert not isinstance(result, Rejection), getattr(result, "detail", "")
+    assert result.improvement == "candidate"
+
+
+@pytest.mark.parametrize(
+    "ask",
+    [
+        "Get your EMT-B and volunteer somewhere for six months.",
+        "Enroll in a fire academy programme this year.",
+        "You should join a volunteer department.",
+        "Take a course in conflict resolution.",
+        "I recommend you find a crew environment before testing again.",
+    ],
+)
+def test_development_point_prescribing_a_remedy_is_rejected(rubric, metrics, ask):
+    """Naming a gap is cheap to be wrong about; naming the cure costs him a year and a fee."""
+    result = verify_point(
+        point(improvement="candidate", answer_quote=None, ask=ask), rubric, TRANSCRIPT, metrics
+    )
+    assert isinstance(result, Rejection)
+    assert result.code == "prescribes_remedy"
+
+
+def test_the_prescription_guard_does_not_apply_to_answer_points(rubric, metrics):
+    """An answer point telling him to name what a teammate did is not career advice."""
+    result = verify_point(
+        point(improvement="answer", ask="Take the story back to what he actually said."),
+        rubric,
+        TRANSCRIPT,
+        metrics,
+    )
+    assert not isinstance(result, Rejection), getattr(result, "detail", "")
+
+
+def test_a_critique_separates_the_two_kinds(rubric, metrics):
+    draft = DraftCritique(
+        assessable=True,
+        internal_score=2,
+        route="n/a",
+        points=[
+            point(improvement="none", observation="You gave a specific, dated incident."),
+            point(improvement="answer", observation="The outcome never lands."),
+            point(
+                improvement="candidate",
+                answer_quote=None,
+                observation="You have never asked why somebody was falling behind.",
+                ask="When have you had that conversation?",
+            ),
+        ],
+    )
+    critique, rejections = verify_critique(draft, rubric, TRANSCRIPT, metrics)
+    assert not rejections
+    assert len(critique.worked) == 1
+    assert len(critique.answer_gaps) == 1
+    assert len(critique.development_gaps) == 1
+    assert critique.development_gaps[0].ask == "When have you had that conversation?"

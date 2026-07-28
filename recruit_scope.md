@@ -298,8 +298,13 @@ either way.
 
 1. **How prescriptive is the gap analysis?** Naming specific certifications and programs
    is far more useful to a candidate and carries more accuracy risk than general
-   categories. Where is the line? Needed before step 7, and untouched by the 2026-07-27
-   session — which settled the oral board pillar and left this one where it was.
+   categories. Where is the line? **This now gates more than it did.** The critique step
+   classifies every point as improving the answer or improving the candidate
+   (`recruit_design_decisions.md` §3, 2026-07-28), so development advice is produced at
+   step 2 rather than waiting for step 7. Until the line is set, the pipeline runs a
+   conservative interim default — a development point names what is absent and may name
+   the category, but the gate rejects a specific certification, programme or provider.
+   Relaxing that is one regex and a prompt line; deciding how far to relax it is not.
 2. **Does Recruit launch with all three pillars or with the oral board alone?** Launch now
    gates all revenue, so this is the schedule question. My recommendation: oral board plus
    a thin gap analysis, with principles and traps growing after launch — the first two are

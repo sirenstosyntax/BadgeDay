@@ -99,6 +99,31 @@ _SCORE_DISCLOSURE = re.compile(
     re.I | re.X,
 )
 
+# Prescribing a remedy rather than naming a gap. Applies to development points only —
+# where the finding is that the candidate's *life* lacks the material, not his telling.
+#
+# Naming a gap is low risk. Naming the programme that fills it is career advice with a cost
+# in time and money, delivered to someone who cannot check it, and it is the same failure
+# this product was built around — worse here than in the answer track, because a candidate
+# can verify a claim about his own answer and cannot verify a claim about his future.
+#
+# How prescriptive this should be is open question 1 in `recruit_scope.md` and is Grant's
+# to settle. Until then the conservative reading holds: name the absence, not the cure.
+_PRESCRIBES_REMEDY = re.compile(
+    r"""
+    \b(
+        (?:go\s+)?(?:get|obtain|earn|acquire)\s+(?:your|an?|the)\s+
+            (?:emt|emr|paramedic|cpr|ffi|ff1|cdl|certificat|licen|degree|associate)
+      | enrol{1,2}\s+in | sign\s+up\s+for | you\s+should\s+(?:take|join|volunteer|apply|enrol)
+      | take\s+(?:a|an|the)\s+(?:course|class|academy|programme|program)\b
+      | join\s+(?:a|an|the)\s+(?:volunteer|department|academy|programme|program)\b
+      | apply\s+to\s+(?:a|an|the)\s+(?:academy|programme|program)\b
+      | i\s+recommend | we\s+recommend | you\s+need\s+to\s+(?:get|take|join|enrol)
+    )
+    """,
+    re.I | re.X,
+)
+
 # Quoted runs. Apostrophes are NOT treated as quote delimiters unless they sit at a word
 # boundary on both sides, because this domain's prose is conversational and full of
 # contractions: an earlier version read the apostrophes in "he'd ... what you're" as an
@@ -264,8 +289,22 @@ def verify_point(
             "missing, not the number.",
         )
 
+    # 6. Prescription, on development points only. An answer point telling him to name what
+    #    a teammate did is fine; a development point telling him which certification to buy
+    #    is a different act with a different cost.
+    if draft.improvement == "candidate":
+        match = _PRESCRIBES_REMEDY.search(prose)
+        if match:
+            return Rejection(
+                "prescribes_remedy",
+                f"development point contains {match.group(0)!r}, which prescribes a "
+                "specific remedy rather than naming what is absent. Say what his "
+                "experience does not yet contain and leave the route to it open.",
+            )
+
     return Point(
         kind=draft.kind,
+        improvement=draft.improvement,
         clause=clause,
         metric=metric,
         answer_quote=draft.answer_quote.strip() if draft.answer_quote else None,

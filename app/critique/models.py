@@ -32,6 +32,20 @@ from app.critique.rubric import Clause
 
 PointKind = Literal["rubric", "measurement"]
 
+# What a point asks the candidate to change. The score is instrumental; this is the part
+# of a critique that does the work, and the two kinds are not interchangeable.
+#
+# - "answer"    — he has the material and did not deploy it. The fix is in the telling and
+#                 he can act on it today.
+# - "candidate" — he does not have the material. He covered a man's section for six weeks
+#                 and never asked him why; no retelling fixes that. The fix is in his life,
+#                 and this is what the readiness gap analysis is for.
+# - "none"      — the point records something the answer did, with nothing to change.
+#
+# Collapsing the first two is what this field exists to prevent: rendered as one kind of
+# bullet, a gap that requires going and doing something reads like a note about phrasing.
+Improvement = Literal["answer", "candidate", "none"]
+
 
 class Metric(BaseModel):
     """A deterministic measurement of delivery, computed in our own code.
@@ -80,6 +94,14 @@ class DraftPoint(BaseModel):
             "when the point is about something absent from the answer entirely."
         ),
     )
+    improvement: Improvement = Field(
+        description=(
+            "'answer' when he has the material and did not deploy it — the fix is in the "
+            "telling. 'candidate' when the material is missing from his life and no "
+            "retelling would produce it — the fix is something he has to go and do. "
+            "'none' when the point records something that worked."
+        )
+    )
     observation: str = Field(
         min_length=1,
         description=(
@@ -92,7 +114,9 @@ class DraftPoint(BaseModel):
         default=None,
         description=(
             "A question putting the gap back to the candidate, so he supplies his own "
-            "material. Never a suggested answer."
+            "material. Never a suggested answer. On a 'candidate' point this names what is "
+            "absent from his experience; it does not prescribe a specific certification, "
+            "programme or provider."
         ),
     )
 
@@ -120,6 +144,7 @@ class Point(BaseModel):
     """A critique point that passed the gate."""
 
     kind: PointKind
+    improvement: Improvement = "answer"
     clause: Clause | None = None  # rubric points
     metric: Metric | None = None  # measurement points
     answer_quote: str | None = None
@@ -155,3 +180,23 @@ class Critique(BaseModel):
     @property
     def measurement_points(self) -> list[Point]:
         return [point for point in self.points if point.kind == "measurement"]
+
+    @property
+    def answer_gaps(self) -> list[Point]:
+        """He has the material. The fix is in the telling."""
+        return [point for point in self.points if point.improvement == "answer"]
+
+    @property
+    def development_gaps(self) -> list[Point]:
+        """He does not have the material. The fix is in his life, not his phrasing.
+
+        These are the points that feed the readiness gap analysis, and the reason the
+        classification exists — rendered as ordinary bullets they read like notes about
+        wording, when what they actually say is that a candidate needs to go and become
+        someone who has the answer.
+        """
+        return [point for point in self.points if point.improvement == "candidate"]
+
+    @property
+    def worked(self) -> list[Point]:
+        return [point for point in self.points if point.improvement == "none"]
