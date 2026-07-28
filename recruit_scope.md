@@ -182,9 +182,13 @@ Promote's pipeline was CLI-testable before it had a frontend.
 
 1. ~~**One rubric, authored and SME-approved.**~~ **Done 2026-07-27** — Criterion 2,
    Motivation & Preparation, in `recruit_rubric_c2_motivation.md`. Hand-authored anchors,
-   1–5, with a 4A/4B route split. Criteria 1 and 3–5 remain unwritten; Criterion 3
-   (Teamwork) is next, and within it the anchor for the *qualified* self-focused candidate
-   comes first — until it exists that candidate passes the rubric unpenalized.
+   1–5, with a 4A/4B route split, and a 3/4B boundary tightened after the noise-floor run.
+   - **Criterion 3 (Teamwork) drafted 2026-07-28** in `recruit_rubric_c3_teamwork.md` —
+     **by Claude, and unreviewed.** It exists to close the gap Criterion 2 recorded: its
+     level 2 anchor catches the qualified self-focused candidate, and fires on him 20 times
+     out of 20. That gap is therefore closed *in draft only*. Drafting into the review chain
+     is permitted; publishing without SME review is not, so this changes nothing about step
+     3's gate. Criteria 1, 4 and 5 remain unwritten.
 2. **The critique pipeline, CLI-first.** Transcript + metrics + rubric in,
    criterion-referenced critique out. Structured JSON, schema-validated, with a
    verification gate that **rejects any critique point not tied to a criterion or to a

@@ -205,6 +205,44 @@ Run one answer through the scorer ~20 times and examine the spread. If run-to-ru
 > reaches — a partial account, where he says something about what the step changed but not
 > much. That is where the boundary will next be soft, and it is not covered here.
 
+> **Criterion 3 draft, run 2026-07-28.** Same harness, `c3`. Criterion 2 was re-run under
+> the new scorer-region extraction and is unchanged (3, 4B, 2, 5 — all clean), so the two
+> sets stay comparable.
+>
+> | Fixture | n | Distribution | Spread | σ |
+> |---|---|---|---|---|
+> | Qualified, self-focused — **the target anchor** | 20 | 2×20 | 0 | 0.00 |
+> | Between 2 and 3 (asked, but crew undifferentiated) | 20 | 3×19, 2×1 | 1 | 0.22 |
+> | Generic, correct, no incident | 10 | 3×10 | 0 | 0.00 |
+> | Changed by a named person | 10 | 5×10 | 0 | 0.00 |
+>
+> **The level 2 anchor fires on the case it was written for, twenty times out of twenty.**
+> That is the gap Criterion 2 recorded, and in draft it is now closed: a candidate who
+> scores 4–5 on Motivation and is the only agent in his own team stories lands at 2 here
+> instead of passing through unpenalized.
+>
+> **One soft spot, and it is nameable.** The single dissenting run on the boundary fixture
+> did not misfire. It applied scoring note 3 — which flags *"I've always gotten along with
+> everyone"* as sometimes a bigger tell than an honest conflict would have been — and read
+> that closing line as pulling the answer down to 2. The reading is available because the
+> note says a flag exists and **no anchor says where it lands.** Same shape as the 3/4B
+> defect: a test stated in one place, unresolved in another. Unlike that one the anchors do
+> not already answer it, so it is a genuine judgment rather than an inconsistency to tidy.
+> Recorded as an open item, deliberately not fixed.
+>
+> **The caveat here is much larger than Criterion 2's and the number should be discounted
+> accordingly.** Claude wrote both the rubric and the fixtures. A clean run therefore
+> measures mostly whether the fixtures match the anchors they were written alongside —
+> internal coherence of one draft, checked against itself. It is **not** evidence that the
+> anchors are right about the fire service, and it is weak evidence that they would hold up
+> on answers written by someone else. Criterion 2's numbers mean more than these do,
+> because a fire captain wrote those anchors.
+>
+> What the run is genuinely good for: it shows the level 2 anchor is **operable** — it
+> catches its target reliably and does not swallow the adjacent case. That is the one thing
+> a drafted anchor can be checked for without an SME in the room. Everything else waits for
+> review.
+
 **[SETTLED] Competitive context is now part of the step 3 decision.**
 stationvisit.com ships AI-scored mock firefighter oral boards across five dimensions with a rubric attributed to experienced firefighters, free first interview, subscription thereafter. Step 3 is therefore not "is Recruit worth building" in the abstract but "do critiques generated from these anchors read as materially better than what already exists" — a cheaper question, answerable before the pipeline is built.
 
@@ -250,7 +288,9 @@ Proposed as a reliability fix — pairwise comparison is more stable than absolu
 |---|---|
 | Criterion 1 anchors | Scope settled (see below), anchors unwritten |
 | Criterion 1 naming | "Communication" overclaims what audio can see. "Answer Construction" plus a separate delivery sub-score is the candidate. **[OPEN]** |
-| Criteria 3, 4, 5 | Unwritten. Teamwork first, and within it the qualified-braggart anchor first. |
+| Criterion 3 | **Drafted 2026-07-28 by Claude, unreviewed** — `recruit_rubric_c3_teamwork.md`. The qualified-self-focused anchor exists and fires 20/20. Needs SME review before it is anything more than a proposal; the anchors represent nobody's judgment yet. |
+| C3 — where the unfalsifiable-claim flag lands | Scoring note 3 flags *"I've always gotten along with everyone"* as a tell but no anchor says whether it pulls an answer to 2 or is just noise on a 3. Found by the harness; it is the one place the draft moved. |
+| Criteria 4, 5 | Unwritten. |
 | Metrics spec | Pause classification, band definitions, stall threshold. Definitions matter more than they look. |
 | ~~Noise floor test~~ | **Run 2026-07-27** — see §7. Stable away from boundaries; ±1 anchor at the 3/4B boundary, 25% of runs. |
 | ~~3/4B boundary anchor~~ | **Tightened 2026-07-28**, re-run clean at 60/60. The test is now *can he say what it changed* — the same test the 4B and 3 anchors already applied. |

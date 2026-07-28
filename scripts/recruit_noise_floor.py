@@ -1,26 +1,35 @@
 """Measure the scorer's run-to-run noise floor on a Recruit rubric.
 
-`recruit_design_decisions.md` §7: run one answer through the scorer ~20 times and look at
+`recruit_design_decisions.md` §7: run one answer through the scorer ~20 times and examine
 the spread. If run-to-run variance exceeds plausible monthly improvement, a progress
 display built on scores is noise, and can show a candidate regressing when he improved.
 
-    python scripts/recruit_noise_floor.py
+    python scripts/recruit_noise_floor.py            # every rubric
+    python scripts/recruit_noise_floor.py c3         # one rubric
 
-Three fixtures rather than one. The 20-run measurement is on a **boundary** answer,
-because that is where a real candidate sits and where movement would be read; a fixture
-parked at 1 or 5 measures the floor and the ceiling, not the scorer. The two smaller runs
-on an unambiguous 2 and an unambiguous 5 exist to show whether any instability is specific
-to the boundary or general — a distinction that changes what you do about it.
+**This measures consistency, not correctness.** A rubric can be perfectly stable and still
+be wrong about the fire service — zero variance says the anchors are unambiguous, never
+that they are right. Only SME review says that. Do not read a clean run as approval.
 
-This is a measurement, not shipped code. There is no critique pipeline yet; the scoring
-call here is the thinnest thing that produces a score from the rubric, and it is
-deliberately not a draft of step 2. Re-run it whenever the rubric's anchors change — the
-number it produces is a property of the rubric at least as much as of the model.
+Fixture design follows two rules learned the hard way:
+
+1. **Boundaries, not exemplars.** A fixture parked at 1 or 5 measures the floor and the
+   ceiling, not the scorer. The long runs go on answers that sit between two anchors.
+2. **Do not test against the worked examples.** Where an anchor carries a worked example,
+   a fixture resembling it measures whether the scorer can match an example to the case it
+   was written from — easier than the real problem, and the resulting zero is partly an
+   artifact. The Criterion 2 run of 2026-07-28 has this limitation and says so; the
+   Criterion 3 fixtures were written to avoid it.
+
+Only the region between the `scorer:start` and `scorer:end` markers of a rubric is shown
+to the scorer. Authorship banners, provenance and grounding notes live outside it, so a
+draft rubric is not scored differently for announcing that it is a draft.
 
 The fixtures are synthetic. No real candidate is described.
 """
 
 import statistics
+import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -31,15 +40,16 @@ from pydantic import BaseModel, Field
 
 from app.config import get_settings
 
-RUBRIC_PATH = Path("recruit_rubric_c2_motivation.md")
-
 MAX_TOKENS = 16_000
 POOL_SIZE = 4
 
+SCORER_START = "<!-- scorer:start"
+SCORER_END = "<!-- scorer:end -->"
+
 SYSTEM_TEMPLATE = """You are scoring one answer from a fire department entry-level oral
-board against a single criterion of an SME-authored rubric. Apply the rubric as written.
-You are not forming your own view about fire service hiring — you are applying this
-rubric's anchors and scoring notes to this answer.
+board against a single criterion of a structured rubric. Apply the rubric as written. You
+are not forming your own view about fire service hiring — you are applying this rubric's
+anchors and scoring notes to this answer.
 
 The candidate answered aloud; what follows is a transcript, so expect the disfluencies of
 speech rather than the shape of written prose. Do not penalise an answer for sounding
@@ -48,7 +58,7 @@ spoken.
 Return the score, the route tag where the rubric calls for one, and the single criterion
 or scoring note that most determined the score.
 
---- RUBRIC ---
+--- RUBRIC: {name} ---
 
 {rubric}
 """
@@ -64,12 +74,12 @@ class Scoring(BaseModel):
     )
 
 
-# --- Fixtures ---------------------------------------------------------------------
+# --- Criterion 2 fixtures ----------------------------------------------------------
 #
 # Answers to a designated motivation question: "Why do you want to be a firefighter with
 # this department, and what have you done to prepare?"
 
-BOUNDARY = """
+C2_PAST_LIST_NO_ACCOUNT = """
 Um, so I've wanted to do this since I was probably nineteen. I got my EMT-B two years ago,
 uh, I went through the community college program, and then I finished a fire academy last
 spring — the certificate program. I've done a couple of ride-alongs, one with the county
@@ -83,11 +93,10 @@ actually matters. So, yeah. I've got the certs, I'm testing everywhere I can, an
 trying to get on somewhere.
 """
 
-# The 4B case under the tightened boundary: a step past the list he *can* account for, but
-# pursuit aimed at qualifying rather than at becoming good at the work. This fixture exists
-# to catch the failure mode of the tightening itself — a boundary that is stable because
-# nothing can reach it is not fixed, it is closed.
-BOUNDARY_4B = """
+# A step past the list he *can* account for, but pursuit aimed at qualifying rather than at
+# becoming good at the work. This fixture exists to catch the failure mode of tightening the
+# 3/4B boundary — a boundary that is stable because nothing can reach it is closed, not fixed.
+C2_PAST_LIST_ACCOUNTED = """
 So I got my EMT-B in 2023 and finished the academy — the certificate program — last year.
 Uh, I also did the wildland pack test and got my red card, which isn't on the posting here,
 I just figured more certs makes me more competitive.
@@ -102,7 +111,7 @@ So that's where I'm at. I've got the certs, I've got the red card, I test everyw
 and I think I'm a stronger candidate than I was two years ago.
 """
 
-CLEAR_TWO = """
+C2_STALE = """
 Yeah, so I took an EMT class, uh, that would have been back in 2021 I think. Maybe 2020.
 I passed it. I was going to do the academy but then my hours got picked up at work and it
 just, it kind of got away from me, you know how it is.
@@ -112,7 +121,7 @@ volunteer. It's just been a matter of timing, honestly. Things have been busy. B
 here, I'm testing, so.
 """
 
-CLEAR_FIVE = """
+C2_CONTINUOUS = """
 So I got my EMT in 2022 and I've been running as a volunteer with a district about forty
 minutes from my house since about six months after that. Uh, I re-certed last year and I
 picked up my Firefighter I and II in between, and I'm about halfway through a paramedic
@@ -129,6 +138,117 @@ didn't know I'd be doing, and it's the part I want to be good at.
 So the paramedic program is that. I ride out with the volunteer district, I've done
 ride-alongs with two career departments, and I test everywhere I can get to.
 """
+
+
+# --- Criterion 3 fixtures ----------------------------------------------------------
+#
+# Answers to a designated teamwork question: "Tell us about a time you worked with someone
+# who wasn't doing their share."
+#
+# The level 2 anchor lists its tells explicitly, so these were written to exhibit the
+# *pattern* without reciting the list — the fixture has to be a plausible, sympathetic
+# answer a real candidate would give, or it tests nothing.
+
+# The target case: qualified, competent, and the only agent in his own story.
+C3_SELF_FOCUSED = """
+Yeah, so at my last job — I was a shift lead at a warehouse — I had a guy on my crew who
+just wasn't keeping up. Consistently. And look, I'm not going to let the numbers slip
+because one person's having a hard time, so what I did was I restructured how we ran the
+floor. I took his section on top of mine for about six weeks and I just absorbed it. Came
+in early, stayed late.
+
+And honestly the numbers went up that quarter. My manager noticed. I ended up getting the
+scheduling responsibility off the back of it, which at that site was, uh, that was a big
+deal.
+
+I think that's what I'd bring here. I'm a team player, I don't complain, and if something
+needs doing I'll pick it up and carry it. Nobody's ever had to worry about whether I did my
+part.
+"""
+
+# The hard case, and the point of the run: between 2 and 3. He *did* ask — which is not a
+# level 2 tell — but the crew is undifferentiated and the situation resolves itself.
+C3_BOUNDARY_2_3 = """
+Um, so we had a situation on my crew where one of the guys was kind of checked out for a
+while. And the way we handled it was, uh, we all sort of picked up a little extra where we
+could. I definitely took on some of it.
+
+I did talk to him at one point — just asked if everything was alright. He said things were
+fine so I didn't push it. And it kind of sorted itself out after a few weeks, I think some
+stuff at home settled down for him.
+
+I don't know, I just think you've got to be willing to carry a bit extra sometimes. That's
+what a crew is. I've always gotten along with everyone I've worked with.
+"""
+
+C3_GENERIC = """
+So, teamwork's probably the biggest thing in this job, right? Uh, I've always worked in team
+environments. Construction, and before that a couple years in a restaurant kitchen, and both
+of those, you sink or swim together.
+
+If somebody's not pulling their weight I think you've got to address it directly but
+respectfully. You don't go straight to the supervisor, you talk to the person first. And
+usually people respond to that. I've found most people want to do a good job, they just
+sometimes need someone to say something.
+
+We had good crews at both places. Everybody pulled their weight, we got along, we got the
+work done.
+"""
+
+C3_CHANGED_BY_SOMEONE = """
+Uh, yeah. When I was volunteering there was an engineer named Dave who I did not get along
+with at first. He was blunt with me in a way I took personally for about the first two
+months. I thought he had a problem with me.
+
+And then we had a call — car into a pole — and I was slow getting the stabilisation struts
+because I was second-guessing myself. Afterwards he pulled me aside and said, you know,
+"I'm hard on you because you hesitate, and hesitating is going to get somebody hurt." Which
+was not fun to hear. But he was right.
+
+What I do differently now is I say out loud what I'm about to do before I do it. Dave does
+that — I picked it up off him. Sounds small, but it stopped the second-guessing, because
+once you've said it you're committed. And he and I are good now. He wrote one of my
+references.
+"""
+
+
+RUBRICS = {
+    "c2": {
+        "name": "Criterion 2 — Motivation & Preparation",
+        "path": Path("recruit_rubric_c2_motivation.md"),
+        "fixtures": [
+            ("Past the list, cannot account for it", C2_PAST_LIST_NO_ACCOUNT, 20),
+            ("Past the list, can account for it", C2_PAST_LIST_ACCOUNTED, 20),
+            ("Stale preparation", C2_STALE, 10),
+            ("Continuous, other-focused", C2_CONTINUOUS, 10),
+        ],
+    },
+    "c3": {
+        "name": "Criterion 3 — Teamwork & Interpersonal",
+        "path": Path("recruit_rubric_c3_teamwork.md"),
+        "fixtures": [
+            ("Qualified, self-focused (the target anchor)", C3_SELF_FOCUSED, 20),
+            ("Between 2 and 3 (asked, but crew undifferentiated)", C3_BOUNDARY_2_3, 20),
+            ("Generic, correct, no incident", C3_GENERIC, 10),
+            ("Changed by a named person", C3_CHANGED_BY_SOMEONE, 10),
+        ],
+    },
+}
+
+
+def scorer_region(path: Path) -> str:
+    """The part of a rubric the scorer sees.
+
+    Bounded by markers so that a draft rubric's authorship banner and its grounded/invented
+    annotations stay out of the prompt. Without this, a rubric would be scored differently
+    for admitting it is a draft, and the measurement would be of the banner.
+    """
+    text = path.read_text()
+    if SCORER_START not in text or SCORER_END not in text:
+        raise SystemExit(f"{path} is missing its scorer:start / scorer:end markers")
+    body = text.split(SCORER_START, 1)[1].split(SCORER_END, 1)[0]
+    # Drop the remainder of the marker's own comment line.
+    return body.split("-->", 1)[1].strip()
 
 
 def score_once(client: Anthropic, model: str, effort: str, system: str, answer: str):
@@ -150,7 +270,7 @@ def score_once(client: Anthropic, model: str, effort: str, system: str, answer: 
 
 
 def run(label: str, answer: str, n: int, client: Anthropic, model: str, effort: str, system: str):
-    print(f"\n=== {label} — {n} runs " + "=" * 30)
+    print(f"\n--- {label} — {n} runs")
 
     # One warm-up first, so the rest read the cached rubric rather than all missing at once.
     results = [score_once(client, model, effort, system, answer)]
@@ -180,32 +300,39 @@ def run(label: str, answer: str, n: int, client: Anthropic, model: str, effort: 
     if routes:
         print(f"  route tags at 4: {dict(routes)}")
 
-    print("  deciding criterion, one line each:")
+    seen = set()
+    print("  deciding criterion, first sighting of each distinct score:")
     for r in scored:
+        if r.score in seen:
+            continue
+        seen.add(r.score)
         tag = f"{r.score}{r.route if r.route != 'n/a' else ''}"
-        print(f"    [{tag}] {r.deciding_criterion.strip()[:110]}")
+        print(f"    [{tag}] {r.deciding_criterion.strip()}")
 
 
 def main() -> None:
+    wanted = [a.lower() for a in sys.argv[1:]] or list(RUBRICS)
+    unknown = [w for w in wanted if w not in RUBRICS]
+    if unknown:
+        raise SystemExit(f"unknown rubric(s) {unknown}; choose from {list(RUBRICS)}")
+
     settings = get_settings()
     if not settings.anthropic_api_key:
         raise SystemExit("ANTHROPIC_API_KEY is not set — check .env")
-    if not RUBRIC_PATH.exists():
-        raise SystemExit(f"{RUBRIC_PATH} not found — run this from the repository root")
 
-    system = SYSTEM_TEMPLATE.format(rubric=RUBRIC_PATH.read_text())
     client = Anthropic(api_key=settings.anthropic_api_key)
     model, effort = settings.generation_model, settings.generation_effort
-    print(f"scorer: {model}, effort={effort}, adaptive thinking, rubric = Criterion 2")
+    print(f"scorer: {model}, effort={effort}, adaptive thinking")
+    print("this measures consistency, not correctness — a stable rubric can still be wrong")
 
-    fixtures = [
-        ("BOUNDARY (past the list, cannot account for it)", BOUNDARY, 20),
-        ("BOUNDARY 4B (past the list, can account for it)", BOUNDARY_4B, 20),
-        ("CLEAR 2 (stale preparation)", CLEAR_TWO, 10),
-        ("CLEAR 5 (continuous, other-focused)", CLEAR_FIVE, 10),
-    ]
-    for label, answer, n in fixtures:
-        run(label, answer, n, client, model, effort, system)
+    for key in wanted:
+        spec = RUBRICS[key]
+        if not spec["path"].exists():
+            raise SystemExit(f"{spec['path']} not found — run this from the repository root")
+        system = SYSTEM_TEMPLATE.format(name=spec["name"], rubric=scorer_region(spec["path"]))
+        print(f"\n{'=' * 78}\n{spec['name']}\n{'=' * 78}")
+        for label, answer, n in spec["fixtures"]:
+            run(label, answer, n, client, model, effort, system)
 
 
 if __name__ == "__main__":
