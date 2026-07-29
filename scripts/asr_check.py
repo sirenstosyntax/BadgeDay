@@ -27,13 +27,13 @@ about the fire service.
 """
 
 import json
-import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 from app.audio.metrics import compute
 from app.audio.models import CORE_FILLERS, Transcript, Word
+from app.config import get_settings
 
 # What we are checking for. Deliberately the *core* set only — if a provider drops these it
 # drops everything, and if it keeps them the ambiguous cases barely matter.
@@ -107,15 +107,16 @@ def check_deepgram(path: Path) -> Finding | None:
     default rather than as a priced add-on. Documentation is not evidence, which is what
     this script is for.
     """
-    key = os.environ.get("DEEPGRAM_API_KEY")
-    if not key:
-        print("  skipping deepgram — DEEPGRAM_API_KEY not set")
+    settings = get_settings()
+    if not settings.transcription_configured:
+        print("  skipping deepgram — DEEPGRAM_API_KEY is not set in .env")
         return None
+    key = settings.deepgram_api_key
 
     import httpx
 
     params = {
-        "model": "nova-2",
+        "model": settings.deepgram_model,
         "filler_words": "true",
         "punctuate": "true",
         "smart_format": "false",  # smart_format tidies speech, which is the failure mode
