@@ -228,6 +228,53 @@ Rules:
 
 Mechanically the gate narrows rather than opens. It keeps rejecting the directive forms — *you should*, *you need to*, *I recommend*, *go get your…* — and stops rejecting the neutral naming of a route, which is what a menu is made of.
 
+> **Criterion 3 SME review, 2026-07-29 — Grant scored blind, 11 answers.** Three
+> agreements, eight divergences, and the divergences are not scattered.
+>
+> | | you | anchors | |
+> |---|---|---|---|
+> | A — qualified, self-focused | 2 | 2 | **agree** |
+> | I — changed by a named person | 5 | 5 | **agree** |
+> | K — other person acts, appetite instrumental | 4 | 4B | **agree** |
+> | B — handles friction, people as process | 4 | 3 | +1 |
+> | C — teammate answers but changes nothing | 3 | 2 | +1 |
+> | D — the clone answer | 4 | 3 | +1 |
+> | F — teammate discloses and fixes it | 5 | 4B | +1 |
+> | E — never had a problem with anyone | 5 | 2 | **+3** |
+> | G — loves the crew, ducked the conversation | 1 | 4A | **−3** |
+> | H — thin offer (brothers) | *incomplete* | not assessable | — |
+> | J — one-man shop | *incomplete* | not assessable | — |
+>
+> **The anchor the criterion was written for is right.** A is the qualified self-focused
+> candidate — the gap Criterion 2 recorded and the reason C3 exists — and it scored 2 from
+> both. So does the top of the scale. The load-bearing parts hold.
+>
+> **The anchors are systematically harsh.** Five of the six numeric divergences run the same
+> way: Grant scores *higher*, mostly by exactly one level. That is not scatter, it is a
+> calibration offset — the draft reads a competent answer as a mediocre one and a mediocre
+> one as a poor one. **`c3.note.2` decided five of the eight divergences**, which makes the
+> behavioural-frame clause the single biggest lever in the rubric and the first thing to
+> loosen.
+>
+> **G is the reverse, it is the largest gap, and it is the most valuable data point in the
+> exercise.** The candidate volunteers on an ambulance service, talks warmly about the crew
+> by name, and then: a colleague repeatedly fails to restock the rig, he raises it once
+> "kind of jokingly", the man gets funny about it, and he quietly starts checking it himself
+> — *"it was easier than having the conversation, honestly."* The draft read the warmth as
+> dominant and scored 4A. Grant scored **1**, the anchor reserved for the problem being in
+> the room.
+>
+> No inference in the draft would have produced that, and it is exactly the class of
+> judgment `recruit_oral_board_sources.md` says only experience supplies. Grant's reasoning
+> is recorded in the next entry rather than guessed at here.
+>
+> **"Incomplete" is not a value the exercise offered**, and he used it for both H and J —
+> the thin offer and the genuinely solitary working life. The rubric treats those as
+> different outcomes (`not assessable` is a finding about a life; `not answered` is the
+> absence of one). He treated them as the same thing and as a property of the *answer*.
+> That bears directly on §2's three-outcome rule and is an open question, not a scoring
+> disagreement.
+
 **[SETTLED] Critique identifies gaps; it never supplies content.**
 It may name what is missing and ask for the candidate's own material. It may not provide a model answer, sample language, or an example response.
 
