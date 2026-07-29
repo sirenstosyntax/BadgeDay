@@ -12,8 +12,8 @@ no measurement settles. This exercise supplies it.
 
 Score each answer **from your own judgment, without opening the rubric.** Where your score
 and the anchors agree, that clause needs no further attention. Where they disagree, that is
-the clause to rewrite, and the disagreement says what is wrong with it. Ten answers rather
-than fifteen clauses, and it converges on the few that are actually wrong.
+the clause to rewrite, and the disagreement says what is wrong with it. 11 answers
+rather than 15 clauses, and it converges on the few that are actually wrong.
 
 Do not read the rubric first. If you have just been working in it, leave this an hour.
 
