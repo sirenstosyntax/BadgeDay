@@ -19,7 +19,7 @@
 
 | | |
 |---|---|
-| Scale | 1–5, **plus a not-assessable outcome** — see scoring note 3 |
+| Scale | 1–5, **plus a not-assessable outcome** — see scoring note 4 |
 | Structure | Generic frame, drafted anchors |
 | Anchor authorship | **Claude — draft, unreviewed** |
 | Anchor status | Draft. Level 2 written first, per the open risk carried by Criterion 2. |
@@ -60,22 +60,61 @@ in the station at 3am. Politeness is not the same as fit.
 
 These govern how the anchors below are applied. They are part of the criterion.
 
-**1. Score the cast of the story, not its adjectives.**
+**1. Will he say the thing that needs saying? This outranks everything else here.**
+
+The question behind the question is not whether he gets on with people. It is whether he
+will tell a colleague something the colleague does not want to hear. On a crew that is not
+a personality trait, it is an operational one: the man who will not say *the rig is short
+again* is the man who will not say *your strap is loose* or *you are going in without a
+line*.
+
+This note applies only where there was **a specific conversation he declined to have.** If
+he had it — clumsily, late, badly, or only once — note 1 is satisfied and the answer is
+scored on the notes below. **Asking and accepting the first answer counts as having it.**
+*"I asked if everything was alright, he said he was fine, so I left it"* is shallow
+engagement, not avoidance: he opened the door. That is anchor 3, not anchor 2, and
+certainly not anchor 1. Do not read "the other people are thin in his account" as avoidance; that is
+note 2 and it is a different, lesser fault.
+
+Where he did decline it, **what was at stake decides how far it pulls him down**, and the
+two are not close:
+
+- **Something that could hurt someone.** A rig going out short. A cut corner. A mistake
+  nobody was told about. This is a **1**, and it stays a 1 however warm and specific the
+  rest of the answer is — especially then, because the warmth is what stops a panel
+  noticing. The tell is that he reports the avoidance without discomfort: *"it was easier
+  than having the conversation."* He does not know it is a problem, so he will do it again
+  on a floor, about something that matters more than stock levels.
+- **Someone's share of the work.** A colleague not keeping up, and he absorbed it rather
+  than asking why. That is a **2** — a real fault, and the self-focused pattern anchor 2
+  describes, but not the same animal. Nobody was going to get hurt, and he was carrying the
+  load rather than hiding from it.
+
+Conversely a candidate who states plainly that he would go to the person first, and shows
+he understands why, has answered the question — **even without an incident to hang it on.**
+He may be short of evidence, which is a different and lesser fault. See note 2.
+
+**2. Score the cast of the story, not its adjectives.**
 Every candidate asserts he is a team player; the word is free. What is not free is a story
 in which other people do things. Ask of any team story: **does anyone other than the
-candidate take an action?** Can he name what they did? If the team is scenery and he is the
-only agent in the scene, he has told you the opposite of what he asserted, and the
-assertion does not survive it.
+candidate take an action?** Can he name what they did?
 
-This is the criterion's central test and the one that does most of the work below.
+This is a test of how much evidence an answer carries, and it is real — but it is *secondary
+to note 1* and must not be applied as though a thin story were a character finding. A
+candidate whose account is short on other people has given you less to go on. He has not
+thereby shown you a problem.
 
-**2. The behavioural frame: a specific incident, not a self-description.**
+**3. Specificity is a credibility floor, not the thing being measured.**
 An answer that describes a real occasion — what happened, who else was there, what he did,
-how it came out — is evidence. An answer that describes how he generally believes he
-behaves is a claim. Score the first; note the absence of it in the second. This is the most
-common real failure and it is reliably observable.
+how it came out — can be believed. An answer that only describes how he generally believes
+he behaves cannot be checked, and that is its weakness.
 
-**3. Some candidates have no team history. That is not a low score — it is a different outcome.**
+But the test is *is there enough here to believe it happened*, not *is this well told*. A
+plainly narrated real occasion beats a polished one, and a candidate who does not name the
+people in it has not thereby failed — see anchor 5. What is being scored is his conduct;
+specificity is how you know he is describing conduct rather than inventing it.
+
+**4. Some candidates have no team history. That is not a low score — it is a different outcome.**
 
 This criterion measures how other people figure in a candidate's account of his own life,
 and it assumes there is such an account to measure. Not every candidate has one. A man who
@@ -95,12 +134,12 @@ people and theirs affected him is admissible evidence, and a candidate who volun
 of these and then dismisses it — *"if that counts"*, *"but that's not a job"* — is telling
 you where to look. Score what he offers, and note in critique that he undersold it.
 
-> **Open — a real offer that is too thin to score.** The harness split three ways on a
-> candidate who mentions raising his brothers in one clause and immediately discounts it:
-> enough to score (3), too thin to score (not assessable), or self-focused within the story
-> itself (2, on the reading that the siblings are beneficiaries rather than agents). This
-> note says *score what he offers* and does not say what to do when the offer is a single
-> dismissed sentence. Decide, and put it here.
+**A single dismissed clause is not enough to score on.** *"I helped raise my brothers, if
+that counts — but that's not a job"* names a setting and nothing else: no occasion, no other
+person acting, nothing he did. Return **not assessable** and ask him about it, rather than
+scoring the sentence he almost did not say. Settled by SME review 2026-07-29 — he is not
+declining to answer and his life is not empty, so neither a low score nor *not answered*
+is honest. What he has given is a lead, and the right response to a lead is to follow it.
 
 **Second, where it is genuinely absent, return insufficient evidence.** Not a 1, not a 2 —
 its own outcome, reported as its own thing. The honest position is that this criterion
@@ -113,7 +152,7 @@ them out of his own story. The distinction is factual and checkable: was anybody
 If other people were present in the setting he describes and absent from his account of it,
 that is a 2. Insufficient evidence requires that there was genuinely nobody there.
 
-**4. Do not score the teammate.**
+**5. Do not score the teammate.**
 A candidate who worked with someone genuinely difficult is not penalised for having had a
 difficult teammate, and a candidate with an easy history is not credited for luck. Score
 what he did and how he tells it. A candidate who describes a real problem honestly is doing
@@ -128,13 +167,13 @@ answer is usually not true, and is sometimes a bigger flag than the problem woul
 > is a level 2 tell in its own right, or a thing to note in critique that does not move the
 > score, and put the answer in the anchor rather than here.
 
-**5. Two axes: wanting to, and being able to.**
+**6. Two axes: wanting to, and being able to.**
 Wanting to work with people and being able to work with people are different, and a
 candidate can have either without the other. Level 4 is high on one and short on the other,
 so the score carries a route tag (4A / 4B) and critique must address the axis that is
 short. Feedback keyed to the number will tell him to do more of what he is already doing.
 
-**6. Critique voice constraint.**
+**7. Critique voice constraint.**
 Generated critique may state how an answer is **likely to read to a panel**, tied to a
 specific observable behaviour. It may not assert a score the candidate received, or
 attribute an internal state.
@@ -146,12 +185,12 @@ The distinction bites harder here than on Criterion 2. Almost every failure in t
 criterion is one a candidate would experience as a claim about his character, and the
 rubric's job is to keep the feedback on what he said.
 
-**7. Red flags are not contained.**
+**8. Red flags are not contained.**
 A flag raised here is reported to shape interpretation of subsequent answers rather than
 being scored in isolation. Panel behaviour is not answer-independent, and a crew-fit
 concern in particular colours everything a panel hears afterwards.
 
-**8. This criterion is partly subjective, and that is not a defect.**
+**9. This criterion is partly subjective, and that is not a defect.**
 More so than Criterion 2. Panels react to candidates, and reaction is much of what this
 dimension measures. The anchors stay behavioural so they can be verified; the reaction to
 those behaviours is named where it bears on the score.
@@ -160,30 +199,49 @@ those behaviours is named where it bears on the score.
 
 ## Anchors
 
-### 5 — Other people are real in his account, and one of them changed him
+### 5 — He demonstrably behaves well on a crew
 
-Tells team stories in which other people take actions, and can say what those actions were.
-Names individuals and what each contributed rather than describing "the team" as a single
-undifferentiated thing. Credits precisely and takes blame without distributing it.
+The top of this criterion is **conduct, not narration.** He does the things a crew needs
+done: takes his share and some of someone else's without making it a story, teaches
+somebody who is struggling rather than working around them, says the difficult thing when
+it needs saying, credits precisely and takes blame without distributing it. Reciprocity is
+described as ordinary rather than as an achievement — *"you help them out and they do the
+same for you next time"* — because to him it is.
 
-The distinguishing mark: **he can point to something he does differently because of
-someone he worked with.** Not a lesson he drew about himself — a specific person, a
-specific thing they did or said, and a specific change in him. When he describes a
-disagreement, he can state the other person's position in a way that person would
-recognise, whether or not he came round to it.
+**Specificity is required as a credibility test, not as a measure of quality.** There has to
+be enough of it to believe the occasion happened: a setting, a person, a thing that was
+actually done. That is a floor, and it is there because an answer with no purchase on
+anything is one a candidate could have invented on the spot.
 
-### 4 — Strong on one axis, short on the other
+**It is not a demand that he name individuals or describe how someone changed him.** A man
+who says he showed a newer lad how to load the truck properly so he was not fighting it has
+shown you the crew ethic, whether or not he gives the lad's name and whether or not he
+draws a lesson about himself. Do not mark him down for telling it plainly. Being changed by
+a named colleague is *strong* evidence and belongs here — it is one route to a 5, not the
+definition of one.
+
+### 4 — Sound conduct with something missing, or the right instincts thinly evidenced
+
+Between the man who behaves well across the board and the man who only describes it. Two
+ways in. He does most of what a 5 does with one part absent. **Or he states the right
+approach plainly and convincingly — go to the person first, address it without making an
+enemy — with no occasion behind it.** The second is a real 4: he has answered the question
+this criterion asks and is short of proof, which is a lesser thing than being short of the
+instinct.
 
 Two candidates reach a 4 by opposite routes. The score is the same; the diagnosis is not.
 **Record which.**
 
-**4A — Wants the crew; rough edges.**
+**4A — Wants the crew, and says the difficult thing imperfectly.**
 Genuine appetite for working alongside people, and evidence of real relationships rather
-than asserted ones — he talks about specific people unprompted, and warmly. But friction
-handles him rather than the other way round: the conflict story ends with him going around
-the person, absorbing the work himself, or waiting it out, and he narrates that without
-apparent discomfort. He wants the station; he has not yet learned to be in it when it is
-difficult.
+than asserted ones — he talks about specific people unprompted, and warmly. He *does* raise
+what needs raising, but clumsily: badly timed, too blunt, or in front of others when it
+should have been quiet, and it costs him something each time.
+
+**Rough edges means he says it badly, not that he avoids saying it.** A candidate who
+went around the person instead is not a 4A however warm the rest of the answer is — see
+note 1 and anchor 1. This distinction is the whole difference between a man a crew can
+train and a man a crew cannot rely on.
 
 **4B — Handles people; appetite unproven.**
 Resolves friction cleanly and can describe defusing a situation without making an enemy of
@@ -205,16 +263,22 @@ a 3.
 
 Boundary against 5: 4 handles people or wants them. 5 was **changed** by one.
 
-### 3 — Says the right things; the team stays generic
+### 3 — He made contact and did not follow through
 
-Knows what the question is for and answers it correctly. Willingness is real and there is
-nothing to hold against him. But the team in his stories is undifferentiated — "we worked
-well together," "everybody pulled their weight" — and he cannot say what any particular
-person did. Conflicts, if mentioned, resolve themselves or are described in the passive.
+He engaged — asked the question, raised it once — and then let it go. *"I asked if
+everything was alright, he said he was fine, so that was that. I kept an eye on it and
+covered the first half hour."* The door was opened and not walked through, and whatever was
+actually wrong went unexamined; it resolved itself, or did not.
 
-The clone answer of this criterion: correct, unobjectionable, and indistinguishable from
-every other candidate who prepared. He has not said anything a panel could hold against
-him and has not given them anything to remember either.
+This is genuinely better than absorbing the work in silence, because he was willing to ask.
+It is short of a 4 because asking once and accepting the first answer is not finding out,
+and on a crew the thing behind *"I'm fine"* is usually the thing that matters.
+
+The other route to a 3 is an answer so undifferentiated that nothing can be read from it at
+all: "we worked well together", "everybody pulled their weight", no occasion, no stated
+approach, nothing. Note that a candidate who **describes the right approach** clearly — go
+to the person first, directly but without making an enemy of him — is a **4**, not a 3. He
+has told you what he would do and it is the right thing; what he lacks is evidence.
 
 ### 2 — Qualified, and the crew is missing from his own stories
 
@@ -252,13 +316,24 @@ it, that is a 2, however strong the file behind it.**
 Distinguish from a 1: the 2 is a pattern the candidate does not know he is showing. He is
 not hostile and would be surprised to be told. A 1 is visible in the room.
 
-### 1 — The problem is in the room
+### 1 — He would not say it, or the problem is in the room
 
-Describes teammates or supervisors with contempt, dismissively, or as adversaries. Narrates
-a conflict in which he is plainly the difficulty and shows no sign of knowing it. Or cannot
-produce any account of working with other people at all — not a thin one, none.
+Two routes here, and the first is the one that catches candidates a panel likes.
 
-Where a 2 requires the panel to notice a pattern, a 1 does not require interpretation.
+**He declined a conversation that needed having, and something was at stake.** A colleague
+repeatedly failing to restock a rig; a mistake nobody was telling anyone about; a corner
+being cut. He noticed, he did not say it, and he worked around it instead. **This is a 1
+even when the rest of the answer is warm and specific** — especially then, because the
+warmth is what stops a panel noticing. The tell that it belongs here rather than at 2 is
+that he reports the avoidance without discomfort: *"it was easier than having the
+conversation."* He does not know it is a problem, which means he will do it again on a
+floor, about something that matters more than stock levels.
+
+**Or the problem is visible in the room.** Describes teammates or supervisors with contempt,
+dismissively, or as adversaries. Narrates a conflict in which he is plainly the difficulty
+and shows no sign of knowing it.
+
+Where a 2 requires the panel to notice a pattern, neither of these does.
 
 ---
 
