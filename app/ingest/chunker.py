@@ -28,6 +28,17 @@ page, so it lands inside every section spanning a page break — interrupting a 
 and offering the generator a perfectly citable, perfectly worthless question. That last
 part is why it matters: nothing about it is false, so no grounding check catches it.
 
+Figure text is dropped for the same reason, and it is the more dangerous case. A footer
+is worthless but harmless; an org chart is forty fragments of real-looking content that
+attach to whichever section preceded the diagram, so a question drawn from them cites a
+section that says something else. The citation still resolves, so verification passes.
+
+This does lose any content that only exists inside a diagram. That is the intended
+trade: extraction of diagram text is unreliable in a way prose is not — superscript
+ordinals in a real chart came back as `4""`, `15T`, and `21D` — so a question generated
+from it would be wrong on the facts as well as wrong on the citation. Tables are a
+separate structure in the response and are unaffected.
+
 ## Container sections (read before building coverage tracking)
 
 A heading whose content lives entirely in its children can still emit a heading-only
@@ -42,6 +53,7 @@ import uuid
 from dataclasses import dataclass, field
 
 from app.ingest.models import (
+    ROLE_FIGURE,
     ROLE_PAGE_FOOTER,
     ROLE_PAGE_HEADER,
     ROLE_PAGE_NUMBER,
@@ -74,7 +86,7 @@ DEFAULT_MAX_CHARS = 1800
 # their citations.
 MIN_SPLIT_CHARS = 120
 
-LAYOUT_FURNITURE = frozenset({ROLE_PAGE_HEADER, ROLE_PAGE_FOOTER, ROLE_PAGE_NUMBER})
+LAYOUT_FURNITURE = frozenset({ROLE_PAGE_HEADER, ROLE_PAGE_FOOTER, ROLE_PAGE_NUMBER, ROLE_FIGURE})
 
 
 @dataclass

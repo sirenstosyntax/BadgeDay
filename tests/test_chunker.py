@@ -299,3 +299,54 @@ def test_document_without_structure_is_entirely_semantic() -> None:
     chunks = chunk_document(doc, DOC_ID)
     assert all(c.kind == "semantic" for c in chunks)
     assert all(c.section_path == [] for c in chunks)
+
+
+# --- Figure text -------------------------------------------------------------
+
+
+def test_figure_text_is_dropped() -> None:
+    """An org chart's box labels are not guideline content."""
+    doc = _doc(
+        ("A. Command shall be established by the first arriving officer.", 1),
+        ("Figure 1: High-Rise Alarm Assignments", 2, "figure"),
+        ("COMMAND BATTALION CHIEF", 2, "figure"),
+        ("WATER SUPPLY 3RD ENGINE", 2, "figure"),
+    )
+    text = " ".join(c.text for c in chunk_document(doc, DOC_ID))
+    assert "Command shall be established" in text
+    assert "BATTALION CHIEF" not in text
+    assert "WATER SUPPLY" not in text
+
+
+def test_figure_text_does_not_attach_to_the_preceding_section() -> None:
+    """The real failure: diagram text absorbed into the last section before it.
+
+    A question drawn from those fragments would cite that section, and the citation
+    would resolve — the chunk really would contain the text — so verification passes
+    while the candidate is sent to a section about something else.
+    """
+    doc = _doc(
+        ("PROCEDURE", 1, "sectionHeading"),
+        ("A. Companies shall carry standpipe equipment into the building.", 1),
+        ("B. Air replenishment systems are found in stairwells.", 1),
+        ("LOBBY CONTROL 4TH ENGINE", 2, "figure"),
+        ("RECON GROUP 2ND AERIAL", 2, "figure"),
+    )
+    chunks = chunk_document(doc, DOC_ID)
+    holding_the_prose = [c for c in chunks if "Air replenishment" in c.text]
+    assert holding_the_prose, "the guideline text itself must survive"
+    for chunk in holding_the_prose:
+        assert "LOBBY CONTROL" not in chunk.text
+        assert "RECON GROUP" not in chunk.text
+
+
+def test_figure_label_shaped_like_a_heading_does_not_open_a_section() -> None:
+    """`COMMAND` in a chart box must not become a citable location."""
+    doc = _doc(
+        ("A. Units arriving shall assume pre-assigned responsibilities.", 1),
+        ("COMMAND", 2, "figure"),
+        ("SAFETY", 2, "figure"),
+        ("LOGISTICS", 2, "figure"),
+    )
+    labels = {c.section_label for c in chunk_document(doc, DOC_ID)}
+    assert not {"COMMAND", "SAFETY", "LOGISTICS"} & labels
