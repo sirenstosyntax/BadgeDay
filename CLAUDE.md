@@ -95,10 +95,16 @@ critical path to any revenue.
 - **Legal:** privacy policy and terms served at /privacy and /terms, linked from the
   footer, the sign-in screen and the paywall.
 
-Still open on Promote, none of it blocking Recruit: transactional email for magic links
-(Supabase's default sender is rate-limited and spam-prone), cost-per-document measured
-against a real SOG, alerting when a job exhausts its retries, and an in-app way to report
-a wrong question.
+Still open on Promote, none of it blocking Recruit: **transactional email for magic
+links** (Supabase's default sender is rate-limited and spam-prone — needs a provider
+account, so it is blocked on a signup rather than on code), and **cost-per-document
+measured against a real SOG** (blocked on a real document).
+
+Closed 2026-07-28: **reporting a wrong question** (`POST /questions/{id}/report`,
+migration 0006) and **noticing a dead job** (an ERROR log at the point a job spends its
+last attempt, plus the `dead_jobs` view). Both existed because the product had no way to
+tell anyone it was broken — verification proves a question is cited, never that it is
+right, and a job that exhausted its retries stopped silently while a candidate waited.
 
 ### Recruit — to build
 

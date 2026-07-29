@@ -10,6 +10,7 @@ from app.api.billing import router as billing_router
 from app.api.documents import router as documents_router
 from app.api.health import router as health_router
 from app.api.practice import router as practice_router
+from app.api.reports import router as reports_router
 from app.config import get_settings
 from app.redirect import add_canonical_redirect
 from app.spa import mount_spa
@@ -44,6 +45,7 @@ app.include_router(documents_router)
 app.include_router(practice_router)
 app.include_router(account_router)
 app.include_router(billing_router)
+app.include_router(reports_router)
 
 # Last, so every API route above takes precedence: the SPA's catch-all only handles paths
 # the API did not claim. A no-op in development, where web/dist has not been built and the
