@@ -14,9 +14,11 @@ import logging
 from dataclasses import dataclass, field
 
 from anthropic import Anthropic
+from pydantic import ValidationError
 
 from app.config import Settings
 from app.critique.models import Critique, DraftCritique, Metric
+from app.llm_output import TruncatedOutput, is_truncated_json
 from app.critique.prompt import SYSTEM_PROMPT, build_retry_message, build_user_message
 from app.critique.rubric import Rubric
 from app.critique.verify import Rejection, verify_critique
@@ -49,17 +51,27 @@ def _request_draft(client: Anthropic, settings: Settings, messages: list[dict]) 
     strips the constraints structured outputs does not accept and re-validates them
     client-side. Hand-building the schema skips that transform and gets rejected.
     """
-    response = client.messages.parse(
-        model=settings.generation_model,
-        max_tokens=MAX_TOKENS,
-        system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
-        messages=messages,
-        thinking={"type": "adaptive"},
-        output_config={"effort": settings.generation_effort},
-        output_format=DraftCritique,
-    )
-    if response.stop_reason == "max_tokens":
-        raise ValueError("Critique hit max_tokens; output truncated.")
+    try:
+        response = client.messages.parse(
+            model=settings.generation_model,
+            max_tokens=MAX_TOKENS,
+            system=[
+                {"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}
+            ],
+            messages=messages,
+            thinking={"type": "adaptive"},
+            output_config={"effort": settings.generation_effort},
+            output_format=DraftCritique,
+        )
+    except ValidationError as exc:
+        # Truncation surfaces here rather than on `stop_reason` below — the SDK validates
+        # the body inside the call. See `app/llm_output.py` for why the two are worth
+        # keeping apart.
+        if is_truncated_json(exc):
+            raise TruncatedOutput("Critique hit max_tokens; output truncated.") from exc
+        raise
+    if response.stop_reason == "max_tokens":  # complete JSON that still ran out of room
+        raise TruncatedOutput("Critique hit max_tokens; output truncated.")
     if response.parsed_output is None:
         raise ValueError(
             f"Model returned no parseable output (stop_reason={response.stop_reason})."
@@ -92,6 +104,19 @@ def critique_answer(
         outcome.attempts = attempt
         try:
             draft = _request_draft(client, settings, messages)
+        except TruncatedOutput as exc:
+            # The one failure worth repeating the request for. Nothing is wrong with the
+            # prompt — the model was mid-sentence — and adaptive thinking means the next
+            # attempt is not the same length as this one. There is no draft to feed back,
+            # so the messages stay as they are and the ask is simply made again.
+            logger.warning("Critique truncated on attempt %d of %d", attempt, max_attempts)
+            if attempt == max_attempts:
+                outcome.failure = f"{type(exc).__name__}: {exc}"
+                break
+            # Deliberately not recorded on the outcome yet: an attempt that goes on to
+            # succeed produced a sound critique, and reporting a failure beside it would
+            # be false. The log line above is where a truncation that got retried lives.
+            continue
         except Exception as exc:  # noqa: BLE001 - surfaced on the outcome, not raised
             logger.exception("Critique request failed on attempt %d", attempt)
             outcome.failure = f"{type(exc).__name__}: {exc}"
