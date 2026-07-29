@@ -286,6 +286,16 @@ Audio is retained only if the candidate opts in for self-review. Voice recording
 **[PROVISIONAL] Playback of the candidate's own answer may be the strongest feature in this area.**
 People are startled by their own filler rate in a way no counter reproduces.
 
+**[PROVISIONAL] Deepgram is the first candidate, and Azure is not — despite Azure already being in the stack.** (2026-07-28, from documentation only.)
+
+The obvious choice was Azure. Document Intelligence already runs in `sts-examgen-rg`, hosting is Azure Container Apps, and adding a second vendor means a second account, a second key and a second bill. The evidence went the other way.
+
+- **Deepgram** documents `filler_words=true` as an explicit switch, at no extra cost and no latency impact, and returns per-word `start`, `end`, `confidence` and `punctuated_word` by default rather than as a priced add-on. `punctuated_word` matters more than it looks: it is what lets a pause between sentences be told from one mid-sentence, which §6 says are opposite signals.
+- **Azure AI Speech** documents disfluency removal as *off by default*, which reads as though filler words survive. Microsoft's own Q&A says otherwise: users migrating from other services report "uh", "um" and "gonna" missing from Azure transcripts that competitors returned, and the Microsoft answer attributes it to model sensitivity rather than a setting — so there is nothing to switch on. **A documented default of "we keep them" and a practical result of "they are gone" is precisely the silent failure §5 warns about**, and it is the more dangerous shape because the docs read as reassurance.
+- **CrisperWhisper** is purpose-built for verbatim transcription with word timestamps around disfluencies, and is the strongest fit on capability. It is a model rather than an API, so it means running inference ourselves. Noted as the fallback if the hosted options fail, not as a V1 choice — a self-hosted GPU dependency is a large operational commitment to take on for one metric.
+
+**This is documentation, not evidence, and the file should not pretend otherwise.** Marketing pages advertise clean transcripts, which is the failure mode; Azure's own docs said the right thing and the practice did not match. `scripts/asr_check.py` is the instrument that settles it, and it needs thirty seconds of real speech — not TTS, whose "um" is pronounced as a full clear word and would pass a test that real hesitation fails.
+
 ### Implementation warnings
 
 - **Filler words are commonly stripped by default.** Most ASR cleans up disfluencies; Whisper in particular tends to drop "um" and "uh" and tidy false starts. Verify disfluency preservation on our own audio before relying on filler metrics. Most likely silent failure in this feature.
