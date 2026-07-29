@@ -1,0 +1,207 @@
+# BadgeDay — Pricing and Competitive Position
+
+*Recruit pricing, and what "materially better than Station Visit" has to mean concretely.
+Drafted 2026-07-29. Prices here are a recommendation for Stripe configuration, not code:
+per `web/src/ui/Paywall.tsx` the amount lives in Stripe and is never printed in the app.
+Stripe stays in test mode until both modules ship (`CLAUDE.md`).*
+
+---
+
+## The market, priced
+
+Everything below was retrieved 2026-07-29.
+
+| Offer | What it is | Price |
+|---|---|---|
+| **[Station Visit](https://stationvisit.com/)** — direct competitor | AI-scored mock oral boards, 5 dimensions | Free: 1 interview, no card · **$19.99/mo** · **$99/yr** · **$49 / 90 days** |
+| **[1-11 Fire Prep](https://www.111fireprep.com/)** | Membership: tips, questions, Q&A, discounted coaching | **$29.99/mo**, 3-day free trial |
+| **[911 Prep](https://www.911interview.com/)** | Video course + human mock interviews | **$499** course · **$949** with 3 mock interviews |
+| **[Aspiring Fire Officers](https://aspiringfireofficers.com/coaching/)** | 1:1 human coaching | **$85/hr** (+$25 per extra person for groups) |
+| Other human coaching | Claimed market range | **$350–500/hr** at the top end |
+| NTN FireTEAM | The actual test the candidate must pass | $60–95 |
+| **BadgeDay Promote** | Existing module | ~$29/mo, ~$129 / 90 days |
+
+**The shape of it:** a self-serve AI tier at **$20–30/month**, and a human tier an order of
+magnitude above it at **$85–500/hour** or **$500–950** packaged. Nothing sits in between,
+because nothing has been able to — that gap is exactly where an SME-authored rubric applied
+by a model can live.
+
+---
+
+## Recommendation
+
+> **Free — the full readiness gap analysis, plus one complete mock board with critique.
+> No card.**
+>
+> **Monthly — $29.**
+> **6-month "hiring cycle" — $119** (~$19.83/mo). *The plan to sell.*
+> **12-month — $179** (~$14.92/mo).
+>
+> **No 90-day pass for Recruit.**
+
+### Why give the gap analysis away entirely
+
+This is the strongest single move available and it costs almost nothing.
+
+`recruit_scope.md` already describes pillar 2 as "the module's on-ramp — it is fast, it
+delivers something concrete on day one, and it tells a candidate why they need the rest."
+That is a description of a free tier. A candidate who completes the intake and receives a
+prioritised 6/12/18-month plan naming his three biggest gaps has been told, by something
+that clearly knows the trade, exactly why he is not competitive yet. The conversion ask
+writes itself, and it is not "buy this to see your score" — it is "you now know what to fix;
+the board is the part you cannot fix alone."
+
+It also beats Station Visit's free tier on its own terms. Theirs is one mock interview — a
+sample of the paid product. Ours is a **complete deliverable he keeps**, plus a sample of
+the paid product. Marginal cost is one model call.
+
+Recruit is also the module with the better free-tier economics: it has no ingestion cost.
+A Promote free tier would mean paying Azure Document Intelligence for a stranger's upload.
+
+### Why $29/month, not $19.99
+
+Do not undercut Station Visit. Going in cheaper against an incumbent says we are the budget
+option, and if the plan is to be materially better then that is the wrong claim and it
+leaves money on the table permanently — the first price is very hard to raise.
+
+$29 also matches Promote, which keeps one brand telling one story about what a BadgeDay
+subscription costs, and it sits at the top of the established self-serve band rather than
+outside it (1-11 Fire Prep is already at $29.99 for a membership with no AI critique at
+all). Against $85/hr for a single hour with a human, $29 for a month is not a hard argument.
+
+### Why the 6-month plan is the hero
+
+The whole product thesis is that the candidate is **6–18 months out** — that is the premise
+of the gap analysis. Promote sells a 90-day intensive because a promotional exam has a date
+on it. A pre-hire candidate has no date; he has a hiring cycle and a list of things to fix
+that take a year. **Selling him a 90-day pass sells him the wrong shape** and quietly
+contradicts the advice the product just gave him.
+
+$119 for six months is a real commitment at a real discount, it is the term over which the
+gap analysis plan actually plays out, and it lands just above Station Visit's annual $99 —
+close enough not to need defending, far enough to signal a different class of product.
+
+### Where the judgment call is
+
+**The 12-month at $179 is 81% above Station Visit's annual $99.** That is the one number in
+this recommendation that is genuinely arguable. The case for it: the plan the gap analysis
+produces runs 18 months, so annual is the natural term for the candidate it is written for,
+and discounting it heavily trains buyers to wait for the discount. The case against: a new
+brand with no reputation asking nearly double the incumbent on the flagship term is a real
+conversion risk.
+
+If you want the safer version, **$139/yr** (~$11.58/mo) keeps a visible discount ladder and
+sits close enough to $99 that the comparison does not sting. I would still open at $179 and
+find out — it is one Stripe price ID either way, and Stripe is in test mode until both
+modules ship, so this decision costs nothing to revisit before launch.
+
+### Cost does not constrain any of this
+
+Rough per-answer marginal cost, to verify against real numbers once `scripts/asr_check.py`
+has run:
+
+- Batch ASR on a 3-minute answer: **~$0.015**
+- Critique call (rubric + transcript + metrics in, structured critique out): **~$0.05**
+- **~$0.06 per answer; ~$0.30 for a five-question full board**
+
+A user doing a full board every week for a year costs **~$16**. Against a $119 six-month or
+$179 annual plan the gross margin is ~90%, and the tail risk usually associated with
+advertising "unlimited" does not exist here: **the bank bounds it.** At the ~290 prompts
+recommended in `recruit_question_bank.md`, and with no repeats ever, a candidate physically
+cannot consume more than ~290 answers ≈ **$17** before the 12-month retirement rule recycles
+anything. Unlimited practice is safe to advertise.
+
+So price on position and value, not on cost. There is no cost argument for being cheap here.
+
+### Packaging stays separate
+
+`recruit_scope.md` settled this 2026-07-26 and nothing found here disturbs it: separate
+plans, no bundle. A serving Lieutenant candidate and a pre-hire applicant are different
+people and a combined plan sells each of them half a product. Structurally this means new
+`STRIPE_PRICE_ID_RECRUIT_*` entries alongside the existing pair in `app/config.py`, with the
+price-ID → module mapping resolved server-side per the architecture table.
+
+Note the naming: Promote's existing `STRIPE_PRICE_ID_INTENSIVE_90DAY` has no Recruit
+counterpart, so the config gains `STRIPE_PRICE_ID_RECRUIT_MONTHLY`,
+`..._RECRUIT_6MONTH`, `..._RECRUIT_ANNUAL` — three, not a mirror of Promote's two.
+
+---
+
+## "Materially better than Station Visit" — what it has to mean
+
+`recruit_scope.md` step 3 sets the bar comparatively. Here is the comparison made concrete,
+so the step 3 decision has something to test against.
+
+### What they do that we must match — table stakes, not differentiation
+
+Losing on any of these makes the rest of the argument irrelevant.
+
+1. **A free first session.** Covered, and beaten, by giving away the gap analysis.
+2. **A full mock panel, not a single question.** They run intro → scenario → values →
+   motivation → closing. Our current design is one question per session. **This is the
+   biggest functional gap and it is not currently in the build order.** A candidate
+   comparing the two will read single-question practice as a demo. Recommend a full-board
+   session mode composed of five prompts drawn per the rotation rule in
+   `recruit_question_bank.md`, with critique per answer plus a whole-board pass — which
+   Criterion 1 needs anyway, since its scope is settled as *scored across the whole board*.
+3. **Question volume and rotation.** They advertise rotating questions to prevent
+   memorisation — the same design decision as ours. Not a differentiator either way.
+4. **They ship today and we do not.** The only fix is shipping.
+
+### What they do that we should copy, with a caveat
+
+**Custom question entry** — the candidate types in a question he heard on a real station
+visit and gets it scored on the same rubric. It is genuinely useful, it costs little, and it
+does not violate the no-upload rule (a prompt is not a document, and there is nothing to
+retrieve or cite).
+
+**The caveat is real, though:** our critique is only as good as the rubric authored for that
+question family, and an arbitrary pasted question may map to no reviewed criterion at all.
+Shipping it naively produces exactly the unanchored career advice the whole architecture
+exists to prevent. If we build it, it must classify the pasted question into a known family
+first and **decline, visibly, when it cannot** — "this one is outside what we score" is an
+acceptable answer and is itself a credibility signal.
+
+### Where we can be materially better
+
+1. **Every critique point names its criterion.** They give a numerical score, strengths, and
+   one improvement area. We ship a verification gate that *rejects* any point not tied to a
+   named rubric clause or a computed metric — `app/critique/`, 43 tests, already built. This
+   is the Promote citation discipline transplanted, and it is the difference between
+   feedback and opinion. It is also demonstrable in a screenshot.
+2. **No score is shown.** They show a number. §4 says a surfaced number invites optimising
+   the number. This is a deliberate advantage that **will read as a missing feature unless
+   it is marketed as a position** — say plainly why the number is withheld.
+3. **We never write your answer for you.** Their feedback names an improvement area; the
+   standing temptation in this category is to supply language. Our gate forbids it outright.
+   The pitch is the level 3 anchor itself: the clone answer is correct, generic, and
+   indistinguishable, and a tool that hands out phrasing manufactures clone answers at
+   scale. No competitor can claim this without rebuilding around it.
+4. **Delivery is arithmetic, not an AI opinion.** Their fifth dimension is "delivery
+   quality," model-judged. Ours is words per minute, time-to-first-word, filler rate, pause
+   count and position, longest unbroken stretch — computed in our own code from word
+   timestamps. Deterministic, zero run-to-run variance, honestly comparable across sessions.
+   Theirs cannot be compared across sessions and probably should not be.
+5. **The readiness gap analysis.** They have nothing like it. It is the reason a candidate
+   subscribes for six months instead of cramming for a week, and it is the single largest
+   product difference.
+6. **Progress as behaviors across novel questions** — *across your last eight answers, to
+   eight questions you had never seen, here is what held and here is what drops out under
+   pressure.* Strictly more useful than a score trend, and it is the honest way to report a
+   scorer whose noise floor we have actually measured (§7).
+7. **The author outranks theirs, and we should say so.** Their rubric is attributed to "an
+   experienced firefighter-paramedic." Ours is authored by a fire captain with over twenty
+   years in the service — real credibility, and `recruit_scope.md` already says to claim it
+   plainly and never to dress it up as a department's scoring sheet.
+8. **Audio is transcribed, measured, and discarded** unless he opts in. A privacy stance
+   worth stating out loud in a category where nobody states one.
+
+### The honest read
+
+Points 1, 3, 4 and 6 are **already built or already decided** and are defensible on day one.
+Point 5 is the biggest gap and is pillar 2, now committed for launch. Point 2 is a real
+advantage that markets badly and needs copy written for it.
+
+The exposure is table stakes item 2 — **full-board sessions**. Everything else on this page
+is an argument we can already make; that one is a feature we do not have and a candidate
+will notice within thirty seconds of comparing.
