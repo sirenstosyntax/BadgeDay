@@ -307,15 +307,48 @@ either way.
    conservative interim default — a development point names what is absent and may name
    the category, but the gate rejects a specific certification, programme or provider.
    Relaxing that is one regex and a prompt line; deciding how far to relax it is not.
-2. **Does Recruit launch with all three pillars or with the oral board alone?** Launch now
-   gates all revenue, so this is the schedule question. My recommendation: oral board plus
-   a thin gap analysis, with principles and traps growing after launch — the first two are
-   the product, the third is what makes it feel complete.
+2. ~~**Does Recruit launch with all three pillars or with the oral board alone?**~~
+   **Settled 2026-07-29 by Grant: all three pillars at launch.** The recommendation below
+   was to ship two and grow the third; it was overruled deliberately, on the grounds that
+   the product must launch with real value rather than with a defensible minimum.
+
+   What that costs, recorded so it is not a surprise: pillar 3 is the cheapest of the three
+   and the least risky, so the schedule impact is smaller than it looks — but **the binding
+   constraint is not pillar 3, it is rubric coverage.** Criteria 1, 4 and 5 are unwritten
+   and C3 is drafted-unreviewed, which means roughly 11 of the 36 evidenced question
+   families can be critiqued today (`recruit_question_bank.md`). Three pillars against two
+   criteria would be broad and thin. **Authoring and reviewing C1/C4/C5 now outranks
+   growing the question bank**, and it is the real path to launching with value.
+
+   Pillar 2 additionally becomes the free tier — see `badgeday_pricing.md`. That raises its
+   quality bar (it is now the first thing a stranger sees) without changing its scope.
+
+   *(original recommendation)* Oral board plus a thin gap analysis, with principles and
+   traps growing after launch — the first two are the product, the third is what makes it
+   feel complete.
 3. **What does Criterion 1 get called?** "Communication" overclaims what audio can see.
    "Answer Construction" plus a separate delivery sub-score is the candidate. Its scope is
    settled — scored across the whole board rather than on one designated question, so its
    anchors cannot reference a specific answer — but the name is not. See
    `recruit_design_decisions.md` §10.
-4. **Question bank size and rotation policy.** A hard requirement now rather than a detail,
-   because a novel question every session means the bank has to outlast a subscription.
-   Needed at step 4.
+4. ~~**Question bank size and rotation policy.**~~ **Proposed 2026-07-29 in
+   `recruit_question_bank.md`** — 36 evidenced question families, target ~290 prompts at
+   launch (36 families × 8 variants) growing to ~500, with 12-month retirement for
+   exhaustion, no prompt ever repeated, no family within a rolling 8 sessions, and 70/30
+   weighted/random selection. Needs your sign-off, and the family list needs SME review
+   before any of it publishes.
+
+   The reason a large bank turns out to be affordable: **a Recruit question is an unkeyed
+   prompt** — no answer, no distractors, no citation — so per-item review is seconds rather
+   than minutes, and the judgment lives in the family rather than the variant. The
+   reviewable asset stays bounded.
+
+   *(original)* A hard requirement now rather than a detail, because a novel question every
+   session means the bank has to outlast a subscription. Needed at step 4.
+
+5. **Does a practice session issue one question or a full board of five?** New, and it
+   surfaced from the competitive comparison rather than from the design. Station Visit runs
+   a full panel; our design issues one question. See `badgeday_pricing.md` — this is the
+   one place where a candidate comparing the two products would find us visibly thinner,
+   and Criterion 1's settled scope (scored across a whole board, not one answer) needs a
+   full board to score against anyway.
