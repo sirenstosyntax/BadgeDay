@@ -55,7 +55,7 @@ where it does is what rewrites an anchor; the number alone only says something i
 > I think that's what I'd bring here. I'm a team player, I don't complain, and if something
 > needs doing I'll pick it up and carry it.
 
-## B
+## B 
 
 > At the distribution centre I supervised a team of about nine. We had an issue where two of
 > the pickers had a running disagreement about zone allocation that was starting to affect
@@ -79,7 +79,7 @@ where it does is what rewrites an anchor; the number alone only says something i
 > eye on it and covered the first half hour when he wasn't there, and after a few weeks it
 > sort of settled down on its own.
 
-## D
+## D 
 
 > So, teamwork's probably the biggest thing in this job, right? I've always worked in team
 > environments. Construction, and before that a couple of years in a restaurant kitchen, and
@@ -93,7 +93,7 @@ where it does is what rewrites an anchor; the number alone only says something i
 > We had good crews at both places. Everybody pulled their weight, we got along, we got the
 > work done.
 
-## E
+## E 
 
 > I did three years on a landscaping crew, four of us, and honestly it was fine. Everyone
 > pulled their weight. If someone was slow you'd just help them out and they'd do the same
@@ -104,7 +104,7 @@ where it does is what rewrites an anchor; the number alone only says something i
 > 
 > I've genuinely never had a problem with anyone I've worked with. I get on with everybody.
 
-## F
+## F 
 
 > Same sort of thing happened with a lad called Ryan at the depot — late most mornings, and
 > it was landing on the rest of us.
@@ -129,7 +129,7 @@ where it does is what rewrites an anchor; the number alone only says something i
 > I loved that crew though. That's the part of this job I want — you're with the same people
 > for twenty-four hours, you eat together. I've missed it since I moved.
 
-## H
+## H - Incomplete
 
 > Uh, honestly? I don't have a great example for that. I've mostly worked by myself. I did
 > five years driving long-haul, which is, you're alone in the truck. Before that I was doing
@@ -189,17 +189,17 @@ where it does is what rewrites an anchor; the number alone only says something i
 Fill in after the `=`. Free text after the score is kept as your note.
 
 ```scores
-A = 
-B = 
-C = 
-D = 
-E = 
-F = 
-G = 
-H = 
-I = 
-J = 
-K = 
+A = 2
+B = 4
+C = 3
+D = 4
+E = 5
+F = 5
+G = 1
+H = Incomplete
+I = 5
+J = Incomplete
+K = 4
 ```
 
 ---

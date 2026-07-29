@@ -27,6 +27,21 @@ class Settings(BaseSettings):
     generation_model: str = "claude-sonnet-5"
     generation_effort: Literal["low", "medium", "high", "xhigh", "max"] = "high"
 
+    # --- Speech to text ------------------------------------------------------
+    # Deepgram, chosen on the evidence in recruit_design_decisions.md §5 — filler_words is
+    # an explicit documented switch and word timings come back by default. Blank means no
+    # transcription is attempted; the fixture transcriber serves tests either way, so an
+    # unset key never fails a test run.
+    deepgram_api_key: str = ""
+    # nova-2 with filler_words=true and smart_format=false. smart_format tidies speech into
+    # readable prose, which is precisely the failure mode — a cleaned-up transcript is a
+    # better one by the industry's measure and a useless one by ours.
+    deepgram_model: str = "nova-2"
+
+    @property
+    def transcription_configured(self) -> bool:
+        return bool(self.deepgram_api_key)
+
     # --- Azure Document Intelligence -----------------------------------------
     # Blank endpoint means the fixture analyzer is used. See app/ingest/analyzer.py.
     azure_docintel_endpoint: str = ""
