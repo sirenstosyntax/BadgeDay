@@ -196,9 +196,9 @@ D = 4
 E = 5
 F = 5
 G = 1
-H = Incomplete
+H = not assessable
 I = 5
-J = Incomplete
+J = not assessable
 K = 4
 ```
 
