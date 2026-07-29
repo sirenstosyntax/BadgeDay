@@ -29,6 +29,12 @@ A stray `1.` opening a sentence is the ordinal-marker equivalent of `2.5 gallons
 guard is sequence: a marker is accepted only if it opens a list (`A`, `1`, `a`, `i`) or
 continues one (the successor of the previous sibling). Prose rarely satisfies that by
 accident, and when it does it is genuinely a list.
+
+## Markers that lose their space
+
+Real documents contain typos, and `ii.Fire personnel` is one a fire captain will never
+notice. The recognizer tolerates a missing space after an ordinal marker when a capital
+follows — see `_MARKER_GAP` for why that condition, and why decimal is excluded.
 """
 
 import re
@@ -74,15 +80,33 @@ _LOWER_ROMAN = [
     "xx",
 ]
 
+# A marker is normally followed by whitespace. Real documents lose it — the reference SOG
+# this pipeline was validated against carries `ii.Fire personnel should be aware…` — and
+# an unrecognized marker does not fail loudly: the item folds into its predecessor, and
+# every citation beneath it silently coarsens. That is the failure class this module
+# exists to prevent, so the missing space has to be tolerated.
+#
+# Tolerating it outright would trade the bug for a worse one. `a.m.` would open a lettered
+# list and `e.g.` a roman one, manufacturing sections out of ordinary prose. Requiring the
+# next character to be a capital rejects both — what follows those abbreviations is
+# lowercase — and costs nothing real, because an outline item starts with a capital.
+_MARKER_GAP = r"(?:\s+|(?=[A-Z]))"
+
+# Decimal is deliberately left requiring real whitespace. It is the family that collides
+# with measurements, and in a fire document the collisions are everywhere: `2.5GPM`,
+# `1.5NST`, `4.5PSI` would each become a citable section, every one of them followed by a
+# capital. `decimal_follows` guards the same risk from the other side; this keeps both
+# lines of defense. A decimal outline that also loses its spaces is a problem worth
+# seeing evidence of before widening the rule to meet it.
 PATTERNS: list[tuple[MarkerStyle, re.Pattern[str]]] = [
     (MarkerStyle.DECIMAL, re.compile(r"^(\d+(?:\.\d+)+)[.)]?\s+(\S.*)$")),
-    (MarkerStyle.UPPER_ALPHA, re.compile(r"^([A-Z])[.)]\s+(\S.*)$")),
-    (MarkerStyle.ARABIC, re.compile(r"^(\d{1,3})[.)]\s+(\S.*)$")),
+    (MarkerStyle.UPPER_ALPHA, re.compile(rf"^([A-Z])[.)]{_MARKER_GAP}(\S.*)$")),
+    (MarkerStyle.ARABIC, re.compile(rf"^(\d{{1,3}})[.)]{_MARKER_GAP}(\S.*)$")),
     (
         MarkerStyle.LOWER_ROMAN,
-        re.compile(rf"^({'|'.join(_LOWER_ROMAN)})[.)]\s+(\S.*)$"),
+        re.compile(rf"^({'|'.join(_LOWER_ROMAN)})[.)]{_MARKER_GAP}(\S.*)$"),
     ),
-    (MarkerStyle.LOWER_ALPHA, re.compile(r"^([a-z])[.)]\s+(\S.*)$")),
+    (MarkerStyle.LOWER_ALPHA, re.compile(rf"^([a-z])[.)]{_MARKER_GAP}(\S.*)$")),
 ]
 
 
