@@ -529,6 +529,60 @@ Run one answer through the scorer ~20 times and examine the spread. If run-to-ru
 > a 16k cap and stops on `end_turn`. Scores parse correctly throughout, so distributions are
 > unaffected; a single retry was added so a hard failure does not quietly shrink n.
 
+> **Criterion 3 re-run 2026-07-29, on the rubric as rewritten from Grant's blind review.**
+> Same harness, same fixtures, so the numbers are comparable to the two runs above.
+>
+> | Fixture | n | Outcome | Spread | σ |
+> |---|---|---|---|---|
+> | Qualified, self-focused | 20 | 2×20 | 0 | 0.00 |
+> | No team history, material undersold *(was 3-way split)* | 20 | **not assessable ×20** | 0 | 0.00 |
+> | No team history, genuinely nobody there | 10 | not assessable ×10 | 0 | 0.00 |
+> | Between 2 and 3 *(was 3×17, 2×2, 4A×1)* | 20 | 3×20 | 0 | 0.00 |
+> | Generic, correct, no incident *(was 3×10)* | 10 | **4B×10** | 0 | 0.00 |
+> | Changed by a named person | 10 | 5×10 | 0 | 0.00 |
+>
+> **Eighty runs, zero variance, and the two regressions the previous run recorded are both
+> gone.** The undersold offer went from splitting three ways to not-assessable twenty times
+> out of twenty, which is the settlement written into note 4. The 2/3 boundary that had
+> regressed to σ 0.38 with a stray 4A is back to 3×20. The rewrite did not trade one
+> boundary for another — the first edit here that has not.
+>
+> **The generic-correct fixture deliberately moved 3 → 4B**, ten out of ten, which is the
+> rewrite's intent rather than drift: a candidate who states the right approach plainly is
+> now a 4 short of evidence rather than a 3. Worth flagging because it is the largest
+> single behavioural change in the criterion and it raises the floor for a whole class of
+> answer. Whether that is *right* is Grant's call, not the harness's.
+>
+> The Criterion 2 caveat about self-referential tuning is now weaker but not gone: the
+> anchors were rewritten from an SME's scores on answers he had not seen scored, which is
+> real external signal, but the fixtures are still Claude's and still written alongside an
+> earlier draft of the anchors.
+
+**[SETTLED] The noise floor is a property of the path, not just the rubric — measure the one that ships.**
+Measured 2026-07-29 and it was not expected. The two runs above put the revised Criterion 3 at **80 runs, zero variance on the scorer path**. The same rubric text, on the same answers, through **`critique_answer` — the path that actually ships — moves by up to three anchors.**
+
+Two consecutive full runs of `scripts/recruit_review_compare.py` disagreed with each other on **four of eleven** answers, having changed nothing but a bug fix that touched one unrelated answer. Five runs per answer on the five that moved:
+
+| Answer | Grant | Pipeline over 5 runs | Spread |
+|---|---|---|---|
+| B | 4 | 4B×4, 2×1 | 3 anchors |
+| E | 5 | 4B×3, 3×1, 2×1 | 3 anchors |
+| F | 5 | 4B×4, 5×1 | 2 anchors |
+| I | 5 | 5×3, 4B×1, 4A×1 | 2 anchors |
+| K | 4 | 4B×5 | 0 |
+
+E never once reached the score Grant gave it and swung from 2 to 4B. Both paths read the identical rubric region — `app/critique/rubric.py` respects the `scorer:start`/`scorer:end` markers — so this is not the authorship-banner confound the harness was built to exclude.
+
+**Consequences, in order of how much they cost:**
+
+1. **Both calibration reports are artifacts.** The first reported five divergences, the second reported one, from the same rubric. Neither is a finding about a clause, and rewriting an anchor from either would be chasing noise. Any divergence smaller than the pipeline's own spread is unreadable, and right now that is most of them.
+2. **The report's "the clause that decided it" column is a fiction.** `pipeline_verdict` derives it from `critique.points[0].clause` — the clause the *first point* happened to cite. Point order is not causation, and nothing in the schema records which anchor the model actually applied. So the loop of "divergence → this is the clause to rewrite" has been pointing at arbitrary clauses, which is worse than pointing at none.
+3. **The 60/60 and 80/80 results do not transfer to the product.** They are properties of the scorer prompt, which asks for a score and the single deciding criterion and nothing else. They were read as properties of the rubric.
+
+**The likely mechanism, and it is a design consequence rather than a bug.** The critique prompt tells the model the score is internal and instrumental and that *the advice is the product* — correctly, per §1 — and then asks for the score as one field among four, with no requirement to commit to an anchor or say why. Every other claim in this system has to name what it rests on: a point cites its clause, a not-assessable outcome must quote the words that earn it, and the scorer names its deciding criterion. **The outcome itself is the one judgment in the pipeline that is not anchored to anything**, and it is the one that moves.
+
+Not yet fixed — the remedy touches the critique schema and prompt, which is the module's spine, and it is a decision rather than a repair. It also may not need fixing at all for the shipping product, since the score is never shown; what it certainly breaks is the SME calibration exercise at step 3, which is the gate the whole module waits on.
+
 **[SETTLED] Competitive context is now part of the step 3 decision.**
 stationvisit.com ships AI-scored mock firefighter oral boards across five dimensions with a rubric attributed to experienced firefighters, free first interview, subscription thereafter. Step 3 is therefore not "is Recruit worth building" in the abstract but "do critiques generated from these anchors read as materially better than what already exists" — a cheaper question, answerable before the pipeline is built.
 
@@ -574,12 +628,14 @@ Proposed as a reliability fix — pairwise comparison is more stable than absolu
 |---|---|
 | Criterion 1 anchors | Scope settled (see below), anchors unwritten |
 | Criterion 1 naming | "Communication" overclaims what audio can see. "Answer Construction" plus a separate delivery sub-score is the candidate. **[OPEN]** |
-| Criterion 3 | **Drafted 2026-07-28 by Claude, unreviewed** — `recruit_rubric_c3_teamwork.md`. The qualified-self-focused anchor exists and fires 20/20. Needs SME review before it is anything more than a proposal; the anchors represent nobody's judgment yet. |
+| Criterion 3 | **Rewritten 2026-07-29 from Grant's blind scores** — `recruit_rubric_c3_teamwork.md`. No longer represents nobody's judgment: the anchors were rewritten from an SME's scores on answers he had not seen scored, and note 1 (will he say the difficult thing) came from him. Stable at 80/80 on the scorer path. Still wants a pass over the rewritten text itself, which he has not read. |
+| **Pipeline score instability** | **Found 2026-07-29 and it blocks step 3.** The revised C3 is 80/80 stable on the scorer path and moves up to three anchors through `critique_answer`. See §7. The calibration report is unreadable until this is settled, and its deciding-clause column is a fiction. Grant's call — the score is never shown to a candidate, so this may only need fixing for the review exercise. |
+| C3 — the generic-correct answer moved 3 → 4B | The rewrite's largest single behavioural change: a candidate who states the right approach plainly is now a 4 short of evidence rather than a 3. Intended, 10/10, and it raises the floor for a whole class of answer. Wants Grant's confirmation that it is what he meant. |
 | ~~Is the weak teamwork answer really all development?~~ | **Dissolved by Grant 2026-07-28.** It was the wrong question to put to the model. Ask the candidate: is there a better story, and if not, that is the thing to go and get. Development verdicts on that fixture went 74 to zero. |
 | ~~c2.anchor.2 — mixed anchor~~ | **Withdrawn 2026-07-28.** Not a defect: the anchor is two true things about one answer, and the critique should report both. See §3. |
-| C3 — where the unfalsifiable-claim flag lands | Scoring note 4 flags *"I've always gotten along with everyone"* as a tell but no anchor says whether it pulls an answer to 2 or is just noise on a 3. Found by the harness. |
-| C3 — what counts as "an action" at the 4 boundary | A teammate answering *"things are fine"* when asked was read as a named other person taking an action, putting a borderline answer at 4A. The boundary says an action is required and does not say what one is. |
-| C3 — a real but too-thin offer | Scoring note 3 says score what he offers; it does not say what to do when the offer is one dismissed clause. Splits three ways between 3, not-assessable, and 2. |
+| C3 — where the unfalsifiable-claim flag lands | **Now scoring note 5** (the rewrite renumbered the notes). It flags *"I've always gotten along with everyone"* as a tell but no anchor says whether it pulls an answer to 2 or is just noise on a 3. Found by the harness, and the rewrite left the question open where it stood. |
+| C3 — what counts as "an action" at the 4 boundary | A teammate answering *"things are fine"* when asked was read as a named other person taking an action, putting a borderline answer at 4A. The boundary says an action is required and does not say what one is. **Quieter after the rewrite** — the 2/3 fixture is back to 20/20 — but the rewrite demoted the cast-of-the-story test rather than defining an action, so the question is dodged rather than answered. |
+| ~~C3 — a real but too-thin offer~~ | **Settled by Grant 2026-07-29**, now scoring note 4: a single dismissed clause names a setting and nothing else, so it returns not assessable and asks him about it. He is not declining to answer and his life is not empty, so neither a low score nor *not answered* is honest. 20/20 on the fixture that used to split three ways. |
 | Not-assessable outcome on other criteria | Implemented on C3. Criterion 2 should get it on review; the rule is rubric-wide even though it bites hardest on Teamwork. |
 | ~~Not assessable vs. did not answer~~ | **Fixed 2026-07-28.** Three outcomes: scored, not assessable (a conclusion, must quote the words that establish it), not answered (no basis either way — ask him). See §2. |
 | Criteria 4, 5 | Unwritten. |
