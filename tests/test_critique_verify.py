@@ -60,6 +60,19 @@ def point(**overrides) -> DraftPoint:
     return DraftPoint(**{**base, **overrides})
 
 
+def draft_critique(**overrides) -> DraftCritique:
+    """A draft critique with the outcome anchored, since the gate now requires that."""
+    base = {
+        "outcome": "scored",
+        "deciding_clause_id": "c3.anchor.2",
+        "determination": "He is the only agent in his own team story.",
+        "internal_score": 2,
+        "route": "n/a",
+        "points": [point()],
+    }
+    return DraftCritique(**{**base, **overrides})
+
+
 # --- 1. Anchoring: the check the whole product rests on ----------------------
 
 
@@ -319,7 +332,7 @@ def test_score_disclosure_is_rejected(rubric, metrics, observation):
 
 
 def test_one_bad_point_does_not_discard_its_siblings(rubric, metrics):
-    draft = DraftCritique(
+    draft = draft_critique(
         outcome="scored",
         internal_score=2,
         route="n/a",
@@ -337,7 +350,7 @@ def test_one_bad_point_does_not_discard_its_siblings(rubric, metrics):
 def test_a_not_scored_outcome_forces_the_internal_score_to_zero(rubric, metrics):
     """Neither declining outcome may carry a score that could be averaged in."""
     for outcome in ("not_assessable", "not_answered"):
-        draft = DraftCritique(
+        draft = draft_critique(
             outcome=outcome, internal_score=2, route="n/a", points=[point()]
         )
         critique, _ = verify_critique(draft, rubric, TRANSCRIPT, metrics)
@@ -350,7 +363,7 @@ def test_a_not_scored_outcome_forces_the_internal_score_to_zero(rubric, metrics)
 
 def test_not_assessable_must_quote_the_words_that_establish_it(rubric, metrics):
     """A claim about his life, made to him, on one paragraph. It has to be earned."""
-    draft = DraftCritique(
+    draft = draft_critique(
         outcome="not_assessable",
         internal_score=0,
         route="n/a",
@@ -363,7 +376,7 @@ def test_not_assessable_must_quote_the_words_that_establish_it(rubric, metrics):
 
 
 def test_not_assessable_supported_by_a_quote_survives(rubric, metrics):
-    draft = DraftCritique(
+    draft = draft_critique(
         outcome="not_assessable",
         internal_score=0,
         route="n/a",
@@ -375,7 +388,7 @@ def test_not_assessable_supported_by_a_quote_survives(rubric, metrics):
 
 def test_a_non_answer_must_ask_rather_than_conclude(rubric, metrics):
     """Silence is not evidence he has never done it, so the outcome is a question."""
-    draft = DraftCritique(
+    draft = draft_critique(
         outcome="not_answered",
         internal_score=0,
         route="n/a",
@@ -386,7 +399,7 @@ def test_a_non_answer_must_ask_rather_than_conclude(rubric, metrics):
 
 
 def test_a_non_answer_that_asks_survives(rubric, metrics):
-    draft = DraftCritique(
+    draft = draft_critique(
         outcome="not_answered",
         internal_score=0,
         route="n/a",
@@ -405,7 +418,7 @@ def test_a_non_answer_that_asks_survives(rubric, metrics):
 
 def test_rejections_carry_enough_detail_to_regenerate_from(rubric, metrics):
     """The retry loop feeds `detail` back to the model, so it has to name the actual problem."""
-    draft = DraftCritique(
+    draft = draft_critique(
         outcome="scored", internal_score=2, route="n/a", points=[point(source_id="c3.anchor.9")]
     )
     _, rejections = verify_critique(draft, rubric, TRANSCRIPT, metrics)
@@ -513,7 +526,7 @@ def test_the_prescription_guard_does_not_apply_to_answer_points(rubric, metrics)
 
 
 def test_a_critique_separates_the_two_kinds(rubric, metrics):
-    draft = DraftCritique(
+    draft = draft_critique(
         outcome="scored",
         internal_score=2,
         route="n/a",
@@ -581,7 +594,7 @@ def test_the_prescription_guard_covers_the_no_branch_of_a_fork(rubric, metrics):
 
 
 def test_the_four_groups_are_separable(rubric, metrics):
-    draft = DraftCritique(
+    draft = draft_critique(
         outcome="scored",
         internal_score=2,
         route="n/a",

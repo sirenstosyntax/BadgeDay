@@ -65,8 +65,11 @@ def pipeline_verdict(outcome) -> tuple[str, str]:
     critique = outcome.critique
     if critique is None:
         return "FAILED", ""
-    clauses = [p.clause.clause_id for p in critique.points if p.clause]
-    decided_by = clauses[0] if clauses else ""
+    # The real determination, not an inference from point order. This used to read
+    # `points[0].clause` — the clause the first point happened to cite — so every
+    # "the clause that decided it" in every report before 2026-07-29 named an arbitrary
+    # clause, and the divergence-to-rewrite loop was aimed by it. See §7.
+    decided_by = critique.deciding_clause.clause_id if critique.deciding_clause else ""
     if critique.outcome != "scored":
         return critique.outcome.replace("_", " "), decided_by
     # The route already carries its own digit — "4A", not "A" — so appending it to the

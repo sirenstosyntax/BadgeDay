@@ -147,7 +147,13 @@ class DraftPoint(BaseModel):
 
 
 class DraftCritique(BaseModel):
-    """The top-level shape the model is constrained to emit."""
+    """The top-level shape the model is constrained to emit.
+
+    **Field order is load-bearing.** Structured output is emitted in declaration order, so
+    the determination is written before the score and the score before the points. The
+    outcome is a conclusion drawn from a named clause, and a model that emits the number
+    first and the reasoning after has decided nothing — it has guessed and then justified.
+    """
 
     outcome: Outcome = Field(
         description=(
@@ -156,6 +162,24 @@ class DraftCritique(BaseModel):
             "quote him. 'not_answered' when he gave nothing to judge either way: silence, "
             "a refusal, a request to repeat, or a pivot to another subject."
         )
+    )
+    deciding_clause_id: str = Field(
+        min_length=1,
+        description=(
+            "The one clause of the rubric that decided this outcome — the anchor the answer "
+            "lands on, or the scoring note that took it somewhere else. Must be a clause_id "
+            "from the catalogue supplied with the rubric. Where a scoring note overrides an "
+            "anchor, name the note, because the note is what decided it."
+        ),
+    )
+    determination: str = Field(
+        min_length=1,
+        description=(
+            "Why that clause and not the one on either side of it, in a sentence or two, "
+            "referring to what the candidate actually said. This is the reasoning the score "
+            "rests on and it is written before the score, not after it. Internal — never "
+            "shown to the candidate."
+        ),
     )
     internal_score: int = Field(
         ge=0, le=5, description="The anchor the answer lands on, or 0 when not scored."
@@ -189,11 +213,21 @@ class Point(BaseModel):
 
 
 class Critique(BaseModel):
-    """A verified critique. Every point traces to a rubric clause or a computed metric."""
+    """A verified critique. Every point traces to a rubric clause or a computed metric.
+
+    So does the outcome. `deciding_clause` is the anchor determination, resolved against
+    the rubric that was actually loaded — the same treatment a point's clause gets, for the
+    same reason. It was added after the outcome turned out to be the one judgment in the
+    pipeline anchored to nothing, and the one that moved: 80 runs of zero variance on the
+    scorer path against a three-anchor swing here, on identical rubric text. See
+    `recruit_design_decisions.md` §7.
+    """
 
     criterion_id: str
     criterion_name: str
     outcome: Outcome
+    deciding_clause: Clause | None = None
+    determination: str = ""
     internal_score: int
     route: str
     points: list[Point]

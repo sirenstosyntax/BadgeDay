@@ -581,7 +581,26 @@ E never once reached the score Grant gave it and swung from 2 to 4B. Both paths 
 
 **The likely mechanism, and it is a design consequence rather than a bug.** The critique prompt tells the model the score is internal and instrumental and that *the advice is the product* — correctly, per §1 — and then asks for the score as one field among four, with no requirement to commit to an anchor or say why. Every other claim in this system has to name what it rests on: a point cites its clause, a not-assessable outcome must quote the words that earn it, and the scorer names its deciding criterion. **The outcome itself is the one judgment in the pipeline that is not anchored to anything**, and it is the one that moves.
 
-Not yet fixed — the remedy touches the critique schema and prompt, which is the module's spine, and it is a decision rather than a repair. It also may not need fixing at all for the shipping product, since the score is never shown; what it certainly breaks is the SME calibration exercise at step 3, which is the gate the whole module waits on.
+**[SETTLED] The outcome carries its own anchor, like every other claim in the pipeline.**
+Decided by Grant 2026-07-29. `DraftCritique` gains two required fields — `deciding_clause_id`, gated against the loaded rubric exactly as a point's clause is, and `determination`, the reasoning in a sentence or two. **Field order is load-bearing**: structured output is emitted in declaration order, so the determination is written before the score. A model that emits the number first and the reasoning after has decided nothing; it has guessed and then justified.
+
+The prompt now says to decide the outcome and name what decided it before writing the critique, and the passage calling the score *internal and instrumental* was qualified — instrumental was being read as casual.
+
+**Measured after, same five answers, five runs each:**
+
+| Answer | Grant | Before | After |
+|---|---|---|---|
+| B | 4 | 4B×4, 2×1 | **4B×5** |
+| E | 5 | 4B×3, 3×1, 2×1 | 5×3, 4B×2 |
+| F | 5 | 4B×4, 5×1 | **4B×5** |
+| I | 5 | 5×3, 4B×1, 4A×1 | **5×5** |
+| K | 4 | 4B×5 | 4B×4, 5×1 |
+
+**Three of five now stable where one was, and the worst spread drops from three anchors to two.** I is the clearest result: the paradigm 5 was landing on three different anchors and is now 5 five times out of five, matching the SME. E moved from never once reaching his score to reaching it in a majority of runs. K got marginally worse.
+
+**Not fixed, improved.** E and K still move by one anchor, which is the same one-anchor boundary wobble Criterion 2 showed before its clause was tightened, and it is a rubric question rather than a pipeline one. The claim this change earns is narrower than "the scorer is stable": **a divergence of one anchor is still not readable, and a divergence of two or more now is.**
+
+**What it bought immediately: the first trustworthy finding the exercise has produced.** F is now a stable divergence — 4B on all five runs and both full calibration runs, against Grant's 5 — decided by note 1, on the reading that asking once and getting a real answer satisfies *he had the conversation* without reaching the top anchor. That is a specific clause, a specific reading, and a specific disagreement with the SME. Before this change, F's divergence was indistinguishable from noise and its deciding clause was whatever the first point happened to cite.
 
 **[SETTLED] Competitive context is now part of the step 3 decision.**
 stationvisit.com ships AI-scored mock firefighter oral boards across five dimensions with a rubric attributed to experienced firefighters, free first interview, subscription thereafter. Step 3 is therefore not "is Recruit worth building" in the abstract but "do critiques generated from these anchors read as materially better than what already exists" — a cheaper question, answerable before the pipeline is built.
@@ -629,8 +648,10 @@ Proposed as a reliability fix — pairwise comparison is more stable than absolu
 | Criterion 1 anchors | Scope settled (see below), anchors unwritten |
 | Criterion 1 naming | "Communication" overclaims what audio can see. "Answer Construction" plus a separate delivery sub-score is the candidate. **[OPEN]** |
 | Criterion 3 | **Rewritten 2026-07-29 from Grant's blind scores** — `recruit_rubric_c3_teamwork.md`. No longer represents nobody's judgment: the anchors were rewritten from an SME's scores on answers he had not seen scored, and note 1 (will he say the difficult thing) came from him. Stable at 80/80 on the scorer path. Still wants a pass over the rewritten text itself, which he has not read. |
-| **Pipeline score instability** | **Found 2026-07-29 and it blocks step 3.** The revised C3 is 80/80 stable on the scorer path and moves up to three anchors through `critique_answer`. See §7. The calibration report is unreadable until this is settled, and its deciding-clause column is a fiction. Grant's call — the score is never shown to a candidate, so this may only need fixing for the review exercise. |
-| C3 — the generic-correct answer moved 3 → 4B | The rewrite's largest single behavioural change: a candidate who states the right approach plainly is now a 4 short of evidence rather than a 3. Intended, 10/10, and it raises the floor for a whole class of answer. Wants Grant's confirmation that it is what he meant. |
+| ~~Pipeline score instability~~ | **Largely fixed 2026-07-29** by anchoring the outcome in the schema — see §7. Three of five previously-unstable answers are now stable and the worst spread fell from three anchors to two. What remains is a one-anchor wobble on two answers, tracked below as a rubric question rather than a pipeline one. |
+| C3 — one-anchor wobble on E and K | The residue after the outcome anchor: E moves 5/4B, K moves 4B/5, both at the 4B/5 boundary. Same shape as Criterion 2's 3/4B boundary before it was tightened, and that one turned out to be a nameable clause ambiguity rather than model noise. Worth the same treatment. A one-anchor divergence is still unreadable in the calibration report. |
+| **C3 — F is a real divergence at 4B vs 5** | The first trustworthy finding from the review exercise. Stable across five runs and both full calibration runs, decided by note 1: the candidate asks Ryan what is going on, gets a real answer, and Ryan fixes it himself. The anchors say that satisfies *he had the conversation* without reaching the top; Grant says 5. Needs him to say which, and the answer probably belongs in an anchor. |
+| ~~C3 — the generic-correct answer moved 3 → 4B~~ | **Confirmed intended by Grant 2026-07-29.** A candidate who states the right approach plainly has answered the question and is short of evidence, which is a lesser fault than lacking the instinct. 10/10 on the fixture. |
 | ~~Is the weak teamwork answer really all development?~~ | **Dissolved by Grant 2026-07-28.** It was the wrong question to put to the model. Ask the candidate: is there a better story, and if not, that is the thing to go and get. Development verdicts on that fixture went 74 to zero. |
 | ~~c2.anchor.2 — mixed anchor~~ | **Withdrawn 2026-07-28.** Not a defect: the anchor is two true things about one answer, and the critique should report both. See §3. |
 | C3 — where the unfalsifiable-claim flag lands | **Now scoring note 5** (the rewrite renumbered the notes). It flags *"I've always gotten along with everyone"* as a tell but no anchor says whether it pulls an answer to 2 or is just noise on a 3. Found by the harness, and the rewrite left the question open where it stood. |

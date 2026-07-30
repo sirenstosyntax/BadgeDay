@@ -59,6 +59,20 @@ def _point(clause_id: str, **kw) -> dict:
     }
 
 
+def _draft(**kw) -> dict:
+    """A draft that survives the gate, outcome anchor included."""
+    return {
+        "outcome": kw.get("outcome", "scored"),
+        "deciding_clause_id": kw.get("deciding_clause_id", "c3.anchor.3"),
+        "determination": kw.get(
+            "determination", "He opened the door and did not walk through it."
+        ),
+        "internal_score": kw.get("internal_score", 3),
+        "route": kw.get("route", "n/a"),
+        "points": kw.get("points", [_point("c3.anchor.3"), _point("c3.note.2")]),
+    }
+
+
 def truncation_error(model: type) -> ValidationError:
     """A real parse failure of the shape a cut-off response produces.
 
@@ -126,17 +140,51 @@ def test_an_empty_transcript_never_reaches_the_api(rubric, settings) -> None:
 
 
 def test_a_clean_critique_stops_after_one_attempt(rubric, settings) -> None:
-    draft = {
-        "outcome": "scored",
-        "internal_score": 3,
-        "route": "n/a",
-        "points": [_point("c3.anchor.3"), _point("c3.note.2")],
-    }
+    draft = _draft()
     outcome = _run(FakeClient([draft]), rubric, settings)
     assert outcome.attempts == 1
     assert not outcome.failed
     assert outcome.failure is None
     assert len(outcome.critique.points) == 2
+
+
+# --- The outcome's own anchor ------------------------------------------------
+#
+# The score was the one judgment in the pipeline anchored to nothing, and the one that
+# moved: 80 runs of zero variance on the scorer path against a three-anchor swing here.
+# See `recruit_design_decisions.md` §7.
+
+
+def test_the_deciding_clause_is_resolved_onto_the_critique(rubric, settings) -> None:
+    outcome = _run(FakeClient([_draft(deciding_clause_id="c3.anchor.4B")]), rubric, settings)
+    assert outcome.critique.deciding_clause is not None
+    assert outcome.critique.deciding_clause.clause_id == "c3.anchor.4B"
+    assert outcome.critique.determination
+
+
+def test_an_outcome_anchored_to_a_clause_that_does_not_exist_is_rejected(
+    rubric, settings
+) -> None:
+    """A score citing an invented clause is a number with nothing behind it."""
+    client = FakeClient([_draft(deciding_clause_id="c3.anchor.99")] * 2)
+    outcome = _run(client, rubric, settings)
+    assert any(r.code == "deciding_clause_not_in_rubric" for r in outcome.rejections)
+
+
+def test_an_outcome_anchored_to_another_criterion_is_rejected(rubric, settings) -> None:
+    """The plausible failure: a real clause ID from the wrong rubric."""
+    client = FakeClient([_draft(deciding_clause_id="c2.anchor.3")] * 2)
+    outcome = _run(client, rubric, settings)
+    assert any(r.code == "deciding_clause_not_in_rubric" for r in outcome.rejections)
+
+
+def test_a_rejected_outcome_anchor_is_told_to_the_model_on_retry(rubric, settings) -> None:
+    """The retry loop is fed the rejection text, so it has to name the clause that failed."""
+    client = FakeClient([_draft(deciding_clause_id="c3.anchor.99"), _draft()])
+    _run(client, rubric, settings)
+
+    retry = client.messages.calls[1]["messages"][-1]["content"]
+    assert "c3.anchor.99" in retry
 
 
 # --- Truncation --------------------------------------------------------------
@@ -147,12 +195,7 @@ def test_a_clean_critique_stops_after_one_attempt(rubric, settings) -> None:
 
 
 def test_a_truncated_response_is_retried_rather_than_abandoned(rubric, settings) -> None:
-    draft = {
-        "outcome": "scored",
-        "internal_score": 3,
-        "route": "n/a",
-        "points": [_point("c3.anchor.3"), _point("c3.note.2")],
-    }
+    draft = _draft()
     client = FakeClient([truncation_error(DraftCritique), draft])
     outcome = _run(client, rubric, settings)
 
@@ -163,24 +206,14 @@ def test_a_truncated_response_is_retried_rather_than_abandoned(rubric, settings)
 
 def test_a_retried_truncation_does_not_leave_a_failure_behind(rubric, settings) -> None:
     """A critique that came back sound on the second ask is a success, not a warning."""
-    draft = {
-        "outcome": "scored",
-        "internal_score": 3,
-        "route": "n/a",
-        "points": [_point("c3.anchor.3"), _point("c3.note.2")],
-    }
+    draft = _draft()
     outcome = _run(FakeClient([truncation_error(DraftCritique), draft]), rubric, settings)
     assert outcome.failure is None
 
 
 def test_the_retry_after_a_truncation_asks_again_unchanged(rubric, settings) -> None:
     """There is no draft to feed back — the rejection path would have nothing to quote."""
-    draft = {
-        "outcome": "scored",
-        "internal_score": 3,
-        "route": "n/a",
-        "points": [_point("c3.anchor.3"), _point("c3.note.2")],
-    }
+    draft = _draft()
     client = FakeClient([truncation_error(DraftCritique), draft])
     _run(client, rubric, settings)
 

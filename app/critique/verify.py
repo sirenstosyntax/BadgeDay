@@ -327,14 +327,29 @@ def verify_point(
     )
 
 
-def _verify_outcome(draft: DraftCritique, points: list[Point]) -> Rejection | None:
+def _verify_outcome(
+    draft: DraftCritique, points: list[Point], rubric: Rubric
+) -> Rejection | None:
     """Check the criterion-level conclusion, which is where the costly error lives.
 
     The two ways of declining to score are not symmetric. Saying *he did not answer* costs
     him one question. Saying *his life does not contain this* is a claim about a person,
     made to that person, on the strength of one paragraph — so it has to be earned the same
     way a Promote question is: by pointing at the words that support it.
+
+    The outcome is anchored here on the same principle as a point. An outcome that names no
+    clause of the loaded rubric is a score with nothing behind it — and unlike a stray point
+    it cannot be dropped and the critique still stand, because everything else is built on
+    the level it claims.
     """
+    if rubric.clause(draft.deciding_clause_id) is None:
+        return Rejection(
+            "deciding_clause_not_in_rubric",
+            f"the outcome cites {draft.deciding_clause_id!r} as the clause that decided it, "
+            f"which is not a clause of {rubric.criterion_id}. Name the anchor the answer "
+            "lands on, or the scoring note that overrode it.",
+        )
+
     if draft.outcome == "not_assessable" and not any(p.answer_quote for p in points):
         return Rejection(
             "unsupported_not_assessable",
@@ -377,7 +392,7 @@ def verify_critique(
         else:
             points.append(result)
 
-    outcome_problem = _verify_outcome(draft, points)
+    outcome_problem = _verify_outcome(draft, points, rubric)
     if outcome_problem is not None:
         rejections.append(outcome_problem)
 
@@ -385,6 +400,8 @@ def verify_critique(
         criterion_id=rubric.criterion_id,
         criterion_name=rubric.name,
         outcome=draft.outcome,
+        deciding_clause=rubric.clause(draft.deciding_clause_id),
+        determination=draft.determination.strip(),
         internal_score=draft.internal_score if draft.outcome == "scored" else 0,
         route=draft.route,
         points=points,
