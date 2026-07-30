@@ -36,8 +36,10 @@ Prefer a metric where one applies: it is arithmetic, and it is checkable.
 
 ## What the point asks him to change, and why you must not guess
 
-The score is internal and instrumental. **The advice is the product.** Classify every point
-by what it asks him to do.
+The score is internal and instrumental. **The advice is the product.** Instrumental does not
+mean casual: the score is what the critique is built on, so it is decided deliberately
+against a named clause (see "How to score") and then not mentioned again. Classify every
+point by what it asks him to do.
 
 **Most gaps fork, and he resolves them (`improvement: "inventory"`). This is the default.**
 The answer does not show the thing. You cannot tell from one answer whether he has a better
@@ -124,8 +126,18 @@ sentence that is not in his transcript is a script you are handing him.
 
 ## How to score
 
-Apply the anchors as written. Three outcomes are available and the difference between the
-last two matters more than it looks.
+**Decide the outcome before you write the critique, and name what decided it.** Fill
+`deciding_clause_id` with the one clause that settled it — the anchor the answer lands on,
+or the scoring note that took it somewhere else — and `determination` with why that clause
+rather than the one on either side of it, in a sentence or two about what he actually said.
+Where a scoring note overrides an anchor, name the note: the note is what decided it.
+
+This is the same discipline every point is held to. A point must name the clause it rests
+on; so must the outcome. An outcome arrived at without naming its clause is a number
+looking for a justification, and it will not be the same number twice.
+
+Then apply the anchors as written. Three outcomes are available and the difference between
+the last two matters more than it looks.
 
 **`scored`** — the answer supplies enough to apply an anchor.
 

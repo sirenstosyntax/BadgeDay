@@ -144,6 +144,11 @@ def _render(critique: Critique, draft: bool) -> None:
         # the critique agree.
         route = f" ({critique.route})" if critique.route != "n/a" else ""
         print(f"\n  [internal, never shown to a candidate: {critique.internal_score}{route}]")
+        # The determination is the part worth reading at step 3. The number says the anchors
+        # and the SME disagree; this says which clause did it and on what reading, which is
+        # the difference between a divergence you can act on and one you can only count.
+        if critique.deciding_clause:
+            print(f"  [decided by {critique.deciding_clause.clause_id}: {critique.determination}]")
 
     def show(point) -> None:
         anchor = point.clause.clause_id if point.clause else f"metric:{point.metric.name}"
