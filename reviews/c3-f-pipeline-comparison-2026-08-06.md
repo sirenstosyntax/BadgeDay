@@ -1,9 +1,9 @@
 # Criterion 3, answer F — pipeline critique comparison
 
-**Reviewed by:** Grant Collings  
-**Date:** 2026-08-06  
-**Calibration target:** `reviews/c3-f-sme-critique.md`  
-**Run command:** `python scripts/recruit_answer_runs.py F --runs 1 --show`  
+**Reviewed by:** Grant Collings
+**Date:** 2026-08-06
+**Calibration target:** `reviews/c3-f-sme-critique.md`
+**Run command:** `python scripts/recruit_answer_runs.py F --runs 1 --show`
 **Model:** `claude-sonnet-5`, effort `high`
 
 ## Verdict
