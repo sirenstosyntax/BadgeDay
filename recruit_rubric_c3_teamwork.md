@@ -76,6 +76,19 @@ engagement, not avoidance: he opened the door. That is anchor 3, not anchor 2, a
 certainly not anchor 1. Do not read "the other people are thin in his account" as avoidance; that is
 note 2 and it is a different, lesser fault.
 
+**Asking is the floor. Finding out is the thing being measured.** Note 1 is satisfied by
+opening the door, and the criterion is not finished there. A colleague with something real
+going on rarely says it first — he deflects, minimises, or says nothing at all because he
+does not want to be treated as a special case. **The candidate who stays in the conversation
+past that first deflection, until the actual problem surfaces, has done the decisive
+interpersonal thing in this criterion**, and it is what separates him from the candidate at
+anchor 3 who asked once and took the first answer.
+
+Score it on what surfaced, not on how many times he says he asked. A candidate who reports
+what the other man was actually dealing with — the thing nobody had been told — got there
+because he did not stop at the first answer, whether or not he narrates the persistence.
+The disclosure is the evidence. Settled by SME review 2026-08-06.
+
 Where he did decline it, **what was at stake decides how far it pulls him down**, and the
 two are not close:
 
@@ -166,6 +179,10 @@ answer is usually not true, and is sometimes a bigger flag than the problem woul
 > available because nothing rules it out. Decide whether the never-had-a-disagreement claim
 > is a level 2 tell in its own right, or a thing to note in critique that does not move the
 > score, and put the answer in the anchor rather than here.
+>
+> Narrowed 2026-08-06, not closed. Where the claim is **not** in the answer and the risk is
+> that he opens with one next time, that is note 10 and it does not touch the score. This
+> note still governs the case the harness found, where he actually said it.
 
 **6. Two axes: wanting to, and being able to.**
 Wanting to work with people and being able to work with people are different, and a
@@ -195,6 +212,31 @@ More so than Criterion 2. Panels react to candidates, and reaction is much of wh
 dimension measures. The anchors stay behavioural so they can be verified; the reaction to
 those behaviours is named where it bears on the score.
 
+**10. A reuse or delivery risk is reported, and it does not move the score.**
+
+A candidate takes one good story to several boards, and the way he introduces it is not
+fixed the way the events are. So there is a class of thing worth telling him that is **not a
+fault in this answer**: a way of retelling the same material that would cost him next time.
+The commonest is opening a strong story with an unsupported self-assessment — *"I've always
+been good with people"*, *"I'm a team player"* — which invites a panel to weigh the claim
+instead of the evidence, and does it to a man whose evidence would have carried him.
+
+**Scored: not at all.** A risk names something absent from this answer, so there is nothing
+here to deduct for. Reporting it as a gap tells a candidate he did badly at something he did
+not do. Where the wording is actually present, it is not a risk — it is in the answer, and
+the anchors and note 5 govern it.
+
+**Labelled as a risk, and kept to one.** It is a caution attached to good material; a list
+of cautions is a fault list wearing a different hat.
+
+**Names the pattern, never the replacement.** *"You open by telling the panel you are good
+with people, before the story that shows it"* is the pattern. Supplying what he should say
+instead is the one thing this product does not do — see note 7 and the critique constraints.
+
+Introduced from SME review 2026-08-06, which reads the opening-claim risk as a delivery
+matter rather than a deduction. **This does not settle where note 5's flag lands when the
+claim is actually made** — that question is still open, and note 5 still carries it.
+
 ---
 
 ## Anchors
@@ -219,6 +261,20 @@ shown you the crew ethic, whether or not he gives the lad's name and whether or 
 draws a lesson about himself. Do not mark him down for telling it plainly. Being changed by
 a named colleague is *strong* evidence and belongs here — it is one route to a 5, not the
 definition of one.
+
+**The other man solving it himself is the strongest fact in an answer, not a cap on it.**
+Where the candidate stayed in the conversation until the real problem surfaced and the
+colleague then went and fixed it — took it to a supervisor, changed what he was doing, asked
+for the thing nobody had thought of — **that is the conversation working, and it is a 5.**
+Read the sequence, not the final actor. A colleague who leaves a conversation able to solve
+his own problem was put in that position by the conversation, and the candidate who says
+*"he's the one who sorted it — I just asked the question"* is crediting precisely, which is
+the conduct at the top of this anchor rather than an admission that he did nothing.
+
+Do not route this to 4B on the grounds that the candidate took no further action himself.
+The alternative to asking would have been absorbing the work in silence or escalating over
+the man's head; he did neither, and the outcome was a colleague who fixed his own problem
+and stayed. Settled by SME review 2026-08-06.
 
 ### 4 — Sound conduct with something missing, or the right instincts thinly evidenced
 
@@ -261,7 +317,11 @@ a 3.
 > Decide what clears the bar — plausibly, the other person must do something that changes
 > the situation, not merely respond when spoken to — and say so.
 
-Boundary against 5: 4 handles people or wants them. 5 was **changed** by one.
+Boundary against 5: 4 handles people or wants them. 5 was **changed** by one, or **changed
+something for one** — see anchor 5. A candidate who got past a deflection to the real
+problem, after which the colleague acted on it himself, is a 5 and not a 4B. The test at
+this boundary is whether anything the candidate did altered what the other man was able to
+do; 4B is friction handled with nothing altered.
 
 ### 3 — He made contact and did not follow through
 
@@ -292,7 +352,7 @@ does not appear in his own account of his life.**
 
 **This anchor presupposes there was a crew.** It describes a candidate who had people
 around him and left them out, and it does not reach a candidate who was genuinely working
-alone — that is scoring note 3, and a different outcome entirely. Before applying anything
+alone — that is scoring note 4, and a different outcome entirely. Before applying anything
 below, establish that somebody else was actually there.
 
 The tells, which are behavioural and countable:

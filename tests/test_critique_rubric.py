@@ -129,3 +129,31 @@ def test_criterion_ids_do_not_collide_across_rubrics():
         ids = rubric_module.load(criterion_id, root=root).clause_ids
         assert not (ids & seen), "clause IDs collide between rubrics"
         seen |= ids
+
+
+def test_the_reuse_risk_note_is_citable_on_the_real_c3_rubric():
+    """A risk point cites this note. If the heading stops parsing, every risk is unanchorable.
+
+    Worth pinning separately from the shape test above: the failure is silent in exactly the
+    way the parse-don't-maintain-a-list decision was meant to prevent. The clause would
+    simply stop existing, and the gate would reject a class of point that the prompt still
+    asks for — which reads as the model misbehaving rather than as a heading that lost its
+    format.
+    """
+    root = Path(__file__).resolve().parents[1]
+    rubric = rubric_module.load("c3", root=root)
+    assert "c3.note.10" in rubric.clause_ids
+    assert "reuse" in rubric.clause("c3.note.10").label.lower()
+
+
+def test_the_c3_scorer_region_carries_the_2026_08_06_rulings():
+    """The two anchor changes the calibration review asked for reach the model, or nothing did.
+
+    Both live inside `scorer:start`/`scorer:end`. Putting either outside the markers would
+    leave the docs saying the rulings were encoded while the scorer never saw them — the
+    same class of drift the region markers were introduced to catch.
+    """
+    root = Path(__file__).resolve().parents[1]
+    text = rubric_module.load("c3", root=root).text
+    assert "past that first deflection" in text  # asking is the floor, finding out is not
+    assert "strongest fact in an answer, not a cap on it" in text  # the other man acting
