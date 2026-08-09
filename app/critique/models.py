@@ -46,13 +46,18 @@ PointKind = Literal["rubric", "measurement"]
 # - "candidate" — the answer positively establishes the absence — he said he has never done
 #                 it. Narrow on purpose; inferring it is how we would end up asserting
 #                 things about a life we cannot see.
+# - "risk"      — not a gap at all. A way of retelling this material that would cost him at
+#                 the next board, attached to material that worked here. Scoring note 10:
+#                 reported, never deducted for, because it names something *absent* from the
+#                 answer. Kept separate from the gaps for the same reason "candidate" is kept
+#                 separate from "answer" — rendered among faults, a caution reads as one.
 # - "none"      — the point records something that worked, with nothing to change.
 #
 # The distinction this field exists to protect: a gap that needs him to go and do something
 # must not render as a note about phrasing. The reason most gaps carry "inventory" instead
 # of a verdict is that deciding between the last two requires knowing his history, and one
 # answer is not his history.
-Improvement = Literal["inventory", "answer", "candidate", "none"]
+Improvement = Literal["inventory", "answer", "candidate", "risk", "none"]
 
 # What the criterion could conclude from this answer. Three states rather than two,
 # because "his life lacks this" and "this answer told us nothing" are opposite epistemic
@@ -121,8 +126,9 @@ class DraftPoint(BaseModel):
             "you cannot tell whether he has a better instance or none; ask him, and say "
             "what follows if the answer is no. 'answer' only when the material is visibly "
             "in this answer and merely mishandled. 'candidate' only when the answer states "
-            "outright that he has never done it. 'none' when it records something that "
-            "worked."
+            "outright that he has never done it. 'risk' when nothing here is wrong but a "
+            "way of retelling this material would cost him next time — never a deduction, "
+            "at most one. 'none' when it records something that worked."
         )
     )
     observation: str = Field(
@@ -271,6 +277,17 @@ class Critique(BaseModel):
         someone who has the answer.
         """
         return [point for point in self.points if point.improvement == "candidate"]
+
+    @property
+    def risks(self) -> list[Point]:
+        """Nothing here is wrong. This is what would cost him if he took it to the next board.
+
+        Kept out of `answer_gaps` deliberately. A risk names something *absent* from the
+        answer, so presenting it as a fault tells a candidate he did badly at a thing he did
+        not do — and it is attached to material that worked, which is the reverse of a gap.
+        See scoring note 10.
+        """
+        return [point for point in self.points if point.improvement == "risk"]
 
     @property
     def worked(self) -> list[Point]:

@@ -187,13 +187,19 @@ def test_quoting_the_candidates_own_words_is_allowed(rubric, metrics):
 
 
 def test_short_quoted_rubric_terms_are_not_treated_as_supplied_language(rubric, metrics):
+    """A short quoted term names a thing; it is not a sentence handed to the candidate.
+
+    The prose deliberately no longer says *what the rubric calls…* — that is the instrument
+    talking about itself, and check 6 rejects it now. Which is the point of rewording it:
+    this test is about quote length and should fail for that reason or not at all.
+    """
     result = verify_point(
-        point(observation='This is what the rubric calls "a crew of one".'),
+        point(observation='Three minutes on a four-person job — that is "a crew of one".'),
         rubric,
         TRANSCRIPT,
         metrics,
     )
-    assert not isinstance(result, Rejection)
+    assert not isinstance(result, Rejection), getattr(result, "detail", "")
     assert len("a crew of one".split()) <= MAX_FOREIGN_QUOTE_WORDS
 
 
@@ -615,3 +621,111 @@ def test_the_four_groups_are_separable(rubric, metrics):
     assert not rejections, [r.detail for r in rejections]
     assert (len(critique.worked), len(critique.answer_gaps)) == (1, 1)
     assert (len(critique.inventory_gaps), len(critique.development_gaps)) == (1, 1)
+
+
+# --- 6. Rubric vocabulary: right about the answer, written to the instrument --
+
+
+@pytest.mark.parametrize(
+    "prose",
+    [
+        "This fails the cast-of-the-story test.",
+        "This criterion runs across the whole board, so the pattern matters more than one answer.",
+        "The anchor above requires a named other person who takes an action.",
+        "Scoring note 4 covers the case where nobody else was there.",
+        "You land at c3.anchor.2 on this answer.",
+        "That puts the answer at 4B rather than 5.",
+        "The rubric asks whether anyone else acts.",
+    ],
+)
+def test_rubric_vocabulary_is_kept_out_of_what_the_candidate_reads(rubric, metrics, prose):
+    """Found by SME review 2026-08-06: substantively right, written to the rubric."""
+    result = verify_point(point(observation=prose), rubric, TRANSCRIPT, metrics)
+    assert isinstance(result, Rejection)
+    assert result.code == "rubric_jargon"
+
+
+@pytest.mark.parametrize(
+    "prose",
+    [
+        "Nothing in this account shows anyone but you doing anything.",
+        "You absorbed six weeks of someone else's work and never asked him why.",
+        "Six certifications in forty seconds — that reads as recital.",
+        "He anchors the whole thing on a date, which is what makes it believable.",
+        "Note that you stopped at the first answer he gave you.",
+    ],
+)
+def test_the_jargon_guard_does_not_fire_on_ordinary_critique_prose(rubric, metrics, prose):
+    """A false rejection costs a sound point or a retry, so the guard stays narrow."""
+    result = verify_point(point(observation=prose), rubric, TRANSCRIPT, metrics)
+    assert not isinstance(result, Rejection), getattr(result, "detail", "")
+
+
+def test_the_determination_may_use_rubric_language(rubric, metrics):
+    """It is internal, and naming the clause is its job. Only the point prose is checked."""
+    draft = draft_critique(
+        determination="c3.anchor.2 rather than anchor 3: nobody else acts in the story.",
+    )
+    critique, rejections = verify_critique(draft, rubric, TRANSCRIPT, metrics)
+    assert not rejections, [r.detail for r in rejections]
+    assert critique.determination.startswith("c3.anchor.2")
+
+
+# --- Reuse and delivery risks: scoring note 10 -------------------------------
+
+
+def test_a_risk_is_its_own_group_and_not_a_gap(rubric, metrics):
+    """A caution attached to material that worked must not render among the faults."""
+    draft = draft_critique(
+        points=[
+            point(improvement="none", observation="You named the man and what he did."),
+            point(
+                improvement="risk",
+                answer_quote=None,
+                observation=(
+                    "If you open by telling a panel you are good with people, they weigh the "
+                    "claim instead of the story that proves it."
+                ),
+                ask=None,
+            ),
+        ],
+    )
+    critique, rejections = verify_critique(draft, rubric, TRANSCRIPT, metrics)
+    assert not rejections, [r.detail for r in rejections]
+    assert len(critique.risks) == 1
+    assert not critique.answer_gaps and not critique.inventory_gaps
+    assert not critique.development_gaps
+
+
+def test_a_risk_may_not_supply_the_replacement_wording(rubric, metrics):
+    """Naming the pattern is the point; saying what to say instead is the prohibition."""
+    result = verify_point(
+        point(
+            improvement="risk",
+            answer_quote=None,
+            observation="Try saying that you asked him what was going on and he told you.",
+            ask=None,
+        ),
+        rubric,
+        TRANSCRIPT,
+        metrics,
+    )
+    assert isinstance(result, Rejection)
+    assert result.code == "supplies_language"
+
+
+def test_a_risk_needs_no_ask(rubric, metrics):
+    """It is not a fork put to him — there is nothing for him to settle."""
+    result = verify_point(
+        point(
+            improvement="risk",
+            answer_quote=None,
+            observation="Opening with a claim about yourself puts the claim ahead of the story.",
+            ask=None,
+        ),
+        rubric,
+        TRANSCRIPT,
+        metrics,
+    )
+    assert not isinstance(result, Rejection), getattr(result, "detail", "")
+    assert result.improvement == "risk"
