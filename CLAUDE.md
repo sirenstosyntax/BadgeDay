@@ -274,3 +274,5 @@ are recorded there.
 - Do not score answers independently and sum them.
 - Do not build voice-based confidence or emotion detection.
 - Scores are internal. Report progress as behaviors acquired, not as a number.
+- The rubric's vocabulary is internal too. A candidate never reads the name of
+  a criterion, an anchor, a scoring note, a clause id or a route tag.

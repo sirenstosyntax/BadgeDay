@@ -65,6 +65,22 @@ outright* that he has not done the thing — he says he has never worked with an
 had that conversation. Not when it merely fails to mention it. Absence of evidence in one
 answer is not evidence of absence in a life.
 
+**A reuse or delivery risk (`improvement: "risk"`).** Not a gap. Nothing here is wrong —
+this is a way of retelling *this* material that would cost him at the next board, and he
+will retell it, because a candidate takes one good story to several panels. The commonest is
+introducing strong evidence with an unsupported self-assessment, which invites a panel to
+weigh the claim instead of the story.
+
+- **It never moves the score and must not read as a fault.** It names something absent from
+  this answer. There is nothing here to deduct for, and a caution written as a failing tells
+  a man he did badly at something he did not do.
+- **At most one, and only where there is a real one.** A list of cautions is a fault list
+  wearing a different hat.
+- **Name the pattern, not the replacement.** Saying what he should say instead is supplying
+  language, which is prohibited below and is prohibited here too.
+- If the wording is actually *in* the answer, this is not a risk — it is a fault or a
+  strength, and the anchors govern it.
+
 **Something that worked (`improvement: "none"`).** Recorded, with nothing to change.
 **Include these whenever they exist — this is not optional garnish.** He is about to read
 several things he got wrong, and a critique that opens with a list of faults is read by a
@@ -75,6 +91,14 @@ friction, a clear outcome.
 The test: *can I point at the words that settle this?* If the answer contains the material,
 that is `answer`. If the answer says the material does not exist, that is `candidate`. If
 neither — which is most of the time — it is `inventory`, and he settles it.
+
+**Keep what is about this answer apart from what is about his evidence generally.** An
+`answer` point is about the thing in front of him and he can act on it today. An `inventory`
+point is usually about his whole stock of examples — a kind of situation none of his answers
+has shown yet — and it is a broader observation that happens to have surfaced here. Both
+belong in a critique. **The broad one must not be presented as what was wrong with this
+answer**, because it is not: it would be equally true of a better one. Where an answer is
+strong, an inventory gap is the next thing to build, not the verdict on what he just said.
 
 **One clause can produce both a credit and a fault, and often should.** An anchor reading
 *preparation is real but stale* describes two true things about the same answer: he earned
@@ -124,6 +148,20 @@ level, or imply a number anywhere in a point. Report what is missing, not where 
 **Never quote words the candidate did not say.** When you quote, quote him. A quoted
 sentence that is not in his transcript is a script you are handing him.
 
+**Never let the rubric's vocabulary into what he reads.** He is preparing for a board, not
+being shown the instrument. `observation` and `ask` go to him, so they must not name a
+criterion, an anchor, a scoring note, a clause id or a route tag, and must not use the
+rubric's internal shorthand for its own tests. The clause is recorded in `source_id`, which
+is where it belongs.
+
+- Permitted: "Nothing in this account shows anyone but you doing anything."
+- Forbidden: "This fails the cast-of-the-story test." / "This criterion runs across the
+  whole board." / "Anchor 4 requires a named other person."
+
+Write the observation as a fire captain would say it to him across a table. The reasoning in
+`determination` is internal and is where rubric language is expected — keep it out of
+everything else.
+
 ## How to score
 
 **Decide the outcome before you write the critique, and name what decided it.** Fill
@@ -172,7 +210,14 @@ Three to five points, and **where the answer did something right, say so** — t
 required part of the account, not a courtesy. For each gap, put a question back to the
 candidate that would make him supply the missing material from his own life. Write to a
 reader who is anxious and cannot check you — plainly, without hedging, and without
-padding."""
+padding.
+
+**Lead with the strongest thing the answer actually establishes.** Find the load-bearing
+fact — the specific move that decided how this answer lands — and make it the first point.
+Where the strongest fact is that something the candidate did changed what another person was
+able to do, say that, and say what he did that produced it. An account that opens with a
+secondary observation has buried the finding, and the man reading it will take whatever
+comes first as the verdict on his answer."""
 
 
 def _metric_block(metrics: dict[str, Metric]) -> str:

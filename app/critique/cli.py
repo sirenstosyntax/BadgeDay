@@ -124,7 +124,13 @@ at work. I'm not sure what to tell you there.
 }
 
 
-def _render(critique: Critique, draft: bool) -> None:
+def render_critique(critique: Critique, draft: bool) -> None:
+    """Print a critique for inspection. Public because the run harnesses reuse it.
+
+    A second renderer beside this one would drift, and the point of the harnesses is to
+    look at what the pipeline actually produces — which is only true if they show what the
+    CLI shows.
+    """
     print(f"\n=== {critique.criterion_name} ===")
     if draft:
         print("    (DRAFT RUBRIC — anchors are unreviewed; critique shown for inspection only)")
@@ -159,22 +165,29 @@ def _render(critique: Critique, draft: bool) -> None:
         if point.ask:
             print(f"      → {point.ask}")
 
-    # Two sections, because that is how feedback is read: what he did, then what to work
-    # on. The routing distinction sits underneath the second rather than beside the first —
-    # a man reading four headings, three of them faults, has been handed a verdict. One
-    # clause can appear in both sections, and often should.
+    # Three sections, because that is how feedback is read: what he did, then what to work
+    # on, then what to watch when he reuses this. The routing distinction sits underneath
+    # the middle one rather than beside the first — a man reading four headings, three of
+    # them faults, has been handed a verdict. One clause can appear in more than one
+    # section, and often should.
     if critique.worked:
         print("\n  WHAT YOU DID WELL")
         for point in critique.worked:
             show(point)
 
+    # Answer-specific coaching first and broader inventory gaps after, with the heading
+    # saying which is which. SME review 2026-08-06: an evidence-inventory gap was read as
+    # the primary weakness of a strong answer, which it was not — it would have been just
+    # as true of a better one. The order and the wording are what stop it being read that
+    # way, since whatever comes first is taken as the verdict.
     work = [
-        ("it is already in this answer, handled badly", critique.answer_gaps),
+        ("in this answer — it is here and handled badly", critique.answer_gaps),
         (
+            "beyond this answer — your stock of examples, not what you just said. "
             "is there a better story? if not, that is the thing to go and get",
             critique.inventory_gaps,
         ),
-        ("you said you have not done this", critique.development_gaps),
+        ("beyond this answer — you said you have not done this", critique.development_gaps),
     ]
     if any(points for _, points in work):
         print("\n  WHAT YOU COULD WORK ON")
@@ -184,6 +197,15 @@ def _render(critique: Critique, draft: bool) -> None:
             print(f"\n    — {note}")
             for point in points:
                 show(point)
+
+    # Its own section, and last. A risk is a caution attached to material that worked; among
+    # the gaps it reads as a fault, which is the one thing scoring note 10 says it is not.
+    if critique.risks:
+        print("\n  IF YOU USE THIS STORY AGAIN")
+        print("    Nothing below is wrong with the answer you gave. It is what would cost")
+        print("    you the next time you tell it.")
+        for point in critique.risks:
+            show(point)
 
 
 def _run_one(label: str, transcript: str, rubric, client, settings, draft: bool) -> bool:
@@ -202,7 +224,7 @@ def _run_one(label: str, transcript: str, rubric, client, settings, draft: bool)
     if outcome.failure:
         print(f"  FAILED: {outcome.failure}")
     if outcome.critique is not None and outcome.critique.points:
-        _render(outcome.critique, draft)
+        render_critique(outcome.critique, draft)
 
     print(f"\n  ({outcome.attempts} attempt(s), {len(outcome.rejections)} point(s) rejected)")
     return not outcome.failed

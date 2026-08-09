@@ -11,7 +11,7 @@ were wrong. A critique that has quietly stopped referencing criteria still *look
 good feedback, and it is being read by someone who has no way to check it, at the moment
 he is most inclined to believe it.
 
-Five checks, ordered by how badly each breaks the product:
+Six checks, ordered by how badly each breaks the product:
 
 1. **Anchoring.** The point names a clause that exists in the rubric that was actually
    loaded, or a metric that was actually supplied. A point anchored to nothing, or to an
@@ -26,6 +26,10 @@ Five checks, ordered by how badly each breaks the product:
    an observable behaviour. Rejected: claims about what he is or how he came across.
 5. **Score disclosure.** Scores are internal. A point that tells him his number defeats
    the reason it is internal — surfaced scores get optimised, surfaced gaps get worked on.
+6. **Rubric vocabulary.** The instrument does not talk about itself to the candidate. A
+   point that names a criterion, an anchor or a scoring note is written to the rubric
+   rather than to the man reading it, and it reads as a machine grading rather than as
+   somebody who has done the job telling him what he did.
 
 A rejection is an expected outcome, not an error. The caller regenerates, telling the
 model exactly what was rejected — the same loop Promote's generator runs.
@@ -122,6 +126,33 @@ _PRESCRIBES_REMEDY = re.compile(
       | what\s+you\s+need\s+(?:to\s+do\s+)?is
       | your\s+next\s+step\s+(?:is|should\s+be)\b
     )
+    """,
+    re.I | re.X,
+)
+
+# The rubric's own vocabulary, leaking into what the candidate reads.
+#
+# Found by SME review 2026-08-06: a critique that was substantively right described the
+# answer as failing "the cast-of-story test" and explained that "this criterion runs" across
+# the whole board. Both are true and neither is candidate-facing — they are the instrument
+# talking about itself to a man who is preparing for a board and has never seen it.
+#
+# This is a narrower failure than the ones above and costs less, but it costs on every
+# critique rather than occasionally, and it is the difference between feedback that reads as
+# a captain talking and feedback that reads as a machine grading. `determination` is
+# deliberately not checked: it is internal, and naming the clause is its job.
+_RUBRIC_JARGON = re.compile(
+    r"""
+    \b(
+        (?:this|the|each|every|a)\s+criterion | criterion\s+\d
+      | (?:this|the)\s+rubric | \brubrics?\b
+      | (?:the|this|that|an|a|each)\s+anchors?
+      | scoring\s+note | \bnotes?\s+\d\b
+      | c\d\.(?:anchor|note)\.[0-9a-z]+
+      | \b[1-5][AB]\b
+      | cast[-\s]of[-\s](?:the[-\s])?story
+      | deciding\s+clause | \bclause\s+\d | this\s+dimension
+    )\b
     """,
     re.I | re.X,
 )
@@ -291,7 +322,19 @@ def verify_point(
             "missing, not the number.",
         )
 
-    # 6. An inventory point is a fork put to the candidate, so it has to actually ask
+    # 6. Rubric vocabulary in candidate-facing prose. The point may be entirely sound and
+    #    still be written to the instrument rather than to the man reading it.
+    match = _RUBRIC_JARGON.search(prose)
+    if match:
+        return Rejection(
+            "rubric_jargon",
+            f"point contains {match.group(0)!r}, which is the rubric talking about itself. "
+            "The candidate has never seen the rubric. Say what the answer did or did not "
+            "do, in the words a captain would use across a table; the clause is recorded "
+            "in source_id.",
+        )
+
+    # 7. An inventory point is a fork put to the candidate, so it has to actually ask
     #    something. Without the question it is just an assertion about his life — which is
     #    the guess the inventory classification exists to avoid making.
     if draft.improvement == "inventory" and not (draft.ask or "").strip():
@@ -302,7 +345,7 @@ def verify_point(
             "history rather than letting him settle it.",
         )
 
-    # 7. Prescription, on the branches that give development advice. An answer point telling
+    # 8. Prescription, on the branches that give development advice. An answer point telling
     #    him to name what a teammate did is fine; telling him which certification to buy is
     #    a different act with a different cost.
     if draft.improvement in ("candidate", "inventory"):
