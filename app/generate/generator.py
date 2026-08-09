@@ -17,10 +17,10 @@ from pydantic import ValidationError
 
 from app.config import Settings
 from app.generate.models import DraftBatch, Question
-from app.llm_output import TruncatedOutput, is_truncated_json
 from app.generate.prompt import SYSTEM_PROMPT, build_retry_message, build_user_message
 from app.generate.verify import Rejection, is_generatable, verify_batch
 from app.ingest.models import Chunk
+from app.llm_output import TruncatedOutput, is_truncated_json
 
 logger = logging.getLogger(__name__)
 

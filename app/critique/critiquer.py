@@ -18,10 +18,10 @@ from pydantic import ValidationError
 
 from app.config import Settings
 from app.critique.models import Critique, DraftCritique, Metric
-from app.llm_output import TruncatedOutput, is_truncated_json
 from app.critique.prompt import SYSTEM_PROMPT, build_retry_message, build_user_message
 from app.critique.rubric import Rubric
 from app.critique.verify import Rejection, verify_critique
+from app.llm_output import TruncatedOutput, is_truncated_json
 
 logger = logging.getLogger(__name__)
 
