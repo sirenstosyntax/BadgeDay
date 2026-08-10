@@ -629,6 +629,40 @@ The prompt now says to decide the outcome and name what decided it before writin
 
 The deciding clause is `c3.anchor.4B` in some runs and `c3.note.1` in others, and **that is not instability — the two are not in competition.** Note 1 is the gate he passes (he had the conversation) and 4B is where he lands afterwards. Both readings agree he asked once, got a real answer, and did not himself do anything further. The disagreement with Grant is about whether that reaches the top of the criterion: the anchors say the other person acting is what makes it a 4B, and Grant reads the asking as the thing that made it happen. That is a specific clause, a specific reading, and a specific disagreement worth putting in an anchor.
 
+> **F rerun 2026-08-10, after the anchor edits** — `scripts/recruit_answer_runs.py F --runs 5
+> --show`, `claude-sonnet-5` at effort `high`. Full write-up in
+> `reviews/c3-f-rerun-2026-08-10.md`.
+>
+> | Requirement | Result |
+> |---|---|
+> | Preserve the 5 | **5×5, spread 0, σ 0.00** |
+> | Name the persistence past the deflection | 2 of 5 critiques; 3 of 5 determinations |
+> | Ryan's own action as the strongest evidence | `c3.anchor.5` leads all 5 |
+> | Separate answer-specific from inventory | held once — only one gap in five runs |
+> | One labelled reuse risk | **0 of 5** |
+> | No rubric jargon | clean, zero gate rejections |
+>
+> **The score result is the one that matters and it is unambiguous.** F was 4B in all six
+> post-outcome-anchor observations against Grant's 5; it is now 5 five times out of five with
+> zero spread, and the determinations quote the new 4/5 boundary test rather than paraphrasing
+> it. The divergence §10 had carried since 2026-07-29 is closed. The claim that earns is
+> narrow: **the anchor now says what the SME says.** Nothing here speaks to answers F does not
+> cover.
+>
+> **The reuse-risk class never fired, and the failure is larger than one requirement.** Four of
+> five runs gave the candidate only credit — no ask, no caution, nothing to act on. Defensible
+> on the score, wrong as coaching, for a man who is about to tell this story to another panel.
+> The prompt described the class as optional and the model took the option.
+>
+> **A confound that will keep biting: the determination is not the critique.** The persistence
+> reading is present in most determinations and absent from most critiques, and the internal
+> field is the one that reads best. Any requirement about what the candidate sees has to be
+> measured on `observation` and `ask` — reading the determination and calling it a pass is the
+> same error as reading the scorer path and calling it the pipeline (see above).
+>
+> Three prompt edits followed and are unverified. Requirement 2 at 2 of 5 sits inside the range
+> where five runs cannot separate a fix from noise; the next run needs more than five.
+
 **[SETTLED] Competitive context is now part of the step 3 decision.**
 stationvisit.com ships AI-scored mock firefighter oral boards across five dimensions with a rubric attributed to experienced firefighters, free first interview, subscription thereafter. Step 3 is therefore not "is Recruit worth building" in the abstract but "do critiques generated from these anchors read as materially better than what already exists" — a cheaper question, answerable before the pipeline is built.
 
@@ -679,7 +713,12 @@ Proposed as a reliability fix — pairwise comparison is more stable than absolu
 | ~~Pipeline score instability~~ | **Largely fixed 2026-07-29** by anchoring the outcome in the schema — see §7. Three of five previously-unstable answers are now stable and the worst spread fell from three anchors to two. What remains is a one-anchor wobble on two answers, tracked below as a rubric question rather than a pipeline one. |
 | C3 — one-anchor wobble on E and K | The residue after the outcome anchor: E moves 5/4B, K moves 4B/5, both at the 4B/5 boundary. Same shape as Criterion 2's 3/4B boundary before it was tightened, and that one turned out to be a nameable clause ambiguity rather than model noise. Worth the same treatment. A one-anchor divergence is still unreadable in the calibration report. **The 2026-08-06 edit states a test at exactly this boundary** — did anything he did alter what the other man could do — so E and K should be re-run with F rather than treated as untouched. |
 | ~~**C3 — F is a real divergence at 4B vs 5**~~ | **Settled by Grant 2026-08-06: 5, and the reasoning is now in two anchors.** Note 1 gains the distinction the divergence was actually about — asking is the floor, finding out is what is measured, and staying in the conversation past the first deflection is the decisive move. Anchor 5 gains the ruling that the other man solving it himself is the strongest fact in the answer rather than a cap at 4B, and the 4/5 boundary now tests whether anything the candidate did altered what the other man could do. **Not yet re-run** — see below. |
-| **C3 — the F calibration rerun has not happened** | The rubric and the pipeline both changed in response to `reviews/c3-f-pipeline-comparison-2026-08-06.md`, and nothing has been run against either. Its six required follow-ups are the acceptance test: preserve the 5, name the persistence past the deflection, treat Ryan's own action as the strongest evidence, separate answer-specific coaching from inventory gaps, carry one labelled reuse risk, and drop the rubric jargon. `python scripts/recruit_answer_runs.py F --runs 5 --show`. **Until it runs, the calibration item stays open and the anchor edits are unverified.** |
+| ~~**C3 — F diverges at 4B vs 5**~~ | **Closed 2026-08-10.** The anchor edits worked: F is **5 in five of five, zero spread**, every determination citing `c3.anchor.5` and two quoting the new 4/5 boundary test. First time the exercise has agreed with the SME on F. See `reviews/c3-f-rerun-2026-08-10.md`. |
+| **C3 — the reuse-risk class has never fired** | Requirement 5 of the F review, and the clearest failure of the 2026-08-10 rerun: **zero `risk` points in five runs**, no risk section rendered, though `c3.note.10` parses and the gate would have passed one. The prompt made the class optional (*"only where there is a real one"*) and said nothing about a strong answer being where it earns its keep. Underneath it is a bigger problem — **four of five runs gave the candidate nothing at all to act on**, which is defensible on the score and wrong as coaching. Prompt edit made, not re-run. |
+| **C3 — persistence past the deflection reaches the determination, not the candidate** | Requirement 2, partial. Three of five determinations name the persistence; only two of five critiques do — the rest say *"you asked"*, which is a category, not the move. `determination` is internal, so naming it there satisfies nothing. Prompt edit made (name the move, not the category), not re-run. |
+| **C3 — run 4 contradicted its own determination** | Its determination rests on the disclosure being the evidence the conversation worked; its inventory gap then told the candidate *"there was no pushing past a first deflection."* Same critique. The observation is fair about his evidence *generally* and was written as a fact about **this** answer — requirement 4's defect arriving through a different door. Prompt rule added (no point may contradict the determination), not re-run. |
+| **C3 — requirement 4 is untested, not passed** | One inventory gap across five runs, so the answer-specific / beyond-this-answer separation was exercised exactly once — and that run is the one that broke requirement 2. A five-run pass here is not a result. |
+| **The inspection renderer is not a candidate preview** | `render_critique` prints each point's clause id and the rubric's own heading as its label — correct for an SME tool, and it means the rendered output shows a candidate things requirement 6 exists to keep from him. Any candidate-facing surface renders `observation` / `ask` / `answer_quote` only. Worth settling before step 4 builds one, because the inspection view reads like a finished artifact. |
 | ~~C3 — the generic-correct answer moved 3 → 4B~~ | **Confirmed intended by Grant 2026-07-29.** A candidate who states the right approach plainly has answered the question and is short of evidence, which is a lesser fault than lacking the instinct. 10/10 on the fixture. |
 | ~~Is the weak teamwork answer really all development?~~ | **Dissolved by Grant 2026-07-28.** It was the wrong question to put to the model. Ask the candidate: is there a better story, and if not, that is the thing to go and get. Development verdicts on that fixture went 74 to zero. |
 | ~~c2.anchor.2 — mixed anchor~~ | **Withdrawn 2026-07-28.** Not a defect: the anchor is two true things about one answer, and the critique should report both. See §3. |
