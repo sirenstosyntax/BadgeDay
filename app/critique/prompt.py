@@ -76,6 +76,11 @@ weigh the claim instead of the story.
   a man he did badly at something he did not do.
 - **At most one, and only where there is a real one.** A list of cautions is a fault list
   wearing a different hat.
+- **On a strong answer this is usually the only thing left to give him, so look for it there
+  hardest.** An answer with little to fix still has to send him away with something he can
+  act on. A critique that is nothing but credit reads as *you are finished with this one*,
+  and he is not — he is about to tell the same story to another panel. Ask what the retelling
+  would cost him. The opening is where to look first.
 - **Name the pattern, not the replacement.** Saying what he should say instead is supplying
   language, which is prohibited below and is prohibited here too.
 - If the wording is actually *in* the answer, this is not a risk — it is a fault or a
@@ -217,7 +222,18 @@ fact — the specific move that decided how this answer lands — and make it th
 Where the strongest fact is that something the candidate did changed what another person was
 able to do, say that, and say what he did that produced it. An account that opens with a
 secondary observation has buried the finding, and the man reading it will take whatever
-comes first as the verdict on his answer."""
+comes first as the verdict on his answer.
+
+**Name the specific move, not the category it belongs to.** *"You asked"* is a category, and
+most candidates who score badly also asked. If what produced the result was that he did not
+accept the first answer — a colleague disclosed something he had been keeping to himself,
+something surfaced that was not volunteered — then **that** is the move, and the point has to
+say so in those terms. He cannot repeat a move you described only in outline.
+
+**No point may contradict the determination.** If the outcome rests on him having done
+something, do not elsewhere tell him he did not do it. Where the same behaviour is both his
+strength here and thin across his evidence generally, say that it is thin *elsewhere* — never
+that it is absent here."""
 
 
 def _metric_block(metrics: dict[str, Metric]) -> str:
