@@ -663,6 +663,37 @@ The deciding clause is `c3.anchor.4B` in some runs and `c3.note.1` in others, an
 > Three prompt edits followed and are unverified. Requirement 2 at 2 of 5 sits inside the range
 > where five runs cannot separate a fix from noise; the next run needs more than five.
 
+> **F re-run at n=20, 2026-08-10, after those three prompt edits.** Full write-up in
+> `reviews/c3-f-rerun-2026-08-10-n20.md`.
+>
+> | Requirement | n=5 | n=20 |
+> |---|---|---|
+> | Preserve the 5 | 5×5, σ 0.00 | **20×5, σ 0.00** |
+> | Name the persistence past the deflection | 2 of 5 | **18 of 20** |
+> | Ryan's own action as the strongest evidence | leads 5 of 5 | **leads 19 of 20** |
+> | Separate answer-specific from inventory | 1 gap | 1 gap in 20 |
+> | One labelled reuse risk | 0 of 5 | **4 of 20, all four outside note 10** |
+> | No rubric jargon | clean | clean |
+>
+> **Twenty-five consecutive observations at 5** across the two runs, against 4B six times out of
+> six before the anchor edits. The F divergence is closed, and the determinations quote the new
+> boundary test rather than paraphrasing it.
+>
+> **Requirement 2 is the clearest evidence a prompt edit did what it was written to do** — 2 of 5
+> to 18 of 20 on the same rubric text, the only change being *name the move, not the category*.
+> Worth recording as a counterweight to §7's standing caveat: prompt-level fixes to
+> *what reaches the candidate* are measurable in a way rubric edits are not, because the target
+> is a property of the output rather than a judgment about the fire service.
+>
+> **The reuse-risk class is now reachable and firing outside its own definition.** That is the
+> finding, and it is a question about what a risk *is* rather than a tuning problem — see §10.
+>
+> **One methodological note that will recur: n=5 could not see any of this.** It reported
+> requirement 2 as a partial failure that n=20 shows as a pass, and reported requirement 5 as a
+> flat failure that n=20 shows as a boundary dispute. Both readings at n=5 were wrong in the
+> direction of pessimism, and the earlier run said so at the time. **Five runs is for reading a
+> critique; twenty is the floor for a claim about a rate.**
+
 **[SETTLED] Competitive context is now part of the step 3 decision.**
 stationvisit.com ships AI-scored mock firefighter oral boards across five dimensions with a rubric attributed to experienced firefighters, free first interview, subscription thereafter. Step 3 is therefore not "is Recruit worth building" in the abstract but "do critiques generated from these anchors read as materially better than what already exists" — a cheaper question, answerable before the pipeline is built.
 
@@ -714,9 +745,13 @@ Proposed as a reliability fix — pairwise comparison is more stable than absolu
 | C3 — one-anchor wobble on E and K | The residue after the outcome anchor: E moves 5/4B, K moves 4B/5, both at the 4B/5 boundary. Same shape as Criterion 2's 3/4B boundary before it was tightened, and that one turned out to be a nameable clause ambiguity rather than model noise. Worth the same treatment. A one-anchor divergence is still unreadable in the calibration report. **The 2026-08-06 edit states a test at exactly this boundary** — did anything he did alter what the other man could do — so E and K should be re-run with F rather than treated as untouched. |
 | ~~**C3 — F is a real divergence at 4B vs 5**~~ | **Settled by Grant 2026-08-06: 5, and the reasoning is now in two anchors.** Note 1 gains the distinction the divergence was actually about — asking is the floor, finding out is what is measured, and staying in the conversation past the first deflection is the decisive move. Anchor 5 gains the ruling that the other man solving it himself is the strongest fact in the answer rather than a cap at 4B, and the 4/5 boundary now tests whether anything the candidate did altered what the other man could do. **Not yet re-run** — see below. |
 | ~~**C3 — F diverges at 4B vs 5**~~ | **Closed 2026-08-10.** The anchor edits worked: F is **5 in five of five, zero spread**, every determination citing `c3.anchor.5` and two quoting the new 4/5 boundary test. First time the exercise has agreed with the SME on F. See `reviews/c3-f-rerun-2026-08-10.md`. |
-| **C3 — the reuse-risk class has never fired** | Requirement 5 of the F review, and the clearest failure of the 2026-08-10 rerun: **zero `risk` points in five runs**, no risk section rendered, though `c3.note.10` parses and the gate would have passed one. The prompt made the class optional (*"only where there is a real one"*) and said nothing about a strong answer being where it earns its keep. Underneath it is a bigger problem — **four of five runs gave the candidate nothing at all to act on**, which is defensible on the score and wrong as coaching. Prompt edit made, not re-run. |
-| **C3 — persistence past the deflection reaches the determination, not the candidate** | Requirement 2, partial. Three of five determinations name the persistence; only two of five critiques do — the rest say *"you asked"*, which is a category, not the move. `determination` is internal, so naming it there satisfies nothing. Prompt edit made (name the move, not the category), not re-run. |
-| **C3 — run 4 contradicted its own determination** | Its determination rests on the disclosure being the evidence the conversation worked; its inventory gap then told the candidate *"there was no pushing past a first deflection."* Same critique. The observation is fair about his evidence *generally* and was written as a fact about **this** answer — requirement 4's defect arriving through a different door. Prompt rule added (no point may contradict the determination), not re-run. |
+| **What a reuse risk is — note 10's boundary is drawn too narrowly, or the model is out of bounds** | **The finding from the n=20 run, and it needs Grant.** The `risk` class now fires (4 of 20, up from 0 of 5) and **all four firings quote wording that is present in the answer**, which note 10 explicitly excludes — the note says a risk names something *absent*. Two flag F's opening back-reference (a fixture seam, see below); two flag the closing *"he's the one who sorted it — I just asked the question"* as risking a panel reading his role as smaller than it was. That second one **contradicts anchor 5**, which now says the same sentence is precise crediting and the conduct at the top of the criterion. Both readings are defensible — the anchor scores conduct, the risk is about how a room hears it on a retelling — so the question is whether note 10 should widen to cover *present wording that lands differently elsewhere*. Widening is the more useful product and puts the risk class in standing tension with the anchors on any line that is both strength and liability. **Not tuned. This is a definition, not a defect.** |
+| ~~C3 — the reuse-risk class has never fired~~ | **Reachable as of 2026-08-10** — 4 of 20 after the prompt edit that says a strong answer is where the class earns its keep. What remains is the boundary question above, and the coaching shortfall below. |
+| **C3 — a strong answer still usually gets nothing to act on** | Counting risks and gaps together, **5 of 20 runs gave the candidate anything forward-looking**; fifteen are pure credit. Up from 1 of 5, still a critique that tells a man he is finished with a story he is about to retell to another panel. |
+| ~~C3 — persistence reaches the determination, not the candidate~~ | **Fixed 2026-08-10.** 2 of 5 → **18 of 20** naming the disclosure as something he had to get past, 14 of those in the strong form. Run 9 produced the distinction unprompted: *"not that you asked, but that something real came out of it."* Two runs still give the category only; a residue, not worth another edit. |
+| ~~C3 — a point contradicted its own determination~~ | **Did not recur across 20 runs** after the prompt rule was added. Held on the single gap that appeared, so this is absence of evidence rather than evidence of absence. |
+| **F's opening is a fixture seam being read as candidate behaviour** | *"Same sort of thing happened with a lad called Ryan at the depot"* is the review set's connective tissue — F's probe records *"Pairs with C"* — and two runs correctly flagged it as leaning on a story a cold panel has not heard. Faithful to the text, worthless as calibration, and it means **two of four risk firings measure the harness rather than the pipeline**. **Deliberately not fixed:** editing F changes an answer Grant scored blind and breaks comparability with every prior run on this set. Standing caveat for any answer in the set that opens with a back-reference. |
+| **Rubric content leaks into candidate prose where the jargon gate cannot see it** | The gate tests *vocabulary* — criterion names, anchor names, clause ids — and passed all 20 runs clean. It cannot see rubric **content**: run 17 ended a point with *"what separated Ryan's real problem from a rig short on excuses"*, a mangled reach for note 1's rig-going-out-short example and close to incoherent to a reader who has never seen the rubric. The harder failure of the two. A gate would have to diff prose against the rubric text, and the false-positive cost is high. Flagged, not fixed. |
 | **C3 — requirement 4 is untested, not passed** | One inventory gap across five runs, so the answer-specific / beyond-this-answer separation was exercised exactly once — and that run is the one that broke requirement 2. A five-run pass here is not a result. |
 | **The inspection renderer is not a candidate preview** | `render_critique` prints each point's clause id and the rubric's own heading as its label — correct for an SME tool, and it means the rendered output shows a candidate things requirement 6 exists to keep from him. Any candidate-facing surface renders `observation` / `ask` / `answer_quote` only. Worth settling before step 4 builds one, because the inspection view reads like a finished artifact. |
 | ~~C3 — the generic-correct answer moved 3 → 4B~~ | **Confirmed intended by Grant 2026-07-29.** A candidate who states the right approach plainly has answered the question and is short of evidence, which is a lesser fault than lacking the instinct. 10/10 on the fixture. |
