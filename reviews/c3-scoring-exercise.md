@@ -202,6 +202,27 @@ J = not assessable
 K = 4
 ```
 
+**Do not edit the block above.** It is the blind judgment — given with no rubric in view, which
+is the only reason it counts as evidence. A later change of mind goes in the revisions block
+below, never over the top of this one.
+
+## Revised rulings
+
+Later SME rulings that supersede a blind score. `recruit_review_compare.py` compares against
+these where they exist and prints the blind score beside them, so a ref whose score moved stays
+distinguishable from one that never did.
+
+```scores-revised
+F = 4, a 5 needs more than one of anchor 5's behaviours; F is one exchange and a strong 4
+```
+
+**Why F moved.** Scored 5 blind on 2026-07-29, and confirmed as 5 in the 2026-08-06 calibration
+review. Reversed on 2026-08-10, after the anchor edits made from that review drove F to 5 in
+twenty-five consecutive runs at zero variance — which read as the anchor agreeing with the SME
+and was in fact the anchor reaching its top band on a single well-handled conversation. The
+sequence reasoning from 2026-08-06 stands; the band does not. See §9 of
+`recruit_design_decisions.md`.
+
 ---
 
 *When this is filled in: `python scripts/recruit_review_compare.py`*

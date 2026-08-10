@@ -180,3 +180,60 @@ def test_the_c3_top_band_requires_more_than_one_behaviour():
     # Matched on the unwrapped fragment: the sentence wraps as "this\nclause governs", and a
     # test that pins prose has to pin it as the file actually stores it.
     assert "clause governs" in text  # it outranks the anchor prose below it
+
+
+# --- The review exercise's two score records -------------------------------
+
+
+def test_the_blind_scores_and_the_revisions_stay_separate():
+    """A revised ruling must never overwrite the blind one.
+
+    The blind block is evidence *because* it was given with no rubric in view. This test is
+    the guard against the tempting shortcut — editing `F = 5` to `F = 4` so the comparison
+    reads cleanly — which spends the exercise's only real property to save a line of parsing.
+    """
+    import importlib.util
+
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location(
+        "review_compare", root / "scripts" / "recruit_review_compare.py"
+    )
+    compare = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(compare)
+
+    text = (root / "reviews" / "c3-scoring-exercise.md").read_text()
+    blind = compare.parse_scores(text)
+    revised = compare.parse_revisions(text)
+
+    # F was scored 5 blind on 2026-07-29 and re-read as a strong 4 on 2026-08-10. Both
+    # records survive; the comparison uses the second.
+    assert blind["F"][0] == "5", "the blind score was edited — that record is not editable"
+    assert revised["F"][0] == "4"
+    assert {**blind, **revised}["F"][0] == "4"
+
+    # Every revision names a ref that was actually scored blind, or it is a typo that would
+    # silently add a twelfth answer to the set.
+    assert set(revised) <= set(blind)
+
+
+def test_a_revised_4_agrees_with_either_route_and_diverges_from_5():
+    """The rerun's whole question, pinned: does F come back inside band 4 or still at 5?
+
+    `pipeline_verdict` reports a routed 4 as the lowercase tag, so a bare revised `4` has to
+    agree with `4a` and `4b` and disagree with `5`. Getting this wrong makes the intended
+    result print as a divergence, which is what the revisions block exists to prevent.
+    """
+    import importlib.util
+
+    root = Path(__file__).resolve().parents[1]
+    spec = importlib.util.spec_from_file_location(
+        "review_compare", root / "scripts" / "recruit_review_compare.py"
+    )
+    compare = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(compare)
+
+    assert compare.agrees("4", "4a")
+    assert compare.agrees("4", "4b")
+    assert compare.agrees("4", "4")
+    assert not compare.agrees("4", "5")
+    assert not compare.agrees("4", "3")

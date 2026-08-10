@@ -13,6 +13,22 @@ list of clauses to rewrite, ordered by how far apart the two readings are.
 Agreement is weaker evidence than it looks and the report says so. Ten answers is a small
 set, the answers were written by the same party that drafted the anchors, and an anchor can
 be agreed with here and still be wrong about a candidate nobody thought to write.
+
+## Blind scores and revisions are two different records
+
+The ```scores block is the SME's **blind** judgment — scored with no rubric in front of him,
+which is the whole reason the exercise is worth anything. **It is never edited.** Editing it
+to match a later opinion would destroy the one property that makes it evidence.
+
+An SME can still change his mind, and on 2026-08-10 he did: F was recorded 5 blind, and after
+the anchor rulings he read it as a strong 4. Without somewhere to put that, this script
+compares the pipeline against a superseded position and reports the *intended* outcome as a
+divergence — F coming back 4 would print as a clause to rewrite, which is backwards.
+
+So a second ```scores-revised block holds later rulings. Comparison runs against the revised
+value where one exists; the blind score is still printed beside it, because a ref whose score
+moved is a different kind of result from one that never did, and the report should not be able
+to hide which is which.
 """
 
 import re
@@ -33,11 +49,11 @@ POOL_SIZE = 4
 _SCORE_LINE = re.compile(r"^\s*([A-K])\s*=\s*(.*?)\s*$", re.I)
 
 
-def parse_scores(text: str) -> dict[str, tuple[str, str]]:
-    """Pull `REF = score, optional note` out of the ```scores block."""
-    block = re.search(r"```scores\n(.*?)```", text, re.S)
+def parse_block(text: str, name: str) -> dict[str, tuple[str, str]]:
+    """Pull `REF = score, optional note` out of a named fenced block."""
+    block = re.search(rf"```{name}\n(.*?)```", text, re.S)
     if block is None:
-        raise SystemExit(f"{EXERCISE} has no ```scores block — regenerate the exercise")
+        return {}
 
     scores: dict[str, tuple[str, str]] = {}
     for line in block.group(1).splitlines():
@@ -49,6 +65,24 @@ def parse_scores(text: str) -> dict[str, tuple[str, str]]:
         value, _, note = raw.partition(",")
         scores[match.group(1).upper()] = (value.strip().lower(), note.strip())
     return scores
+
+
+def parse_scores(text: str) -> dict[str, tuple[str, str]]:
+    """The blind scores. Required — without them there is no exercise."""
+    scores = parse_block(text, "scores")
+    if not scores:
+        raise SystemExit(f"{EXERCISE} has no ```scores block — regenerate the exercise")
+    return scores
+
+
+def parse_revisions(text: str) -> dict[str, tuple[str, str]]:
+    """Later SME rulings that supersede a blind score. Optional, and usually empty.
+
+    Kept apart from the blind block rather than merged into it: the blind score is evidence
+    *because* it was given without a rubric in view, and overwriting it with a later opinion
+    would spend that property to save a line of parsing.
+    """
+    return parse_block(text, "scores-revised")
 
 
 def normalise(value: str) -> str:
@@ -92,13 +126,23 @@ def main() -> None:
     if not EXERCISE.exists():
         raise SystemExit(f"{EXERCISE} not found — run scripts/recruit_review_exercise.py first")
 
-    scores = parse_scores(EXERCISE.read_text())
-    if not scores:
-        raise SystemExit(f"no scores filled in yet in {EXERCISE}")
+    text = EXERCISE.read_text()
+    blind = parse_scores(text)
+    revised = parse_revisions(text)
+
+    # Comparison runs against the current SME position; the blind score stays visible beside
+    # any ref that moved. Without this the script measures the pipeline against a superseded
+    # opinion and calls the intended answer a divergence.
+    scores = {**blind, **revised}
 
     missing = [a.ref for a in ANSWERS if a.ref not in scores]
     if missing:
         print(f"note: not yet scored — {', '.join(missing)}\n")
+    if revised:
+        moved = ", ".join(
+            f"{ref} {blind.get(ref, ('—', ''))[0]} → {revised[ref][0]}" for ref in sorted(revised)
+        )
+        print(f"note: comparing against revised rulings — {moved}\n")
 
     settings = get_settings()
     if not settings.anthropic_api_key:
@@ -130,7 +174,8 @@ def main() -> None:
         theirs, clause = pipeline_verdict(results[ref])
         ok = agrees(mine, theirs)
         mark = "  " if ok else "<>"
-        print(f"{ref:3} {mine:>16}   {theirs:<16} {mark}   {clause}")
+        shown = f"{mine} (blind {normalise(blind[ref][0])})" if ref in revised else mine
+        print(f"{ref:3} {shown:>16}   {theirs:<16} {mark}   {clause}")
         if note:
             print(f"{'':3} {'':>16}   note: {note}")
         if not ok:
