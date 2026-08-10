@@ -287,10 +287,16 @@ def verify_point(
 
     foreign = _foreign_quotes(prose, transcript)
     if foreign:
+        # Two different defects reach here and the retry needs to know which. A genuinely
+        # scripted phrase is words he never said; a misquote is words he nearly said, with
+        # an article added or a tense changed. The 2026-08-10 run rejected 'the same sort of
+        # thing' — his own opening with a "the" in front of it — and told the model it had
+        # written a script, which is not the correction it needed to make.
         return Rejection(
             "supplies_language",
-            f"point quotes {foreign[0]!r}, which the candidate did not say — that is a "
-            "scripted phrase, not an observation about his answer.",
+            f"point quotes {foreign[0]!r}, which does not appear in the transcript. Either "
+            "it is a phrase you are handing him, or it is his own words misquoted. Quote him "
+            "exactly, or drop the quotation marks and describe what he said.",
         )
 
     # 3. Grounding.
