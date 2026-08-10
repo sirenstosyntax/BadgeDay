@@ -146,14 +146,37 @@ def test_the_reuse_risk_note_is_citable_on_the_real_c3_rubric():
     assert "reuse" in rubric.clause("c3.note.10").label.lower()
 
 
-def test_the_c3_scorer_region_carries_the_2026_08_06_rulings():
-    """The two anchor changes the calibration review asked for reach the model, or nothing did.
+def test_the_c3_scorer_region_carries_the_sme_rulings():
+    """Every dated ruling reaches the model, or the decisions doc is lying about the rubric.
 
-    Both live inside `scorer:start`/`scorer:end`. Putting either outside the markers would
-    leave the docs saying the rulings were encoded while the scorer never saw them — the
-    same class of drift the region markers were introduced to catch.
+    All of these live inside `scorer:start`/`scorer:end`. Putting one outside the markers
+    would leave §9 and §10 saying a ruling was encoded while the scorer never saw it — the
+    drift the region markers were introduced to catch.
+
+    The last two pull against each other and both have to survive. 2026-08-06 settled that a
+    colleague acting on his own is not held against the candidate; 2026-08-10 settled that it
+    does not by itself reach the top band. Losing the first re-opens the F divergence at 4B;
+    losing the second returns the anchor to scoring F at 5 twenty-five times out of twenty-five.
     """
     root = Path(__file__).resolve().parents[1]
     text = rubric_module.load("c3", root=root).text
     assert "past that first deflection" in text  # asking is the floor, finding out is not
-    assert "strongest fact in an answer, not a cap on it" in text  # the other man acting
+    assert "not a cap on it" in text  # 2026-08-06 — the other man acting is not a demerit
+    assert "One exchange does not supply two behaviours" in text  # 2026-08-10 — breadth
+    assert "It does not by itself earn him the band" in text  # 2026-08-10 — and not the band
+
+
+def test_the_c3_top_band_requires_more_than_one_behaviour():
+    """The breadth clause is the load-bearing sentence of the 2026-08-10 correction.
+
+    Pinned on its own because its absence is silent. Without it the anchor still reads well,
+    still scores every answer, and quietly hands the top band to any single well-handled
+    episode — which is exactly what it did for twenty-five consecutive runs with nothing
+    looking wrong. A clause whose failure mode is a clean run needs a test.
+    """
+    root = Path(__file__).resolve().parents[1]
+    text = rubric_module.load("c3", root=root).text
+    assert "A 5 requires more than one of the behaviours listed above" in text
+    # Matched on the unwrapped fragment: the sentence wraps as "this\nclause governs", and a
+    # test that pins prose has to pin it as the file actually stores it.
+    assert "clause governs" in text  # it outranks the anchor prose below it
