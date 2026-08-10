@@ -250,6 +250,29 @@ it needs saying, credits precisely and takes blame without distributing it. Reci
 described as ordinary rather than as an achievement — *"you help them out and they do the
 same for you next time"* — because to him it is.
 
+**One of those things is not enough. The top band is a pattern, not an occasion.**
+
+A candidate who does one of the things above, once, and does it well, has shown you that one
+thing. He has not shown you a man who behaves well on a crew — he has shown you a man who
+behaved well on a Tuesday. **A 5 requires more than one of the behaviours listed above**, and
+the plural is the whole test: he teaches somebody *and* reciprocity is plainly ordinary to him;
+he says the difficult thing *and* he credits precisely across more than one place in his
+account.
+
+**One exchange does not supply two behaviours.** Asking a colleague what is wrong and then
+crediting him for the fix are two halves of a single conversation, not two pieces of conduct.
+What clears this clause is conduct appearing somewhere *else* as well — a second occasion, a
+disposition he describes as ordinary rather than notable, or a change in how he works that
+outlasted the incident.
+
+This is deliberately about **breadth of conduct rather than a count of incidents.** Two
+behaviours inside one richly told episode can clear it; the same behaviour told three times
+cannot.
+
+Settled by SME review 2026-08-10, correcting an earlier reading that let a single behaviour,
+handled well, reach the top band. **Where this clause and anything below it disagree, this
+clause governs.**
+
 **Specificity is required as a credibility test, not as a measure of quality.** There has to
 be enough of it to believe the occasion happened: a setting, a person, a thing that was
 actually done. That is a floor, and it is there because an answer with no purchase on
@@ -262,28 +285,39 @@ draws a lesson about himself. Do not mark him down for telling it plainly. Being
 a named colleague is *strong* evidence and belongs here — it is one route to a 5, not the
 definition of one.
 
-**The other man solving it himself is the strongest fact in an answer, not a cap on it.**
+**The other man solving it himself is the strongest fact in such an answer, not a cap on it.**
 Where the candidate stayed in the conversation until the real problem surfaced and the
 colleague then went and fixed it — took it to a supervisor, changed what he was doing, asked
-for the thing nobody had thought of — **that is the conversation working, and it is a 5.**
-Read the sequence, not the final actor. A colleague who leaves a conversation able to solve
-his own problem was put in that position by the conversation, and the candidate who says
-*"he's the one who sorted it — I just asked the question"* is crediting precisely, which is
-the conduct at the top of this anchor rather than an admission that he did nothing.
+for the thing nobody had thought of — **that is the conversation working, and it is the
+conduct this anchor describes.** Read the sequence, not the final actor. A colleague who leaves
+a conversation able to solve his own problem was put in that position by the conversation, and
+the candidate who says *"he's the one who sorted it — I just asked the question"* is crediting
+precisely, not admitting that he did nothing.
 
-Do not route this to 4B on the grounds that the candidate took no further action himself.
-The alternative to asking would have been absorbing the work in silence or escalating over
-the man's head; he did neither, and the outcome was a colleague who fixed his own problem
-and stayed. Settled by SME review 2026-08-06.
+**That earns him the behaviour. It does not by itself earn him the band.** Asking and then
+crediting is one exchange, and the clause above requires more than one behaviour showing up in
+more than one place. An answer that contains this sequence and nothing else — no second
+occasion, no disposition described as ordinary, no lasting change in how he works — is a
+**4**, and a strong one. Do not read *"not a cap on it"* as a route to 5 on its own; it was
+written to stop the colleague's agency being held *against* the candidate, which is a
+different question from how far up it carries him.
+
+Settled by SME review 2026-08-06 (the sequence) and corrected 2026-08-10 (the band).
 
 ### 4 — Sound conduct with something missing, or the right instincts thinly evidenced
 
-Between the man who behaves well across the board and the man who only describes it. Two
-ways in. He does most of what a 5 does with one part absent. **Or he states the right
-approach plainly and convincingly — go to the person first, address it without making an
-enemy — with no occasion behind it.** The second is a real 4: he has answered the question
-this criterion asks and is short of proof, which is a lesser thing than being short of the
-instinct.
+Between the man who behaves well across the board and the man who only describes it. Three
+ways in. He does most of what a 5 does with one part absent. **Or he does one of the things a
+5 does, once, and does it well** — the conduct is real and there is only one piece of it, which
+is the band the breadth clause in anchor 5 routes him to. **Or he states the right approach
+plainly and convincingly — go to the person first, address it without making an enemy — with
+no occasion behind it.** The last is a real 4: he has answered the question this criterion asks
+and is short of proof, which is a lesser thing than being short of the instinct.
+
+The middle route is the commonest and the easiest to over-reward. A single clean episode is
+genuinely good evidence and it reads *better* than it scores, because a well-told incident with
+a real outcome feels like a finished case. What it is short of is not quality but extent: one
+piece of conduct, and nothing to say whether it is how he behaves or how he behaved once.
 
 Two candidates reach a 4 by opposite routes. The score is the same; the diagnosis is not.
 **Record which.**
@@ -317,11 +351,20 @@ a 3.
 > Decide what clears the bar — plausibly, the other person must do something that changes
 > the situation, not merely respond when spoken to — and say so.
 
-Boundary against 5: 4 handles people or wants them. 5 was **changed** by one, or **changed
-something for one** — see anchor 5. A candidate who got past a deflection to the real
-problem, after which the colleague acted on it himself, is a 5 and not a 4B. The test at
-this boundary is whether anything the candidate did altered what the other man was able to
-do; 4B is friction handled with nothing altered.
+Boundary against 5: **extent, not quality.** A 4 shows one piece of the conduct anchor 5
+describes; a 5 shows more than one, in more than one place in his account — see the breadth
+clause in anchor 5, which governs this boundary.
+
+*Altering what the other man was able to do* is what separates a 4 from a 3, not a 4 from a 5.
+A candidate who got past a deflection to the real problem, after which the colleague acted on
+it himself, has cleared that test and is **at least** a 4 — well clear of the man who asked once
+and let it go. Whether he reaches 5 is a separate question, and it is answered by how much else
+his account contains.
+
+> **Note the correction.** Until 2026-08-10 this boundary read *"a candidate who got past a
+> deflection... is a 5 and not a 4B."* That sentence drove answer F to 5 in twenty-five
+> consecutive runs against an SME reading of a strong 4. It was the right test applied at the
+> wrong boundary.
 
 ### 3 — He made contact and did not follow through
 
