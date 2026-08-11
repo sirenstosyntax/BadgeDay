@@ -269,9 +269,28 @@ This is deliberately about **breadth of conduct rather than a count of incidents
 behaviours inside one richly told episode can clear it; the same behaviour told three times
 cannot.
 
+**Being changed by a named colleague clears this clause on its own**, and the list above is not
+the only way in. A man who was told something hard, took it, and *still works differently
+because of it* has shown the conduct twice over: once in how he received the correction, and
+again in the practice he carried away from it. The carried change is the second place — it is
+conduct evidenced past the episode that produced it, which is exactly what this clause asks
+for. Where the change persists and the relationship survived, that is a 5 and it needs nothing
+else beside it.
+
+Read against the paragraph below on not demanding named individuals: that route to 5 predates
+this clause and is **not** narrowed by it.
+
 Settled by SME review 2026-08-10, correcting an earlier reading that let a single behaviour,
 handled well, reach the top band. **Where this clause and anything below it disagree, this
 clause governs.**
+
+> **What that precedence cost on the first attempt, recorded so it is not repeated.** The
+> clause originally read *"more than one of the behaviours listed above"* and said it governed
+> everything below — which silently demoted the being-changed route from a route to a 5 to
+> nothing at all, because it is named four paragraphs down and not in the list. The answer
+> written to test that exact route came back **4B against an SME reading of 5** on the first
+> set re-run. A clause that claims precedence has to be read against every route it now
+> outranks, and this one was not.
 
 **Specificity is required as a credibility test, not as a measure of quality.** There has to
 be enough of it to believe the occasion happened: a setting, a person, a thing that was
@@ -283,7 +302,8 @@ who says he showed a newer lad how to load the truck properly so he was not figh
 shown you the crew ethic, whether or not he gives the lad's name and whether or not he
 draws a lesson about himself. Do not mark him down for telling it plainly. Being changed by
 a named colleague is *strong* evidence and belongs here — it is one route to a 5, not the
-definition of one.
+definition of one, and **the breadth clause above does not close it**: where the change is one
+he still carries, that route reaches 5 by itself.
 
 **The other man solving it himself is the strongest fact in such an answer, not a cap on it.**
 Where the candidate stayed in the conversation until the real problem surfaced and the
