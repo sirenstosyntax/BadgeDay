@@ -18,6 +18,7 @@ from app.config import Settings
 from app.critique import rubric as rubric_module
 from app.critique.critiquer import critique_answer
 from app.critique.models import DraftCritique
+from app.llm_output import is_truncated_json, is_unenforced_constraint
 
 QUESTION = "Tell us about a time you worked with someone who wasn't doing their share."
 
@@ -246,3 +247,127 @@ def test_a_schema_violation_is_not_relabelled_as_truncation(rubric, settings) ->
     assert "TruncatedOutput" not in outcome.failure
     # Given up on immediately: asking again produces the same wrong shape.
     assert outcome.attempts == 1
+
+
+
+# --- The third failure category: constraints stripped before the schema is sent ----
+
+
+def validation_error_for(body: str, model: type = DraftCritique) -> ValidationError:
+    """Return the error `body` raises, rather than binding it in an `except` clause.
+
+    `except ValidationError as exc` unbinds `exc` at the end of the block, so an error that
+    needs to outlive the block has to be returned from a function. Both helpers below go
+    through here for that reason.
+    """
+    try:
+        TypeAdapter(model).validate_json(body)
+    except ValidationError as exc:
+        return exc
+    raise AssertionError(f"that JSON should not have validated: {body[:60]}...")
+
+
+def unenforced_constraint_error(model: type) -> ValidationError:
+    """The parse failure an empty required field produces, built the same way as truncation.
+
+    Real JSON through the real validator rather than a hand-built error object, for the
+    reason `truncation_error` gives: the test is about matching what pydantic actually
+    raises, so faking it would test the fake.
+
+    The JSON here is complete and correctly shaped — every field present, every type right,
+    two of them empty. That is exactly what came back on the 2026-08-10 set re-run, because
+    `messages.parse` strips `min_length` before sending the schema and the model was never
+    told the fields could not be blank.
+    """
+    body = (
+        '{"outcome":"scored","deciding_clause_id":"c3.anchor.3",'
+        '"determination":"He asked once and let it go.","internal_score":3,"route":"n/a",'
+        '"points":[{"kind":"rubric","source_id":"c3.anchor.3","improvement":"inventory",'
+        '"observation":"He raised it once.","ask":"Was there a second time?"},'
+        '{"kind":"rubric","source_id":"","improvement":"inventory","observation":"","ask":""}]}'
+    )
+    return validation_error_for(body, model)
+
+
+def test_the_empty_field_error_is_the_shape_we_think_it_is(rubric, settings) -> None:
+    """Guard on the premise of the two tests below.
+
+    If pydantic ever reports an empty `min_length=1` string as something other than
+    `string_too_short`, the classification silently stops matching and an empty field goes
+    back to being reported instead of retried. Cheap to pin, and it is the assumption
+    everything else here rests on.
+    """
+    exc = unenforced_constraint_error(DraftCritique)
+    types = {error["type"] for error in exc.errors()}
+    assert types == {"string_too_short"}, types
+    assert not is_truncated_json(exc), "an empty field is not a truncation"
+    assert is_unenforced_constraint(exc)
+
+
+def test_an_empty_required_field_is_retried_rather_than_reported(rubric, settings) -> None:
+    """Found on the 2026-08-10 set re-run, where it cost answer H outright.
+
+    The response was legal under the schema the API was actually sent, so the model was not
+    breaking a rule it had been shown — which is what makes asking again worth a call, where
+    a genuine shape violation is not.
+    """
+    client = FakeClient([unenforced_constraint_error(DraftCritique), _draft()])
+    outcome = _run(client, rubric, settings)
+
+    assert outcome.attempts == 2, "an empty field was reported instead of retried"
+    assert not outcome.failed
+    # Nothing left behind on the outcome: the attempt that succeeded produced a sound
+    # critique, and reporting a failure beside it would be false.
+    assert outcome.failure is None
+
+
+def test_the_retry_after_an_empty_field_asks_again_unchanged(rubric, settings) -> None:
+    """There is no usable draft to feed back, so the gate's retry message must not appear.
+
+    Same reasoning as the truncation retry: the rejection was ours, not the model's, and
+    telling it which points were rejected would be describing a critique it never produced.
+    """
+    client = FakeClient([unenforced_constraint_error(DraftCritique), _draft()])
+    _run(client, rubric, settings)
+
+    first, second = client.messages.calls
+    assert first["messages"] == second["messages"]
+
+
+def test_an_empty_field_on_every_attempt_is_reported_as_its_own_failure(
+    rubric, settings
+) -> None:
+    """It must not be reported as a truncation — the follow-ups are different.
+
+    A truncation says give it more room. This says the prompt should state the constraint the
+    schema cannot carry across the wire.
+    """
+    error = unenforced_constraint_error(DraftCritique)
+    outcome = _run(FakeClient([error, error]), rubric, settings)
+
+    assert outcome.failed
+    assert "UnenforcedConstraint" in (outcome.failure or "")
+    assert "Truncated" not in (outcome.failure or "")
+
+
+def test_a_shape_violation_mixed_with_an_empty_field_is_still_not_retried(
+    rubric, settings
+) -> None:
+    """The `all` in `is_unenforced_constraint` is what this pins.
+
+    A missing field alongside an empty one is a real schema defect that happens to contain an
+    empty string. Retrying it spends a call to hide a bug, which is the distinction
+    `app/llm_output.py` exists to keep.
+    """
+    mixed = validation_error_for(
+        # Empty point fields *and* a missing deciding_clause_id.
+        '{"outcome":"scored","determination":"No deciding clause at all.",'
+        '"internal_score":3,"route":"n/a",'
+        '"points":[{"kind":"rubric","source_id":"","improvement":"inventory",'
+        '"observation":"","ask":""}]}'
+    )
+    assert not is_unenforced_constraint(mixed), "a missing field is a real schema violation"
+
+    outcome = _run(FakeClient([mixed, _draft()]), rubric, settings)
+    assert outcome.attempts == 1, "a shape violation was retried"
+    assert outcome.failed

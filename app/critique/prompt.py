@@ -209,6 +209,13 @@ The asymmetry is deliberate. Getting `not_answered` wrong costs him one question
 Score this answer on this criterion only. Do not import judgments from criteria you were
 not given.
 
+## No field may be empty
+
+Every field you fill carries something. **A point you cannot describe is a point you must not
+emit** — do not add an entry with a blank `source_id` or a blank `observation` to reach a
+count. Three well-anchored points are a complete critique; four with one empty is a broken
+one, and the blank cannot be shown to anybody.
+
 ## Shape of a good critique
 
 Three to five points, and **where the answer did something right, say so** — that is a

@@ -167,11 +167,21 @@ def main() -> None:
     print(f"{'':3} {'you':>16}   {'anchors':<16} {'':4} decided by")
     print("-" * 78)
 
-    divergences = []
+    divergences: list[tuple[str, str, str, str, str]] = []
+    failures: list[tuple[str, str]] = []
     for ref in sorted(results):
         mine, note = scores[ref]
         mine = normalise(mine)
         theirs, clause = pipeline_verdict(results[ref])
+        # An answer that produced no critique is not a disagreement about a clause, and the
+        # 2026-08-10 run printed two of them under "these are the clauses to rewrite" — which
+        # is the same false-divergence failure `app/llm_output.py` was written to stop, one
+        # layer up. Counted separately, and it does not name a clause because there isn't one.
+        if theirs == "FAILED":
+            failures.append((ref, mine))
+            print(f"{ref:3} {mine:>16}   {'FAILED':<16} !!   (no critique produced)")
+            continue
+
         ok = agrees(mine, theirs)
         mark = "  " if ok else "<>"
         shown = f"{mine} (blind {normalise(blind[ref][0])})" if ref in revised else mine
@@ -182,10 +192,21 @@ def main() -> None:
             divergences.append((ref, mine, theirs, clause, note))
 
     print("\n" + "=" * 78)
+
+    if failures:
+        print(
+            f"{len(failures)} answer(s) produced no critique: "
+            f"{', '.join(ref for ref, _ in failures)}.\n"
+            "**Not a rubric finding.** The pipeline failed on these, so the anchors were never\n"
+            "asked. Read the logged failure, fix it, and re-run before reading anything below —\n"
+            "a set with holes in it understates agreement and overstates nothing.\n"
+        )
+
+    scored = len(results) - len(failures)
     if not divergences:
-        print("No divergences on this set.")
+        print(f"No divergences across the {scored} answer(s) that produced a critique.")
     else:
-        print(f"{len(divergences)} divergence(s) — these are the clauses to rewrite.\n")
+        print(f"{len(divergences)} divergence(s) of {scored} scored — the clauses to rewrite.\n")
         for ref, mine, theirs, clause, note in divergences:
             probe = by_ref(ref).probes
             print(f"  {ref}: you said {mine}, the anchors said {theirs}")
@@ -201,7 +222,9 @@ def main() -> None:
         "that drafted the anchors, so a clause can be agreed with here and still be wrong\n"
         "about a candidate nobody thought to write. Divergence is the reliable signal."
     )
-    return 0 if not divergences else 1
+    # A failure is not a pass. Exiting 0 on a run with holes in it would let a set re-run go
+    # green in CI while two answers were never scored.
+    return 0 if not divergences and not failures else 1
 
 
 if __name__ == "__main__":
