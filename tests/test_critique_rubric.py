@@ -255,3 +255,18 @@ def test_the_breadth_clause_does_not_close_the_being_changed_route():
     text = rubric_module.load("c3", root=root).text
     assert "Being changed by a named colleague clears this clause on its own" in text
     assert "the breadth clause above does not close it" in text
+
+
+def test_the_untied_routes_to_the_second_behaviour_survive():
+    """Found by the n=20 run on answer E, where the clause split its own readers.
+
+    The breadth clause offers three ways to supply the second behaviour; two of them are not
+    tied to a named occasion. The neighbouring sentence — "one exchange does not supply two
+    behaviours" — was being generalised into "only incidents count", which reads routes 2 and
+    3 straight out of the clause. One run rejected *"that's how it works"* on exactly those
+    grounds while others counted it, and both readings were available in the text.
+    """
+    root = Path(__file__).resolve().parents[1]
+    text = rubric_module.load("c3", root=root).text
+    assert "Routes 2 and 3 are not tied to a named occasion" in text
+    assert "only incidents count" in text  # the misreading, named so it stays named
