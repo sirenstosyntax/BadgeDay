@@ -237,3 +237,21 @@ def test_a_revised_4_agrees_with_either_route_and_diverges_from_5():
     assert compare.agrees("4", "4")
     assert not compare.agrees("4", "5")
     assert not compare.agrees("4", "3")
+
+
+def test_the_breadth_clause_does_not_close_the_being_changed_route():
+    """The defect the first set re-run found, pinned so the clause cannot re-close it.
+
+    The breadth clause claims precedence over everything below it in anchor 5. "Being changed
+    by a named colleague" is named four paragraphs down and not in the clause's list, so the
+    first version of the clause silently demoted a pre-existing route to 5 into nothing — and
+    answer I, the fixture written to test that exact route, came back 4B against an SME 5.
+
+    Both halves are asserted because either alone is insufficient: the clause has to say the
+    route clears it, and the route has to say the clause does not close it. A reader arriving
+    at one without the other gets the wrong answer.
+    """
+    root = Path(__file__).resolve().parents[1]
+    text = rubric_module.load("c3", root=root).text
+    assert "Being changed by a named colleague clears this clause on its own" in text
+    assert "the breadth clause above does not close it" in text
