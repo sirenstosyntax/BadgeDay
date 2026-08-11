@@ -220,7 +220,16 @@ def main() -> None:
     print(
         "Agreement is weaker evidence than it looks: ten answers, written by the same party\n"
         "that drafted the anchors, so a clause can be agreed with here and still be wrong\n"
-        "about a candidate nobody thought to write. Divergence is the reliable signal."
+        "about a candidate nobody thought to write.\n"
+        "\n"
+        "**And one run per answer cannot tell a divergence from a wobble.** This is one draw\n"
+        "each. An answer sitting on a boundary has a rate, not a value — E was measured at\n"
+        "5x3 / 4Bx2 on 2026-07-29 — so it will 'diverge' in some runs and agree in others with\n"
+        "nothing having changed, and three consecutive set runs read as stability when two of\n"
+        "the eleven were coin flips. Before treating any single-run divergence as a finding,\n"
+        "get a rate for it:\n"
+        "\n"
+        "    python scripts/recruit_answer_runs.py <REF> --runs 20\n"
     )
     # A failure is not a pass. Exiting 0 on a run with holes in it would let a set re-run go
     # green in CI while two answers were never scored.
