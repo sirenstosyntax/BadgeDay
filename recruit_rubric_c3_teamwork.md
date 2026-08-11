@@ -261,9 +261,30 @@ account.
 
 **One exchange does not supply two behaviours.** Asking a colleague what is wrong and then
 crediting him for the fix are two halves of a single conversation, not two pieces of conduct.
-What clears this clause is conduct appearing somewhere *else* as well — a second occasion, a
-disposition he describes as ordinary rather than notable, or a change in how he works that
-outlasted the incident.
+What clears this clause is conduct appearing somewhere *else* as well, and there are exactly
+three ways it can:
+
+1. **A second occasion.** Another time, another person, another thing done.
+2. **A disposition he describes as ordinary.** *"If someone was slow you'd just help them out
+   and they'd do the same for you next time — that's how it works."*
+3. **A change in how he works that outlasted the incident.** *"What I do differently now is…"*
+
+**Routes 2 and 3 are not tied to a named occasion, and that is not a defect in them.** A
+disposition is a claim about how he behaves generally, and it counts here *because* it is
+general — a man for whom reciprocity is unremarkable is telling you about a pattern, which is
+the thing this clause is looking for and the thing a single incident cannot supply. Do not
+require it to come attached to a dated episode. The opening paragraph of this anchor names
+exactly such a line as top-band conduct.
+
+**Do not read "one exchange does not supply two behaviours" as "only incidents count."** That
+sentence rules out double-counting the halves of a single event. It does not rule out routes 2
+and 3, which are how most answers that genuinely deserve a 5 will clear this clause.
+
+> **Added 2026-08-10 after the n=20 run on answer E** — 5×8, 4B×11, 4×1 — where the
+> determinations disagreed about precisely one thing: whether *"that's how it works"* counts as
+> a second behaviour. The runs scoring 5 counted it; one scoring 4 rejected it as *"a general
+> rule about the crew rather than a tied occasion"*, which is route 2 being read out of the
+> clause by the sentence above it. Both readings were available in the text as written.
 
 This is deliberately about **breadth of conduct rather than a count of incidents.** Two
 behaviours inside one richly told episode can clear it; the same behaviour told three times
