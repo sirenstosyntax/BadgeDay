@@ -694,6 +694,47 @@ The deciding clause is `c3.anchor.4B` in some runs and `c3.note.1` in others, an
 > direction of pessimism, and the earlier run said so at the time. **Five runs is for reading a
 > critique; twenty is the floor for a claim about a rate.**
 
+> **Noise floor re-run 2026-08-10, after all four anchor edits** — `scripts/recruit_noise_floor.py c3`,
+> scorer path, `claude-sonnet-5` at effort `high`.
+>
+> | Fixture | n | Distribution | Spread | σ |
+> |---|---|---|---|---|
+> | Qualified, self-focused | 20 | 2×20 | 0 | 0.00 |
+> | No team history, undersold | 20 | not assessable ×20 | — | — |
+> | No team history, nobody there | 10 | not assessable ×10 | — | — |
+> | Between 2 and 3 | 20 | 3×20 | 0 | 0.00 |
+> | Generic, correct, no incident | 10 | 4B×10 | 0 | 0.00 |
+> | Changed by a named person | 10 | **5×10** | 0 | 0.00 |
+>
+> **Ninety runs, zero variance on every fixture** — the cleanest this has been, against a
+> previous best of 80/80. Two of these had a wobble history: the undersold fixture split three
+> ways in July before note 4 was settled, and the 2/3 boundary produced a stray 4A. Both are
+> flat. **The four anchor edits introduced no scorer-path ambiguity on anything these six
+> fixtures reach.**
+>
+> **Two edits are confirmed by name in the determinations.** The being-changed fixture's
+> reasoning quotes the restored route back — *"clears the breadth clause on its own, reaching the
+> top band"* — and the generic-correct fixture cites *"anchor 4's third route"*, the numbering
+> added the same day. Both are being read as written.
+>
+> **What it does not touch.** No fixture tests the breadth requirement itself — the
+> being-changed fixture tests the *exemption* from it. Nothing here speaks to the
+> two-behaviours case, which is where E lives.
+>
+> **And it is fresh evidence for the path decision below rather than against it.** The
+> being-changed fixture *is* review-set answer I, the same transcript. Same rubric, same model,
+> same effort, same day:
+>
+> | Path | Answer I |
+> |---|---|
+> | Scorer (`recruit_noise_floor.py`) | **5×10, σ 0.00** |
+> | Critique (`recruit_review_compare.py`) | 4B, 5, 5 across three set runs |
+>
+> One answer, two paths, two different stabilities — which is exactly the 2026-07-29 finding
+> reproduced on a single transcript rather than inferred across five. **A clean scorer floor and
+> a wobbling product are not in tension; they are the same result seen twice.** So 90/90 says the
+> rubric is unambiguous to a reader asked only for a score, and says nothing about what ships.
+
 **[SETTLED] A set run reports values; a boundary answer has a rate. Do not read one as the other.**
 Established by getting it wrong, twice, on 2026-08-10. Three consecutive set runs produced an orderly table that read as stability, and the third falsified the second: E crossed a band and D crossed a route with no edit to explain either. E has been measured at **5×3, 4B×2** since 2026-07-29 — a 60/40 answer, logged in §10 as a known wobble the whole time — so 5, 5, 4B across three runs is exactly what it should have produced.
 
@@ -772,8 +813,8 @@ Proposed as a reliability fix — pairwise comparison is more stable than absolu
 |---|---|
 | Criterion 1 anchors | Scope settled (see below), anchors unwritten |
 | Criterion 1 naming | "Communication" overclaims what audio can see. "Answer Construction" plus a separate delivery sub-score is the candidate. **[OPEN]** |
-| Criterion 3 | **Rewritten 2026-07-29 from Grant's blind scores** — `recruit_rubric_c3_teamwork.md`. No longer represents nobody's judgment: the anchors were rewritten from an SME's scores on answers he had not seen scored, and note 1 (will he say the difficult thing) came from him. Stable at 80/80 on the scorer path. Still wants a pass over the rewritten text itself, which he has not read. **Amended again 2026-08-06** with the F rulings and a new scoring note 10; the 80/80 predates those edits and the standing rule in §7 is to re-run after any anchor change. |
-| C3 — the noise floor is stale | Note 1, anchor 5, the 4/5 boundary and note 10 all changed on 2026-08-06, and then anchor 5, anchor 4 and the 4/5 boundary changed **again** on 2026-08-10 for the breadth correction. `scripts/recruit_noise_floor.py c3` has not been run since either. The number is a property of the rubric at least as much as of the model, so the 80/80 should not be quoted for the current text. |
+| Criterion 3 | **Rewritten 2026-07-29 from Grant's blind scores** — `recruit_rubric_c3_teamwork.md`. No longer represents nobody's judgment: the anchors were rewritten from an SME's scores on answers he had not seen scored, and note 1 (will he say the difficult thing) came from him. Still wants a pass over the rewritten text itself, which he has not read. **Amended again 2026-08-06** with the F rulings and a new scoring note 10, and **again 2026-08-10** four times for the breadth correction. **Stable at 90/90 on the scorer path as of 2026-08-10** — with the three cautions below attached; that figure does not transfer to the product and is not approval. |
+| ~~C3 — the noise floor is stale~~ | **Re-run 2026-08-10 after all four anchor edits: 90 runs, zero variance on all six fixtures** — `reviews/c3-noise-floor-2026-08-10.md`. Two edits confirmed by name in the determinations, including the restored being-changed route. **Three cautions travel with the figure and it should not be quoted bare.** It is not approval (twenty-five consecutive 5s on F were zero variance and the wrong band). No fixture tests the breadth requirement — the being-changed fixture tests the *exemption* from it — so nothing here speaks to the two-behaviours case where E lives. And it is a scorer-path number: the same transcript wobbles 4B/5/5 through the product. See §7. |
 | ~~The whole review set needs re-running~~ | **Run 2026-08-10** — `reviews/c3-set-rerun-2026-08-10.md`. **Nine of eleven agree, zero divergences among the answers that scored.** F fell to 4 and E held at 5, both as predicted, and the other seven did not drift — which was the specific risk of raising the bar. Two answers produced no critique (see below), so I is unmeasured rather than falsified and is the one prediction still outstanding. |
 | **C3 — the breadth clause closed a route to 5 that nothing in the ruling touched** | **Found by the second set re-run, `reviews/c3-set-rerun-2026-08-10-second.md`: I came back 4B against a blind 5.** The clause said *"more than one of the behaviours listed above"* and claimed precedence over everything below it — and *being changed by a named colleague* is not in that list; it sits four paragraphs down as its own standing route to 5, weeks older than the clause. So the clause demoted a route to nothing, silently, and the answer written to test that exact route is the one that fell. §7's warning arriving from the other side: *a boundary made stable by becoming unreachable is closed, not fixed.* **Fixed** — the route now clears the clause on its own, stated in both passages with a test on both, on the reasoning that a change he still carries is the conduct's second appearance. **Not re-run.** |
 | **C3 — does being changed by a colleague need a second behaviour beside it?** | The judgment inside that fix, and Grant's to take. I restored the route rather than close it, because closing it revises his blind 5 on I — a score he has not been asked about. If he does want it closed, I is a 4 and the clause needs no change; if he confirms the restoration, the discriminator across all three ruled answers is **conduct that outlasts the episode** (F has none, E and I both do), which is worth stating as the principle rather than leaving as three worked cases. |
