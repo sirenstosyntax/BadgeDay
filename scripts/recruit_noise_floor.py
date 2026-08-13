@@ -11,6 +11,16 @@ display built on scores is noise, and can show a candidate regressing when he im
 be wrong about the fire service — zero variance says the anchors are unambiguous, never
 that they are right. Only SME review says that. Do not read a clean run as approval.
 
+**And it measures the scorer path, not the product.** The prompt below asks for a score and
+the deciding criterion and nothing else. `critique_answer` — the path that ships — asks for
+a whole critique against the same rubric region and is markedly less stable on the same
+answers; §7 records 80/80 here beside a three-anchor spread there, and 2026-08-10 got both
+readings from one transcript (`C3_CHANGED_BY_SOMEONE` is review-set answer I: 5×10 σ 0.00
+here, 4B/5/5 through `recruit_review_compare.py`). So the question this script answers is
+**whether the rubric text is ambiguous to a reader asked only to score** — a real question,
+and not the same one as whether the product is stable. For that, use
+`scripts/recruit_answer_runs.py <REF> --runs 20`.
+
 Fixture design follows two rules learned the hard way:
 
 1. **Boundaries, not exemplars.** A fixture parked at 1 or 5 measures the floor and the
