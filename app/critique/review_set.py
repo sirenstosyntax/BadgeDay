@@ -18,6 +18,17 @@ exercise is that his judgment arrives independently. It is recorded here because
 comparison needs it afterwards, and because a fixture whose purpose nobody wrote down
 stops being a test of anything within a month.
 
+**The clause references in `probes` are hand-written, and they went stale once.** The
+2026-07-29 rewrite inserted two scoring notes above the old note 3, shifting every note
+below them down by one — and these strings did not move. So from July until 2026-08-10, the
+answer written to probe *"do not score the teammate"* pointed at the no-team-history note,
+and the answer written to probe no-team-history pointed at the specificity floor. Both are
+printed by `recruit_review_compare.py` under *"written to probe"* as the record of what an
+answer is for, so a divergence report was aiming the reader at the wrong clause. This is the
+hand-maintained-list failure that `rubric.py` parses the catalogue to avoid, one layer up
+and unguarded; `tests/test_review_set.py` now resolves every reference here against the real
+catalogue, which catches a shift but not a swap between two clauses that both exist.
+
 Answers are synthetic. No real candidate is described.
 """
 
@@ -113,7 +124,7 @@ load the truck properly so he wasn't fighting it. He picked it up quick.
 
 I've genuinely never had a problem with anyone I've worked with. I get on with everybody.
 """,
-        "note.4 — the unfalsifiable claim. Does 'never had a problem with anyone' pull an "
+        "note.5 — the unfalsifiable claim. Does 'never had a problem with anyone' pull an "
         "answer down, or is it a thing to note without moving the score?",
     ),
     ReviewAnswer(
@@ -164,7 +175,7 @@ I know that's probably not what you're looking for. I'm not trying to dodge the 
 just don't want to make something up. I think I'd be alright on a crew, I get on with people
 fine, but I can't point to a time it was actually tested the way you're asking.
 """,
-        "note.3 — a real offer that is too thin to score. He volunteers the caregiving and "
+        "note.4 — a real offer that is too thin to score. He volunteers the caregiving and "
         "discounts it in the same breath.",
     ),
     ReviewAnswer(
