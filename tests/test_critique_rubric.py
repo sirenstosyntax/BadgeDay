@@ -270,3 +270,27 @@ def test_the_untied_routes_to_the_second_behaviour_survive():
     text = rubric_module.load("c3", root=root).text
     assert "Routes 2 and 3 are not tied to a named occasion" in text
     assert "only incidents count" in text  # the misreading, named so it stays named
+
+
+def test_a_disposition_that_restates_the_incident_is_not_a_second_behaviour():
+    """SME ruling 2026-08-10, narrowing route 2 — and the guard against it eating route 2.
+
+    The ruling and the fix directly above it pull in opposite directions and both have to
+    survive, which is the trap this anchor fell into four times in a day. The untied rule
+    says a disposition counts with no occasion attached; the restatement rule says it counts
+    only when it names conduct the incident did not. Lose the first and route 2 closes,
+    demoting answers on grounds the ruling explicitly did not endorse. Lose the second and E
+    returns to 95% at the top band against a revised 4.
+
+    The reconciling sentence is pinned too, because a reader who meets either rule without it
+    reaches for the wrong axis: the test is what the disposition is *about*, never whether it
+    is tied to a date.
+    """
+    root = Path(__file__).resolve().parents[1]
+    text = rubric_module.load("c3", root=root).text
+    assert "A disposition that only restates the incident is not a second behaviour" in text
+    # The operational test, not just the principle — the clause has to be applicable.
+    assert "remove the incident from the answer" in text.lower()
+    # Matched on the unwrapped fragment: the sentence wraps as "for being\nuntied", and a
+    # test that pins prose has to pin it as the file actually stores it.
+    assert "Do not demote an untied disposition for being" in text

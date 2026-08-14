@@ -214,7 +214,22 @@ distinguishable from one that never did.
 
 ```scores-revised
 F = 4, a 5 needs more than one of anchor 5's behaviours; F is one exchange and a strong 4
+E = 4, derived from the 2026-08-10 clause ruling rather than a direct re-read of E
 ```
+
+**Why E moved, and the one thing to check about it.** The ruling was *"a disposition that just
+restates the incident isn't a second behaviour"* — given as a clause, with E as the case in
+view. Applied to E it is decisive: the incident is teaching a slower colleague, the disposition
+is that helping slower colleagues is what you do, and that is one behaviour at two altitudes. So
+E is a 4 on anchor 4's third route.
+
+**It is recorded here as a derivation, not as a re-read**, because the distinction matters for
+what this file is. F's entry came from the SME looking at F and saying *strong 4*. E's comes
+from applying a general ruling to an answer he did not separately re-score. The two are not the
+same weight of evidence and the comparison treats them identically, which is the risk. If the
+ruling was meant to leave E at 5 by some route not considered here, this line is the thing to
+delete — and `recruit_review_compare.py` announces every revision at the top of its output
+precisely so a wrong one cannot sit here quietly.
 
 **Why F moved.** Scored 5 blind on 2026-07-29, and confirmed as 5 in the 2026-08-06 calibration
 review. Reversed on 2026-08-10, after the anchor edits made from that review drove F to 5 in
