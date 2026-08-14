@@ -265,16 +265,43 @@ What clears this clause is conduct appearing somewhere *else* as well, and there
 three ways it can:
 
 1. **A second occasion.** Another time, another person, another thing done.
-2. **A disposition he describes as ordinary.** *"If someone was slow you'd just help them out
-   and they'd do the same for you next time — that's how it works."*
+2. **A disposition he describes as ordinary, about conduct the incident did not show.** He
+   talked a colleague through a job he was struggling with, *and* — *"if I've got something
+   wrong I'd rather hear it there and then, that's how you keep people safe"* — taking
+   correction is plainly unremarkable to him too. Two different things, one of them told as a
+   norm rather than an occasion.
 3. **A change in how he works that outlasted the incident.** *"What I do differently now is…"*
+
+**A disposition that only restates the incident is not a second behaviour.** A man who taught
+a slower colleague and then tells you that helping slower colleagues is what you do has given
+you one piece of conduct and its generalisation — the same behaviour described at two levels
+of altitude, not two behaviours. **The test: remove the incident from the answer, and ask
+whether the disposition is still telling you something you did not already know.** If it only
+restates what the story showed, this clause is not met, and the answer is a 4 on anchor 4's
+third route — one of the things a 5 does, done once and done well.
+
+The opening paragraph of this anchor names reciprocity-described-as-ordinary as top-band
+conduct, and it is. **That does not make it a second behaviour beside an incident of the same
+helping** — it is the same conduct appearing in the list and in the story. The behaviours in
+that paragraph are what a 5 does; this clause is about how many *different* ones an answer has
+to show.
+
+This is the same rule as *"one exchange does not supply two behaviours"*, applied on the other
+axis. That sentence stops the halves of a single event being counted as two; this one stops a
+single behaviour being counted twice by being said generally as well as specifically.
 
 **Routes 2 and 3 are not tied to a named occasion, and that is not a defect in them.** A
 disposition is a claim about how he behaves generally, and it counts here *because* it is
-general — a man for whom reciprocity is unremarkable is telling you about a pattern, which is
-the thing this clause is looking for and the thing a single incident cannot supply. Do not
-require it to come attached to a dated episode. The opening paragraph of this anchor names
-exactly such a line as top-band conduct.
+general — a man for whom taking correction is unremarkable is telling you about a pattern,
+which is the thing this clause is looking for and the thing a single incident cannot supply.
+Do not require it to come attached to a dated episode.
+
+**Read the restatement rule and the untied rule together, because each is easy to turn into the
+other.** The restatement rule is about *what the disposition is about*, never about whether it
+is tied to an occasion. A disposition that names different conduct clears this clause however
+generally it is phrased and however much it floats free of a date. A disposition that names the
+same conduct fails it however vividly it is put. **Do not demote an untied disposition for being
+untied, and do not promote a restating one for being well said.**
 
 **Do not read "one exchange does not supply two behaviours" as "only incidents count."** That
 sentence rules out double-counting the halves of a single event. It does not rule out routes 2
@@ -285,6 +312,13 @@ and 3, which are how most answers that genuinely deserve a 5 will clear this cla
 > a second behaviour. The runs scoring 5 counted it; one scoring 4 rejected it as *"a general
 > rule about the crew rather than a tied occasion"*, which is route 2 being read out of the
 > clause by the sentence above it. Both readings were available in the text as written.
+>
+> **Narrowed by SME ruling 2026-08-10, after the re-run**: *"a disposition that just restates
+> the incident isn't a second behaviour."* The numbering moved E from 40% to 95% at the top
+> band, and the one dissenting run made the objection the ruling agrees with — that E's
+> disposition is *"a general restatement of the same kind of help"*. Route 2 survives and is
+> narrowed to dispositions about conduct the incident did not show. **This reverses the blind 5
+> on answer E**, which now sits at 4 on anchor 4's third route.
 
 This is deliberately about **breadth of conduct rather than a count of incidents.** Two
 behaviours inside one richly told episode can clear it; the same behaviour told three times
