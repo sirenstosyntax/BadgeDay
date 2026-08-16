@@ -91,6 +91,66 @@ class Settings(BaseSettings):
             and self.stripe_price_id_intensive_90day
         )
 
+    # --- App stores ----------------------------------------------------------
+    # Both stores require that a subscription sold inside their app is bought through
+    # their billing system, so the phone apps have a second till. See
+    # mobile_release_plan.md; the entitlement it grants is the same one Stripe grants.
+    #
+    # Product ids are configuration for the same reason Stripe's price ids are: they are
+    # created in a console, they differ between the two stores, and a typo in a hardcoded
+    # one is a purchase flow that opens and then fails with an unhelpful store error.
+    play_package_name: str = ""
+    play_product_id_monthly: str = ""
+    play_product_id_intensive_90day: str = ""
+    # The service account that may read purchase state from the Play Developer API, as the
+    # JSON key file's contents. A purchase token means nothing without this call — the
+    # notification carries no expiry date.
+    play_service_account_json: str = ""
+    # The Pub/Sub push subscription's expected audience and service account. Both are
+    # checked on the OIDC token every notification carries; without them, any POST to the
+    # notification URL would be believed.
+    play_pubsub_audience: str = ""
+    play_pubsub_service_account: str = ""
+
+    appstore_bundle_id: str = ""
+    appstore_product_id_monthly: str = ""
+    appstore_product_id_intensive_90day: str = ""
+    # App Store Server API credentials, used to check a transaction against Apple rather
+    # than trust the receipt the device presented.
+    appstore_issuer_id: str = ""
+    appstore_key_id: str = ""
+    appstore_private_key: str = ""
+
+    @property
+    def play_configured(self) -> bool:
+        return bool(
+            self.play_package_name
+            and self.play_service_account_json
+            and self.play_pubsub_audience
+            and self.play_pubsub_service_account
+        )
+
+    @property
+    def appstore_configured(self) -> bool:
+        return bool(
+            self.appstore_bundle_id
+            and self.appstore_issuer_id
+            and self.appstore_key_id
+            and self.appstore_private_key
+        )
+
+    @property
+    def subscription_product_ids(self) -> frozenset[str]:
+        """Which store products are recurring, as opposed to the one-time pass.
+
+        Apple's transaction payload does not always carry a usable type, so the configured
+        list is the reliable answer to "is this a subscription" — see
+        `store_payloads.parse_appstore_payload`.
+        """
+        return frozenset(
+            p for p in (self.play_product_id_monthly, self.appstore_product_id_monthly) if p
+        )
+
     @field_validator("azure_docintel_endpoint")
     @classmethod
     def _endpoint_must_be_a_url(cls, value: str) -> str:

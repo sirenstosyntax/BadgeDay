@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from supabase import AuthError, Client, create_client
 
 from app.billing.gateway import PaymentGateway, StripeGateway
+from app.billing.store_gateway import StoreGateway, UnconfiguredStoreGateway
 from app.config import Settings, get_settings
 from app.storage.client import service_client, user_client
 
@@ -114,5 +115,19 @@ def get_gateway(settings: SettingsDep) -> PaymentGateway:
     return StripeGateway(settings)
 
 
+def get_store_gateway(settings: SettingsDep) -> StoreGateway:
+    """The app-store gateway, which currently refuses everything.
+
+    Deliberately not conditional on `play_configured` / `appstore_configured`. Until the
+    signature verification described at the top of `billing/store_gateway.py` exists there
+    is no implementation to hand out even when the credentials are present, and a gateway
+    that refuses is the only correct thing to serve from a payment endpoint that cannot yet
+    tell a real purchase from an invented one. Swapping the implementation in is one line
+    here.
+    """
+    return UnconfiguredStoreGateway()
+
+
 ServiceDbDep = Annotated[Client, Depends(service_db)]
 GatewayDep = Annotated[PaymentGateway, Depends(get_gateway)]
+StoreGatewayDep = Annotated[StoreGateway, Depends(get_store_gateway)]
