@@ -69,6 +69,13 @@ This supersedes the original "Promote only, do not build Recruit" scoping. Promo
 built and deployed at app.badgeday.com; Recruit is the remaining work and is now on the
 critical path to any revenue.
 
+**Reaffirmed 2026-08-16, when the app-store decision was taken.** Going into the stores
+does not open the gate early. The store work runs *alongside* Recruit rather than ahead of
+it, because most of what it costs is waiting — developer-account enrolment, a D-U-N-S
+number, closed testing — and waiting is the one thing that parallelises. Nothing in
+`mobile_release_plan.md` should be read as a reason to take real money before Recruit
+ships.
+
 ### Promote — built (what shipped)
 
 - **Auth + billing:** email auth, Stripe subscription (monthly ~$29 and a 90-day
@@ -111,7 +118,14 @@ Recruit code, and do not infer Recruit's shape from Promote's.
 - Written-exam practice in Recruit (most commoditized, worst risk-to-differentiation —
   see Product family above). Last, if at all.
 - Department/team accounts of ANY kind (see firewall below)
-- Native mobile apps (responsive web only)
+- ~~Native mobile apps (responsive web only)~~ — **reversed 2026-08-16.** BadgeDay is going
+  into both stores, as wrappers around the same web app: a Trusted Web Activity for Play and
+  Capacitor for iOS. There is no second product codebase and there must not be one — the
+  wrappers add native capabilities (upload from Files and camera, offline practice, local
+  notifications, store purchase) around the app that already exists. A React Native or Swift
+  rewrite is still out of scope. Everything about the release lives in
+  **`mobile_release_plan.md`**; read it before touching either wrapper or anything under
+  `app/billing/store*`.
 - Community features, leaderboards, content marketplace
 
 ## Hard constraints — never violate, never "helpfully" work around
@@ -159,8 +173,14 @@ Recruit code, and do not infer Recruit's shape from Promote's.
 - **Doc processing:** Azure Document Intelligence (existing resource: `sts-docintel` in
   resource group `sts-examgen-rg`)
 - **LLM:** Anthropic API (see Architecture decisions below for the model)
-- **Payments:** Stripe (subscriptions + one-time 90-day pass)
+- **Payments:** Stripe on the web (subscriptions + one-time 90-day pass). **Inside the
+  phone apps, the store's own billing** — Play Billing and StoreKit — because both stores
+  require it for a digital subscription sold in-app. Same two products, same entitlement,
+  different till; the split is in `app/billing/store*` and the reasoning in
+  `mobile_release_plan.md`.
 - **Frontend:** React + Vite, Tailwind. Keep it simple; no SSR framework unless justified.
+- **Mobile:** wrappers around that same frontend — Trusted Web Activity (Play), Capacitor
+  (iOS). Product code is never forked per platform.
 - **Hosting target:** Azure (align with existing sts infrastructure)
 
 ## Architecture decisions
