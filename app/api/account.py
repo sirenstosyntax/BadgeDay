@@ -17,6 +17,7 @@ from fastapi import APIRouter, HTTPException, status
 from app.api.deps import CurrentUserDep, DbDep, GatewayDep, ServiceDbDep
 from app.storage.account import purge_account
 from app.storage.billing import Entitlement, customer_id_for, entitlement
+from app.storage.store import managed_elsewhere
 
 router = APIRouter(tags=["account"])
 
@@ -24,12 +25,24 @@ router = APIRouter(tags=["account"])
 class Account(Entitlement):
     id: str
     email: str | None = None
+    # Which store, if any, holds what they are paying for — 'play', 'appstore', or absent
+    # for Stripe and for candidates who have never paid. The account screen needs it to
+    # send someone to the right place to cancel: a subscription bought through the App
+    # Store cannot be cancelled from our billing portal, and offering that candidate a
+    # portal button is how a cancellation becomes a chargeback.
+    managed_by: str | None = None
 
 
 @router.get("/me")
 def me(user: CurrentUserDep, db: DbDep) -> Account:
     state = entitlement(db, user.id)
-    return Account(id=user.id, email=user.email, **state.model_dump())
+    store = managed_elsewhere(db, user.id)
+    return Account(
+        id=user.id,
+        email=user.email,
+        managed_by=store.platform if store else None,
+        **state.model_dump(),
+    )
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)

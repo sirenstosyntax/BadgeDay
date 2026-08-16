@@ -3,8 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover so the app can paint into the notch and home-indicator areas
+         once it is running as an installed app rather than a browser tab. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Upload your department's promotional reading list and drill cited practice questions until badge day." />
+
+    <!-- Installable, and the prerequisite for the Play wrapper: a Trusted Web Activity is
+         a PWA in a shell, and Bubblewrap reads this manifest to generate the Android
+         project. The icons it names do not exist yet — see web/public/icons/README.md. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#171E26" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta name="apple-mobile-web-app-title" content="BadgeDay" />
+
     <title>BadgeDay</title>
   </head>
   <body>

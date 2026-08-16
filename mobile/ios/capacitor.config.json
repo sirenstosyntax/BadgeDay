@@ -1,0 +1,21 @@
+{
+  "appId": "com.badgeday.app",
+  "appName": "BadgeDay",
+  "webDir": "www",
+  "server": {
+    "url": "https://app.badgeday.com",
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#171E26",
+    "limitsNavigationsToAppBoundDomains": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "backgroundColor": "#171E26",
+      "launchAutoHide": true,
+      "launchShowDuration": 800
+    }
+  }
+}

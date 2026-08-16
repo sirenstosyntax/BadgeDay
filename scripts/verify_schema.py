@@ -297,6 +297,29 @@ def main() -> int:
             f"status {authored.status_code}",
         )
 
+        # The store-billing equivalent of the profiles lesson in 0005. That migration
+        # exists because a candidate could PATCH their own profile row to 'active' until
+        # 2099 using nothing but their own token. store_purchases (0008) holds exactly the
+        # same kind of value, so the refusal is verified against the live database rather
+        # than assumed from the migration having been written.
+        self_granted = api.insert_as_user(
+            alice_token,
+            "store_purchases",
+            {
+                "user_id": alice_id,
+                "platform": "appstore",
+                "product_id": "badgeday.promote.monthly",
+                "purchase_identifier": "invented-by-the-candidate",
+                "kind": "subscription",
+                "status": "active",
+            },
+        )
+        check(
+            "cannot grant herself a store subscription",
+            self_granted.status_code >= 400,
+            f"status {self_granted.status_code}",
+        )
+
         print("\nSignup trigger:\n")
         check("profile row was created automatically", len(profiles) == 1)
 
@@ -426,6 +449,11 @@ def main() -> int:
             ("responses", f"user_id=eq.{alice_id}"),
             ("saved_questions", f"user_id=eq.{alice_id}"),
             ("jobs", f"document_id=eq.{alice_document_id}"),
+            # A store purchase outliving the account it belonged to is both a privacy
+            # failure and a billing one: the row is personal data nobody can now reach,
+            # and a renewal notification arriving later would update a purchase with no
+            # owner rather than being noticed as unattributable.
+            ("store_purchases", f"user_id=eq.{alice_id}"),
         ]
         for table, query in orphans:
             rows = api.select_as_service(table, query)

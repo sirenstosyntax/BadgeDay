@@ -1,0 +1,213 @@
+"""The store billing endpoints.
+
+The property under test throughout is that nothing grants access except a purchase the
+store itself confirmed. These endpoints are public payment paths — the notification ones
+are unauthenticated by design — so the interesting cases are the refusals, not the happy
+path.
+"""
+
+from datetime import UTC, datetime
+
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from app.api.deps import (
+    CurrentUser,
+    current_user,
+    get_settings,
+    get_store_gateway,
+    service_db,
+)
+from app.api.store import router as store_router
+from app.billing.store import PurchaseFacts, RecordPurchase
+from app.billing.store_gateway import StoreNotConfigured, StoreVerificationError
+from app.config import Settings
+
+USER_ID = "66666666-6666-6666-6666-666666666666"
+PAID_THROUGH = datetime(2026, 12, 1, tzinfo=UTC)
+
+
+class _ConfirmingGateway:
+    """A store that confirms whatever it is asked about."""
+
+    def verify_play_purchase(self, *, purchase_token: str, product_id: str, user_id: str):
+        return PurchaseFacts(
+            platform="play",
+            product_id=product_id,
+            purchase_identifier=purchase_token,
+            kind="subscription",
+            state="purchased",
+            expires_at=PAID_THROUGH,
+            user_id=user_id,
+        )
+
+    def verify_appstore_purchase(self, *, transaction_id: str, user_id: str):
+        return PurchaseFacts(
+            platform="appstore",
+            product_id="badgeday.promote.monthly",
+            purchase_identifier=transaction_id,
+            kind="subscription",
+            state="purchased",
+            expires_at=PAID_THROUGH,
+            user_id=user_id,
+        )
+
+    def read_play_notification(self, *, payload: bytes, authorization: str):
+        return None
+
+    def read_appstore_notification(self, *, payload: bytes):
+        return None
+
+
+class _RefusingGateway(_ConfirmingGateway):
+    """A store that does not recognise the purchase it is shown."""
+
+    def verify_play_purchase(self, *, purchase_token: str, product_id: str, user_id: str):
+        raise StoreVerificationError("no such purchase")
+
+    def verify_appstore_purchase(self, *, transaction_id: str, user_id: str):
+        raise StoreVerificationError("no such transaction")
+
+
+class _UnconfiguredGateway(_ConfirmingGateway):
+    def verify_play_purchase(self, *, purchase_token: str, product_id: str, user_id: str):
+        raise StoreNotConfigured("not configured")
+
+
+def _harness(monkeypatch: pytest.MonkeyPatch, gateway: object, **settings: object):
+    """Returns a client and the list of changes that reached the database."""
+    written: list = []
+    monkeypatch.setattr(
+        "app.api.store.apply_store_change", lambda _db, change: written.append(change)
+    )
+
+    app = FastAPI()
+    app.include_router(store_router)
+    app.dependency_overrides[current_user] = lambda: CurrentUser(
+        id=USER_ID, email="c@example.com", access_token="t"
+    )
+    app.dependency_overrides[service_db] = lambda: object()
+    app.dependency_overrides[get_store_gateway] = lambda: gateway
+    app.dependency_overrides[get_settings] = lambda: Settings(**settings)
+    return TestClient(app), written
+
+
+# --- The app reporting its own purchase --------------------------------------
+
+
+def test_a_confirmed_play_purchase_is_recorded_against_the_candidate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, written = _harness(monkeypatch, _ConfirmingGateway())
+    response = client.post(
+        "/billing/store/play/purchase",
+        json={"purchase_token": "token-abc", "product_id": "badgeday.promote.monthly"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["entitled"] is True
+    assert len(written) == 1
+    change = written[0]
+    assert isinstance(change, RecordPurchase)
+    assert change.user_id == USER_ID
+    assert change.status == "active"
+    assert change.expires_at == PAID_THROUGH
+
+
+def test_a_purchase_the_store_will_not_confirm_grants_nothing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The client says what to check, never what to believe.
+
+    Without this the endpoint is a subscription for anyone who can POST a made-up token,
+    which is the whole reason verification is not optional.
+    """
+    client, written = _harness(monkeypatch, _RefusingGateway())
+    response = client.post(
+        "/billing/store/play/purchase",
+        json={"purchase_token": "invented", "product_id": "badgeday.promote.monthly"},
+    )
+
+    assert response.status_code == 402
+    assert written == []
+
+
+def test_an_unconfigured_store_refuses_rather_than_assumes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """503, not a silent success. A payment path that cannot verify must not pretend."""
+    client, written = _harness(monkeypatch, _UnconfiguredGateway())
+    response = client.post(
+        "/billing/store/play/purchase",
+        json={"purchase_token": "token-abc", "product_id": "badgeday.promote.monthly"},
+    )
+
+    assert response.status_code == 503
+    assert written == []
+
+
+def test_a_confirmed_appstore_purchase_is_recorded(monkeypatch: pytest.MonkeyPatch) -> None:
+    client, written = _harness(monkeypatch, _ConfirmingGateway())
+    response = client.post(
+        "/billing/store/appstore/purchase", json={"transaction_id": "2000000012345678"}
+    )
+
+    assert response.status_code == 200
+    assert len(written) == 1
+    assert written[0].platform == "appstore"
+    assert written[0].purchase_identifier == "2000000012345678"
+
+
+# --- The store reporting it ---------------------------------------------------
+
+
+def test_notifications_are_refused_until_the_store_is_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An unauthenticated endpoint that cannot check a signature must not accept anything."""
+    client, written = _harness(monkeypatch, _ConfirmingGateway())
+    assert client.post("/billing/store/play/notifications", content=b"{}").status_code == 503
+    assert client.post("/billing/store/appstore/notifications", content=b"{}").status_code == 503
+    assert written == []
+
+
+def test_a_verified_notification_that_changes_nothing_is_still_answered_200(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Pub/Sub redelivers anything it does not get a 2xx for.
+
+    A price-change notification is nothing to do, not an error, and answering it with one
+    buys an indefinite retry loop over a message that will never mean anything different.
+    """
+    client, written = _harness(
+        monkeypatch,
+        _ConfirmingGateway(),
+        play_package_name="com.badgeday.app",
+        play_service_account_json="{}",
+        play_pubsub_audience="https://api.badgeday.com",
+        play_pubsub_service_account="rtdn@badgeday.iam.gserviceaccount.com",
+    )
+    response = client.post("/billing/store/play/notifications", content=b"{}")
+
+    assert response.status_code == 200
+    assert written == []
+
+
+def test_an_unverifiable_notification_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    class _Forged(_ConfirmingGateway):
+        def read_play_notification(self, *, payload: bytes, authorization: str):
+            raise StoreVerificationError("bad oidc token")
+
+    client, written = _harness(
+        monkeypatch,
+        _Forged(),
+        play_package_name="com.badgeday.app",
+        play_service_account_json="{}",
+        play_pubsub_audience="https://api.badgeday.com",
+        play_pubsub_service_account="rtdn@badgeday.iam.gserviceaccount.com",
+    )
+    response = client.post("/billing/store/play/notifications", content=b"{}")
+
+    assert response.status_code == 400
+    assert written == []

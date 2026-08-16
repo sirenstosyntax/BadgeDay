@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 from app.api.account import router as account_router
 from app.api.deps import CurrentUser, current_user, get_gateway, service_db, user_db
 from app.storage.billing import Entitlement
+from app.storage.store import ManagedElsewhere
 
 USER_ID = "44444444-4444-4444-4444-444444444444"
 
@@ -23,7 +24,11 @@ class _Db:
     """Placeholder; the storage call is monkeypatched over it."""
 
 
-def _client(monkeypatch: pytest.MonkeyPatch, state: Entitlement) -> TestClient:
+def _client(
+    monkeypatch: pytest.MonkeyPatch,
+    state: Entitlement,
+    store: ManagedElsewhere | None = None,
+) -> TestClient:
     app = FastAPI()
     app.include_router(account_router)
     app.dependency_overrides[current_user] = lambda: CurrentUser(
@@ -31,6 +36,7 @@ def _client(monkeypatch: pytest.MonkeyPatch, state: Entitlement) -> TestClient:
     )
     app.dependency_overrides[user_db] = _Db
     monkeypatch.setattr("app.api.account.entitlement", lambda *_: state)
+    monkeypatch.setattr("app.api.account.managed_elsewhere", lambda *_: store)
     return TestClient(app)
 
 
@@ -66,6 +72,37 @@ def test_a_lapsed_candidate_is_reported_as_not_entitled(
     body = client.get("/me").json()
     assert body["entitled"] is False
     assert body["subscription_status"] == "past_due"
+
+
+def test_a_stripe_candidate_is_not_reported_as_managed_by_a_store(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The common case, and the one the web app depends on to keep showing its portal."""
+    client = _client(
+        monkeypatch,
+        Entitlement(entitled=True, subscription_status="active", access_expires_at=None),
+    )
+    assert client.get("/me").json()["managed_by"] is None
+
+
+def test_a_store_subscription_is_reported_so_the_app_can_send_them_to_the_right_place(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Offering a Stripe portal button to someone who paid Apple shows them an empty page.
+
+    They then cannot find how to cancel, and the way that ends is a chargeback rather than
+    a cancellation — so the endpoint has to say which till took the money.
+    """
+    client = _client(
+        monkeypatch,
+        Entitlement(entitled=True, subscription_status="none", access_expires_at=None),
+        ManagedElsewhere(
+            platform="appstore", product_id="badgeday.promote.monthly", status="active"
+        ),
+    )
+    body = client.get("/me").json()
+    assert body["managed_by"] == "appstore"
+    assert body["entitled"] is True
 
 
 # --- Deleting the account ----------------------------------------------------
