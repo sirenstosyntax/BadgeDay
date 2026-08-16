@@ -1,0 +1,44 @@
+{
+  "packageId": "com.badgeday.app",
+  "host": "app.badgeday.com",
+  "name": "BadgeDay — Promotional exam prep",
+  "launcherName": "BadgeDay",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#171E26",
+  "themeColorDark": "#171E26",
+  "navigationColor": "#171E26",
+  "navigationColorDark": "#171E26",
+  "navigationDividerColor": "#171E26",
+  "navigationDividerColorDark": "#171E26",
+  "backgroundColor": "#171E26",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://app.badgeday.com/icons/icon-512.png",
+  "maskableIconUrl": "https://app.badgeday.com/icons/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://app.badgeday.com/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://app.badgeday.com/",
+  "minSdkVersion": 23,
+  "orientationLock": false
+}

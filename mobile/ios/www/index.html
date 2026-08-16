@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>BadgeDay</title>
+  </head>
+  <body>
+    <!--
+      Never shown. Capacitor requires `webDir` to exist and to contain an index.html, but
+      `server.url` in capacitor.config.json points the WebView at app.badgeday.com, so the
+      app loads the deployed site and this file is only ever the thing that stops
+      `cap add ios` from refusing to run.
+
+      Do not grow this into a bundled copy of the app. The whole point of the wrapper is
+      that there is one web app and a deploy updates every surface at once; a copy here
+      would be a second product that drifts silently and ships through App Review.
+    -->
+    <p>BadgeDay loads from app.badgeday.com.</p>
+  </body>
+</html>

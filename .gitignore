@@ -21,6 +21,17 @@ uploads/
 node_modules/
 dist/
 
+# Mobile wrappers — generated native projects, and signing material.
+# The Android keystore is the one file here that must never be committed and must never be
+# lost: it is the identity of the app, and Play will not accept an upload signed with a
+# different key. It belongs in a password manager, not in git and not only on a laptop.
+mobile/android/app/
+mobile/android/*.keystore
+mobile/android/*.jks
+mobile/android/*.keystore.json
+mobile/ios/ios/
+mobile/ios/App/
+
 # Editor / OS
 .DS_Store
 .idea/
