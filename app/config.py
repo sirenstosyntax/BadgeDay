@@ -120,6 +120,16 @@ class Settings(BaseSettings):
     appstore_issuer_id: str = ""
     appstore_key_id: str = ""
     appstore_private_key: str = ""
+    # Apple's root certificates, comma-separated base64 DER, from
+    # https://www.apple.com/certificateauthority/. There is no default and there must not
+    # be one: a notification verifier with an empty trust store rejects every real
+    # notification while looking configured, which is a subscription system that quietly
+    # stops renewing people.
+    appstore_root_certs: str = ""
+    # Sandbox until the app is live. Apple's sandbox signs with a different chain, so a
+    # mismatch here rejects every notification with a signature error that reads like a
+    # credential problem.
+    appstore_environment: Literal["sandbox", "production"] = "sandbox"
 
     @property
     def play_configured(self) -> bool:
@@ -137,6 +147,11 @@ class Settings(BaseSettings):
             and self.appstore_issuer_id
             and self.appstore_key_id
             and self.appstore_private_key
+            # Included deliberately. Without the roots the gateway cannot verify anything,
+            # so "configured" would otherwise mean "has credentials and rejects every
+            # notification" — and the endpoint would answer 400 rather than 503, reporting
+            # a forged notification where the truth is a missing setting.
+            and self.appstore_root_certs
         )
 
     @property

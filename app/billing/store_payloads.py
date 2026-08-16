@@ -176,7 +176,7 @@ def _apple_state(notification_type: str, subtype: str | None) -> StoreState | No
     return _APPLE.get((notification_type, None))
 
 
-def _millis_to_datetime(value: object) -> datetime | None:
+def millis_to_datetime(value: object) -> datetime | None:
     """Apple's dates are milliseconds since the epoch, as a number."""
     if not isinstance(value, int | float):
         return None
@@ -217,7 +217,7 @@ def parse_appstore_payload(
         purchase_identifier=original_transaction_id,
         kind=kind,
         state=state,
-        expires_at=_millis_to_datetime(transaction.get("expiresDate")),
+        expires_at=millis_to_datetime(transaction.get("expiresDate")),
         # Set by the app at purchase time to the candidate's id. Apple passes it through
         # untouched, which is what lets a notification arriving months later still be
         # attributed. Absent on purchases made before the app started setting it, and on

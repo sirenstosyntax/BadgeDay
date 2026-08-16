@@ -35,6 +35,7 @@ The remaining work, and what it needs, is written up in mobile_release_plan.md u
 "Verification is the launch blocker".
 """
 
+import logging
 from typing import Protocol
 
 from app.billing.store import PurchaseFacts
@@ -114,3 +115,95 @@ class UnconfiguredStoreGateway:
 
     def read_appstore_notification(self, *, payload: bytes) -> PurchaseFacts | None:
         raise StoreNotConfigured("App Store billing is not configured.")
+
+
+class StoreGateways:
+    """One gateway per store, behind the single protocol the endpoints depend on.
+
+    Each store's implementation refuses the other's calls, so this routes rather than
+    merges. The point is that a store which is not configured — or whose credentials are
+    wrong — refuses on its own, without taking the other one down with it. Launching on
+    Play weeks before Apple is the expected order, not an edge case.
+
+    A store whose implementation fails to construct is held as the reason it failed rather
+    than as nothing. Anything reaching it raises `StoreNotConfigured` carrying that reason,
+    so a bad key surfaces as a 503 naming the problem instead of an AttributeError.
+    """
+
+    def __init__(
+        self,
+        play: object | None = None,
+        appstore: object | None = None,
+        *,
+        play_error: str = "Google Play billing is not configured.",
+        appstore_error: str = "App Store billing is not configured.",
+    ) -> None:
+        self._play = play
+        self._appstore = appstore
+        self._play_error = play_error
+        self._appstore_error = appstore_error
+
+    def _for_play(self) -> object:
+        if self._play is None:
+            raise StoreNotConfigured(self._play_error)
+        return self._play
+
+    def _for_appstore(self) -> object:
+        if self._appstore is None:
+            raise StoreNotConfigured(self._appstore_error)
+        return self._appstore
+
+    def verify_play_purchase(
+        self, *, purchase_token: str, product_id: str, user_id: str
+    ) -> PurchaseFacts:
+        return self._for_play().verify_play_purchase(
+            purchase_token=purchase_token, product_id=product_id, user_id=user_id
+        )
+
+    def verify_appstore_purchase(self, *, transaction_id: str, user_id: str) -> PurchaseFacts:
+        return self._for_appstore().verify_appstore_purchase(
+            transaction_id=transaction_id, user_id=user_id
+        )
+
+    def read_play_notification(self, *, payload: bytes, authorization: str) -> PurchaseFacts | None:
+        return self._for_play().read_play_notification(
+            payload=payload, authorization=authorization
+        )
+
+    def read_appstore_notification(self, *, payload: bytes) -> PurchaseFacts | None:
+        return self._for_appstore().read_appstore_notification(payload=payload)
+
+
+def build_store_gateway(settings) -> StoreGateways:
+    """Assemble whichever stores are configured and constructible.
+
+    Construction is where a bad credential shows up — an unparseable service-account JSON,
+    an empty root-certificate list — and it must not take the application down at import
+    time. A store that will not construct is recorded as unavailable with its reason, which
+    is the same outcome as never having configured it and is visibly different in the logs.
+    """
+    play = None
+    play_error = "Google Play billing is not configured."
+    if settings.play_configured:
+        try:
+            from app.billing.play_gateway import PlayGateway
+
+            play = PlayGateway(settings)
+        except Exception as exc:
+            play_error = f"Google Play billing failed to start: {exc}"
+            logging.getLogger(__name__).error(play_error)
+
+    appstore = None
+    appstore_error = "App Store billing is not configured."
+    if settings.appstore_configured:
+        try:
+            from app.billing.appstore_gateway import AppStoreGateway
+
+            appstore = AppStoreGateway(settings)
+        except Exception as exc:
+            appstore_error = f"App Store billing failed to start: {exc}"
+            logging.getLogger(__name__).error(appstore_error)
+
+    return StoreGateways(
+        play, appstore, play_error=play_error, appstore_error=appstore_error
+    )

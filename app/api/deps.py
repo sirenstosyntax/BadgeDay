@@ -22,7 +22,7 @@ from pydantic import BaseModel
 from supabase import AuthError, Client, create_client
 
 from app.billing.gateway import PaymentGateway, StripeGateway
-from app.billing.store_gateway import StoreGateway, UnconfiguredStoreGateway
+from app.billing.store_gateway import StoreGateway, build_store_gateway
 from app.config import Settings, get_settings
 from app.storage.client import service_client, user_client
 
@@ -115,17 +115,30 @@ def get_gateway(settings: SettingsDep) -> PaymentGateway:
     return StripeGateway(settings)
 
 
-def get_store_gateway(settings: SettingsDep) -> StoreGateway:
-    """The app-store gateway, which currently refuses everything.
+# Built once rather than per request. Both gateways hold credentials and network clients —
+# Google's discovery document costs a round trip to construct, and Apple's verifier parses a
+# certificate chain — and rebuilding them on every webhook would put that on the critical
+# path of a store's retry budget.
+#
+# A plain module global rather than @lru_cache on the settings argument: Settings is a
+# pydantic model and pydantic models are not hashable, so lru_cache raises TypeError on the
+# first call. `get_settings` is itself cached, so there is exactly one Settings for the
+# process and one gateway set to go with it.
+_STORE_GATEWAY: StoreGateway | None = None
 
-    Deliberately not conditional on `play_configured` / `appstore_configured`. Until the
-    signature verification described at the top of `billing/store_gateway.py` exists there
-    is no implementation to hand out even when the credentials are present, and a gateway
-    that refuses is the only correct thing to serve from a payment endpoint that cannot yet
-    tell a real purchase from an invented one. Swapping the implementation in is one line
-    here.
+
+def get_store_gateway(settings: SettingsDep) -> StoreGateway:
+    """Whichever stores are configured, each refusing on its own behalf.
+
+    An unconfigured store raises `StoreNotConfigured`, which the endpoints answer 503 to.
+    That is the correct response for a payment path with no way to tell a real purchase
+    from an invented one, and it is what every store endpoint does today until the
+    credentials in `.env.example` are filled in.
     """
-    return UnconfiguredStoreGateway()
+    global _STORE_GATEWAY
+    if _STORE_GATEWAY is None:
+        _STORE_GATEWAY = build_store_gateway(settings)
+    return _STORE_GATEWAY
 
 
 ServiceDbDep = Annotated[Client, Depends(service_db)]

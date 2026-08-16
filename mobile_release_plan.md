@@ -117,35 +117,56 @@ Committed on this branch:
   to the App Store to cancel, rather than to a Stripe portal that will show them nothing.
 - 37 tests, covering the mapping exhaustively.
 
-## Verification is the launch blocker
+## Verification — written, unproven
 
-`app/billing/store_gateway.py` ships the seam and a gateway that **refuses every call**.
-The endpoints answer 503. That is deliberate and it is the honest state, not an oversight:
-a store notification is an unauthenticated POST to a public URL whose entire job is to grant
-paid access, and an implementation that decodes the payload without verifying it is not a
-partial implementation — it is a subscription for anyone who can spell JSON.
+Both gateways are now implemented: `app/billing/play_gateway.py` and
+`app/billing/appstore_gateway.py`. **Neither has ever run against a real store**, and no
+test in this repository can change that — every path needs credentials the suite
+deliberately does not have. Treat them as code that compiles and is reasoned about, not as
+code that is known to work.
 
-What each store needs before that gateway can be written:
+Verification is done by each vendor's own library rather than by hand: `google-auth` for the
+OIDC token on a Pub/Sub push, `app-store-server-library` for Apple's JWS certificate chain.
+That choice is deliberate. The check that actually matters — that the `x5c` chain validates
+up to a genuine root — is one a hand-written version can skip while passing every test you
+would think to write. It looks like a signature check and verifies no signature.
+
+An unconfigured or failed-to-start store refuses on its own behalf and the endpoints answer
+503, so launching on Play weeks before Apple works without touching code.
+
+### What is still needed to switch each one on
 
 **Google Play**
 1. A service account with the *View financial data* grant, linked to the Play Console.
-2. A Cloud Pub/Sub topic and push subscription pointed at
-   `/billing/store/play/notifications`, and the OIDC token on each push verified against
-   Google's keys **and** checked for the configured audience and service account.
-3. `purchases.subscriptionsv2.get` / `purchases.products.get` called on the purchase token —
-   the notification carries no expiry date, so without this call there is nothing to write
-   into `expires_at`.
+   `PLAY_SERVICE_ACCOUNT_JSON` is the whole key file.
+2. A Cloud Pub/Sub topic, and a **push** subscription pointed at
+   `/billing/store/play/notifications`. Set `PLAY_PUBSUB_AUDIENCE` to that URL and
+   `PLAY_PUBSUB_SERVICE_ACCOUNT` to the account the subscription pushes as — both are
+   checked on every notification, and without them a signature check proves only that
+   *some* Google account signed the token.
+3. The RTDN topic named in Play Console under *Monetisation setup*.
 
 **Apple**
-1. An App Store Connect API key (issuer id, key id, .p8).
-2. JWS verification of the notification and of both nested payloads against the `x5c`
-   certificate chain, up to Apple's root CA, **with the chain actually validated** rather
-   than the leaf simply decoded.
-3. App Store Server API lookup for the app's own purchase report.
+1. An App Store Connect API key — issuer id, key id, and the `.p8` contents.
+2. `APPSTORE_ROOT_CERTS`: Apple's root certificates as comma-separated base64 DER, from
+   <https://www.apple.com/certificateauthority/>. There is no default, and Apple's
+   `appstore_configured` check refuses without them — a verifier with an empty trust store
+   rejects every genuine notification while looking configured, which presents as Apple
+   sending forgeries rather than as a missing setting.
+3. `APPSTORE_ENVIRONMENT=sandbox` until the app is live. The sandbox signs with a different
+   chain, so getting this wrong rejects everything with what reads like a credential error.
 
-Neither can be exercised from this repository's test suite, which has no credentials by
-design. Both need a real device and a sandbox account to prove out. Budget a working day
-per store once the accounts exist, plus a sandbox purchase run.
+### The proving run
+
+Both need a real device and a sandbox account. The sequence worth running, per store, in
+this order:
+
+1. A sandbox purchase → the app's own report unlocks immediately.
+2. A sandbox renewal → `expires_at` moves forward.
+3. Cancel auto-renew → status goes `canceled` **and access continues** to the paid-through
+   date. This is the one most likely to be wrong and the one a candidate would notice.
+4. A sandbox refund → access ends immediately, expiry cleared.
+5. A replayed notification → updates the same row rather than creating a second.
 
 ## Two open decisions that need Grant
 
@@ -175,26 +196,35 @@ because the product ids are baked into the builds.
 
 ## What Grant has to do, in order
 
-Nothing below is code, and the first three have lead times measured in weeks — they are the
-reason to start now rather than when Recruit is finished.
+Nothing below is code.
 
-1. **Get a D-U-N-S number for Sirens to Syntax LLC** if there isn't one. Free from Dun &
-   Bradstreet, typically days to a few weeks. It gates *both* organisation enrolments.
-2. **Enrol in the Apple Developer Program as an organisation** ($99/yr). Verification takes
-   days to weeks.
-3. **Register the Google Play developer account as an organisation** ($25 once). This is
-   what skips the 12-testers/14-days gate.
-4. **Decide the two open questions above** — deletion-with-a-live-store-subscription, and
+**Both developer accounts already exist** (confirmed 2026-08-16), which removes what would
+otherwise have been the longest lead time on this list.
+
+1. **Check whether the Play account is an organisation or a personal account.** If it is
+   personal and was created after 2023-11-13, production access costs **12 testers opted in
+   continuously for 14 days**, with genuine usage — Google has rejected submissions for
+   inactive testers since April 2026. An organisation account (D-U-N-S) is exempt entirely.
+   If it is personal, either convert it or start recruiting twelve testers now, because
+   fourteen days is fourteen days and it cannot be compressed later.
+2. **Generate the credentials** for each store, per "What is still needed to switch each one
+   on" above. This is the only thing standing between the code and a working purchase.
+3. **Decide the two open questions above** — deletion-with-a-live-store-subscription, and
    store pricing.
-5. **Create the in-app products** in both consoles once pricing is decided, and put their ids
+4. **Create the in-app products** in both consoles once pricing is decided, and put their ids
    in the app's configuration. They must match `PLAY_PRODUCT_ID_*` and `APPSTORE_PRODUCT_ID_*`
    exactly; a typo is a purchase flow that opens and then fails with an unhelpful store
    error.
-6. **Store listing assets**: screenshots at both stores' required sizes, a 1024×1024 icon,
-   a feature graphic for Play, description and keywords. The brand constants in
+5. **Confirm the application id** before the first upload. `com.badgeday.app` is what the
+   wrapper configs use, and neither store lets it change afterwards. If an app entry has
+   already been created in either console, its id wins and the configs should be changed to
+   match.
+6. **The icons.** See `web/public/icons/README.md`. Nothing builds without them.
+7. **Store listing assets**: screenshots at both stores' required sizes, a feature graphic
+   for Play, description and keywords. The brand constants in
    `badgeday_infrastructure_map.md` govern, and the hard rule that Grant's fire department
    is never named or identifiable applies to every screenshot.
-7. **The data forms**: Apple's privacy nutrition labels and Play's Data safety form. Both
+8. **The data forms**: Apple's privacy nutrition labels and Play's Data safety form. Both
    must match what the app actually collects — uploaded documents, email, and (once Recruit
    ships) voice recordings, which are a sensitive category and are declared as transcribed,
    measured and discarded.
@@ -202,10 +232,13 @@ reason to start now rather than when Recruit is finished.
 ## Order of work on our side
 
 1. ~~Store entitlement path — schema, mapping, endpoints, tests.~~ **Done.**
-2. Wrapper projects — TWA and Capacitor. Buildable but not verifiable in CI; neither Xcode
-   nor the Android SDK is present in the container this was written in.
-3. The two gateway implementations. **Blocked on steps 1–3 of Grant's list.**
+2. ~~Wrapper configs — TWA and Capacitor.~~ **Written, never compiled**; neither Xcode nor
+   the Android SDK is present in the container this was written in, and the icons are
+   missing.
+3. ~~The two gateway implementations.~~ **Written, never run against a store.** Now blocked
+   only on the credentials in Grant's step 2.
 4. The iOS capability set that clears 4.2 — upload from Files and camera, offline practice,
-   local notifications.
-5. Sandbox purchase runs on a real device, both stores.
+   local notifications. **This is the largest remaining piece of code**, and it is the one
+   that decides whether the iOS submission is accepted at all.
+5. Sandbox purchase runs on a real device, both stores — the five-step sequence above.
 6. Closed testing, then submission — **after** Recruit ships, per the launch gate.
