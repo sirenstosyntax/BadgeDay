@@ -11,7 +11,17 @@ were wrong. A critique that has quietly stopped referencing criteria still *look
 good feedback, and it is being read by someone who has no way to check it, at the moment
 he is most inclined to believe it.
 
-Six checks, ordered by how badly each breaks the product:
+Seven checks. The first six are per point; the seventh is about the critique as a whole,
+and it is the only one that can reject a critique in which every individual point is
+perfect.
+
+0. **Something to act on.** A critique must give the candidate at least one thing he can
+   do. This is a whole-critique check because it is the one defect that is invisible point
+   by point: twenty runs of a strong answer produced fifteen critiques that were pure
+   credit, every point of them properly anchored, quoted and classified. See
+   `_verify_actionable` for why that is a product failure rather than a compliment.
+
+Then, per point, ordered by how badly each breaks the product:
 
 1. **Anchoring.** The point names a clause that exists in the rubric that was actually
    loaded, or a metric that was actually supplied. A point anchored to nothing, or to an
@@ -418,6 +428,74 @@ def _verify_outcome(
     return None
 
 
+# A point the candidate can do something with, as opposed to one recording what worked.
+# Every `Improvement` except "none" — spelled out rather than derived, so adding a sixth
+# improvement class is a deliberate decision about whether it counts as actionable rather
+# than an accident of how the negation was written.
+ACTIONABLE = frozenset({"inventory", "answer", "candidate", "risk"})
+
+
+def _verify_actionable(draft: DraftCritique, points: list[Point]) -> Rejection | None:
+    """A critique has to leave the candidate with something to do.
+
+    THE DEFECT THIS EXISTS FOR. Twenty runs of a strong answer produced **five** critiques
+    carrying anything forward-looking; the other fifteen were pure credit. Every point in
+    those fifteen passed all six checks below — anchored, grounded, correctly classified,
+    no supplied language. The gate had nothing to say about them, because nothing was wrong
+    with any point individually. What was wrong was the set.
+
+    A critique of pure credit tells a man he is finished with a story he is about to retell
+    to another panel. That is the product failing at the only thing it is for:
+    `recruit_design_decisions.md` §3, *"the advice matters more than the grade"*. The score
+    is internal and the candidate never sees it, so a critique that hands him nothing has
+    handed him nothing at all, however precisely it was scored.
+
+    Enforcing it here rather than in the prompt is deliberate, and it is the same reasoning
+    as the anchoring check. A prompt asking for a suggestion is a request; a gate is a
+    guarantee. Prompt-tuning moved this from 1-in-5 to 5-in-20 and then stopped, which is
+    what asking nicely buys.
+
+    **This does not force a compliment, and it must not.** The rule is one-directional —
+    something to act on is required, praise is not — because an off-topic answer honestly
+    has nothing to praise, and a gate that demanded some would manufacture it. The shape
+    Grant asked for (what you did well, and something to consider) is the *usual* output,
+    not the enforced one.
+
+    Two outcomes are exempt from needing a *point*, because they already owe an ask
+    elsewhere and `_verify_outcome` collects it:
+
+      * `not_answered` — he gave nothing to judge, so the whole critique is one question.
+      * `not_assessable` — his life does not contain the material, and the action is to go
+        and get it. §2 requires that this be said and routed rather than merely concluded,
+        so the ask is checked here too and the two rules meet.
+    """
+    if draft.outcome == "not_answered":
+        return None  # already required to ask; see _verify_outcome
+
+    if draft.outcome == "not_assessable":
+        if any(p.ask for p in points):
+            return None
+        return Rejection(
+            "not_assessable_routes_nowhere",
+            "the critique concludes his life does not contain this material and then stops. "
+            "Establishing the gap is half of it — say what would generate the material, and "
+            "ask him. Naming the absence without a route is a dead end delivered to someone "
+            "who came here to get better.",
+        )
+
+    if any(p.improvement in ACTIONABLE for p in points):
+        return None
+
+    return Rejection(
+        "nothing_to_act_on",
+        "every point records something that worked, so the candidate is left with nothing "
+        "to do. He is about to retell this answer to another panel. Add at least one point "
+        "he can act on — the usual one is an 'inventory' point asking whether he has a "
+        "better instance of this and saying what to do if he has not. Naming what is "
+        "missing is enough; do not supply him with wording.",
+    )
+
+
 def verify_critique(
     draft: DraftCritique,
     rubric: Rubric,
@@ -444,6 +522,13 @@ def verify_critique(
     outcome_problem = _verify_outcome(draft, points, rubric)
     if outcome_problem is not None:
         rejections.append(outcome_problem)
+
+    # Last, and over the surviving points rather than the draft's. A point that was
+    # rejected is a point the candidate will not see, so a critique whose only actionable
+    # point failed one of the checks above is exactly as empty as one that never had one.
+    actionable_problem = _verify_actionable(draft, points)
+    if actionable_problem is not None:
+        rejections.append(actionable_problem)
 
     critique = Critique(
         criterion_id=rubric.criterion_id,
