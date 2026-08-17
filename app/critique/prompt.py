@@ -224,6 +224,18 @@ candidate that would make him supply the missing material from his own life. Wri
 reader who is anxious and cannot check you — plainly, without hedging, and without
 padding.
 
+**At least one point must give him something to act on, and that holds however strong the
+answer is.** A critique in which every point is `improvement: "none"` is rejected. He never
+sees his score, so credit alone hands him nothing — and the better the answer, the more this
+matters: a man about to retell a good story to another panel is exactly the one who can
+still sharpen it, and telling him he is finished is the least useful thing this can say. On
+a strong answer that point is usually an `inventory` one — has he a better instance of this
+— or a `risk`: nothing here is wrong, and here is how this material could land badly on a
+retelling.
+
+Note what that does **not** ask for. There is no requirement to find fault, and none to
+balance praise against criticism. Something he can do is required; a compliment is not.
+
 **Lead with the strongest thing the answer actually establishes.** Find the load-bearing
 fact — the specific move that decided how this answer lands — and make it the first point.
 Where the strongest fact is that something the candidate did changed what another person was

@@ -729,3 +729,159 @@ def test_a_risk_needs_no_ask(rubric, metrics):
     )
     assert not isinstance(result, Rejection), getattr(result, "detail", "")
     assert result.improvement == "risk"
+
+
+# --- 0. Something to act on: the check that is invisible point by point ------
+#
+# Every test above asks whether one point is sound. These ask whether the critique, taken
+# whole, does the job — and the failure they catch is one in which every individual point
+# is flawless. Twenty runs of a strong answer produced fifteen critiques of pure credit,
+# all of them anchored, grounded and correctly classified.
+
+
+def _all_credit(**overrides) -> DraftCritique:
+    """A critique in which nothing is wrong and nothing is offered."""
+    base = {
+        "points": [
+            point(
+                improvement="none",
+                observation="You named the outcome without being asked for it.",
+                ask=None,
+            ),
+            point(
+                improvement="none",
+                answer_quote="Came in early, stayed late",
+                observation="The account is specific about what you did and when.",
+                ask=None,
+            ),
+        ]
+    }
+    return draft_critique(**{**base, **overrides})
+
+
+def test_a_critique_of_pure_credit_is_rejected(rubric, metrics):
+    """The product is the advice. A critique that offers none has delivered nothing.
+
+    Note what is *not* wrong here: both points anchor to a real clause, quote the
+    transcript accurately, attribute no internal state and disclose no score. Point by
+    point the gate has nothing to say, which is exactly why this check is at the level of
+    the critique.
+    """
+    critique, rejections = verify_critique(_all_credit(), rubric, TRANSCRIPT, metrics)
+    assert [r.code for r in rejections] == ["nothing_to_act_on"]
+    # The points still survive — the caller regenerates for the missing one rather than
+    # discarding sound work.
+    assert len(critique.points) == 2
+
+
+@pytest.mark.parametrize("improvement", ["inventory", "answer", "candidate", "risk"])
+def test_one_actionable_point_of_any_kind_satisfies_it(rubric, metrics, improvement):
+    """A risk counts. It is not a fault, but it is something he can do differently.
+
+    The ask is phrased as a fork rather than an instruction, because the prescribes-remedy
+    guard blocks the directive form — *"that is the thing to go and get"* is rejected, and
+    rightly. Worth knowing when writing a point: these two rules meet here, and the
+    something-to-act-on requirement has to be satisfied without tripping the other one.
+    """
+    draft = _all_credit()
+    draft.points.append(
+        point(
+            improvement=improvement,
+            answer_quote=None,
+            observation="Nothing in the account says what the other man did next.",
+            ask="Is there a better instance of this? If there isn't one, that is a real gap "
+            "and a fixable one.",
+        )
+    )
+    _, rejections = verify_critique(draft, rubric, TRANSCRIPT, metrics)
+    assert not rejections, [r.detail for r in rejections]
+
+
+def test_praise_is_never_required(rubric, metrics):
+    """One-directional on purpose: an off-topic answer has nothing to praise.
+
+    A gate that demanded a compliment would manufacture one, which is worse than silence —
+    it teaches a candidate that a weak answer was half good.
+    """
+    draft = draft_critique(points=[point(improvement="answer")])
+    _, rejections = verify_critique(draft, rubric, TRANSCRIPT, metrics)
+    assert not rejections, [r.detail for r in rejections]
+
+
+def test_an_actionable_point_that_fails_another_check_does_not_count(rubric, metrics):
+    """A rejected point is one the candidate never sees, so it cannot be what saves this.
+
+    The check runs over the surviving points rather than the draft's, or a critique whose
+    only suggestion was a scripted sentence would pass while shipping pure credit.
+    """
+    draft = _all_credit()
+    draft.points.append(
+        point(
+            improvement="answer",
+            answer_quote=None,
+            observation='Try saying "I asked him what was going on and he told me."',
+            ask=None,
+        )
+    )
+    _, rejections = verify_critique(draft, rubric, TRANSCRIPT, metrics)
+    codes = {r.code for r in rejections}
+    assert "supplies_language" in codes
+    assert "nothing_to_act_on" in codes
+
+
+def test_a_not_answered_critique_is_exempt(rubric, metrics):
+    """The whole critique is already one question; _verify_outcome enforces the ask."""
+    draft = draft_critique(
+        outcome="not_answered",
+        internal_score=0,
+        points=[
+            point(
+                improvement="none",
+                answer_quote=None,
+                observation="The answer moved to another subject before reaching the question.",
+                ask="What happened the last time you had to work with someone difficult?",
+            )
+        ],
+    )
+    _, rejections = verify_critique(draft, rubric, TRANSCRIPT, metrics)
+    assert not rejections, [r.detail for r in rejections]
+
+
+def test_a_not_assessable_critique_must_route_him_somewhere(rubric, metrics):
+    """Establishing the gap is half of it. §2 requires it be said AND routed.
+
+    Concluding that a man's life lacks the material and then stopping is a dead end
+    delivered to someone who came here to get better.
+    """
+    draft = draft_critique(
+        outcome="not_assessable",
+        internal_score=0,
+        points=[
+            point(
+                improvement="none",
+                answer_quote="I'm a team player, I don't complain",
+                observation="Nothing in the account places anyone else alongside you.",
+                ask=None,
+            )
+        ],
+    )
+    _, rejections = verify_critique(draft, rubric, TRANSCRIPT, metrics)
+    assert "not_assessable_routes_nowhere" in {r.code for r in rejections}
+
+
+def test_a_not_assessable_critique_that_asks_is_accepted(rubric, metrics):
+    draft = draft_critique(
+        outcome="not_assessable",
+        internal_score=0,
+        points=[
+            point(
+                improvement="none",
+                answer_quote="I'm a team player, I don't complain",
+                observation="Nothing in the account places anyone else alongside you.",
+                ask="Military service, sport, a kitchen, a church group — any of those count. "
+                "Was there anywhere you worked alongside people?",
+            )
+        ],
+    )
+    _, rejections = verify_critique(draft, rubric, TRANSCRIPT, metrics)
+    assert not rejections, [r.detail for r in rejections]
