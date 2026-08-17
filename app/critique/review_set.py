@@ -230,6 +230,35 @@ better, but I always intended to come back to this.
         "appetite for the crew stays instrumental. If neither B nor K reaches 4B, the route "
         "is probably unreachable, which bears directly on whether the routes should exist.",
     ),
+    # Added 2026-08-17. E has been filed since July as the note 5 probe and has never once
+    # probed it: across forty runs at n=20, twice, no determination has decided on "I've
+    # genuinely never had a problem with anyone." Both the 5 and the 4B reach a verdict
+    # before the closing line is reached, because E supplies a second behaviour — the lad
+    # and the truck — and the breadth clause is settled by then.
+    #
+    # So this is E with that episode removed and nothing else changed. The setting, the
+    # reciprocity disposition and the closing claim are E's word for word. What is gone is
+    # the one concrete incident, which leaves the unfalsifiable claim as the only thing left
+    # to decide on. §10: "a fixture, not a clause."
+    #
+    # NOT SCORED BY THE SME, and deliberately not slotted into the exercise file: that file
+    # is generated, regenerating it would clobber the blind scores already in it, and a
+    # fixture written after the exercise was run has no blind judgment behind it anyway.
+    # `recruit_review_compare.py` already reports an unscored ref as "not yet scored" rather
+    # than dropping it, so this costs the comparison nothing until he scores it.
+    ReviewAnswer(
+        "L",
+        """
+I did three years on a landscaping crew, four of us, and honestly it was fine. Everyone
+pulled their weight. If someone was slow you'd just help them out and they'd do the same
+for you next time. That's how it works.
+
+I've genuinely never had a problem with anyone I've worked with. I get on with everybody.
+""",
+        "note.5 — the unfalsifiable claim, isolated. E with its second behaviour removed, so "
+        "the closing line is the only thing left to decide on. Does it pull the answer below "
+        "the generic-but-correct band, or is it a thing to note without moving the score?",
+    ),
 )
 
 def by_ref(ref: str) -> ReviewAnswer:

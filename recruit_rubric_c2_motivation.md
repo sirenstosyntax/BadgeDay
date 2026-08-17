@@ -44,6 +44,19 @@ Depth of drive is read from what the effort was aimed at: qualifying for the job
 **6. Red flags are not contained.**
 Panel behavior is not answer-independent. A flag raised early is reported to shape interpretation of subsequent answers rather than being scored in isolation. A pipeline that scores each answer independently and sums will not reproduce real board outcomes.
 
+**7. Three outcomes, not two.**
+The rubric is not total. This rule is rubric-wide and was settled on Criterion 3; this states it for this criterion.
+
+**Where he gave nothing to judge either way, return *not answered*.** Silence, a refusal, a request to repeat the question, a pivot to another subject. Not a low score and not a finding about him — it says only that this answer did not reach the criterion. It must ask him for the material, or it is a 1 with better manners.
+
+**Where the answer positively establishes that the material is absent, return *insufficient evidence to assess*.** Its own outcome, never averaged in as a zero, and it must quote the words that establish it — the discipline citation grounding applies to a document, applied to a claim about a person.
+
+**Insufficient evidence is rarer here than on Teamwork, and that asymmetry is the point.** Teamwork has a real population who genuinely worked alone — solo trades, long-haul, night shift — and cannot be expected to talk about people who were never there. Motivation has no equivalent: every candidate sitting in front of a panel has *some* account of why he is there, even a poor one. **So the default when in doubt is *not answered*, and reaching for insufficient evidence needs him to have said in his own words that there is nothing.** Getting this backwards tells a man his life contains no motive, on evidence nobody has.
+
+**It is not an escape hatch for anchor 1.** The unprepared candidate with no account of why *has* an account; it is thin, and thinness is what anchor 1 scores. Insufficient evidence requires the answer to establish that there is nothing to score, not that what it establishes is poor.
+
+**Where a thin lead is offered — one dismissed clause — follow it rather than scoring the sentence he almost did not say.** Ask, and score what comes back. Same treatment Criterion 3 gives an undersold answer.
+
 ---
 
 ## Anchors
@@ -99,6 +112,10 @@ The candidate with a strong file whose every answer returns to himself is **not*
 ---
 
 ## Provenance and limitations
+
+**Scoring note 7 is drafted, not authored. [2026-08-17 — awaiting SME review.]** Every other clause in the scorer region above carries a fire captain's scoring judgment. Note 7 does not: it applies a rubric-wide rule already settled on Criterion 3 (`recruit_design_decisions.md` §2) to this criterion, which is mechanical in its substance and a judgment call in one place — **the asymmetry**. The note says insufficient-evidence should be rarer here than on Teamwork, and that the default when in doubt is *not answered*, on the reasoning that Teamwork has a real population who genuinely worked alone while every candidate in front of a panel has some account of why he is there. That reasoning is inferred from purpose rather than drawn from experience, and it is the line to attack first.
+
+Deliberately outside the scorer region, per the marker convention: a draft banner inside it would sit in the scoring prompt and the measurement would partly be of the banner.
 
 **These anchors represent one captain's scoring judgment.** They are not a national standard and not a survey of practice. Departments vary in structure, weighting, eligibility rules, and culture. A candidate scored against this rubric is being told how *this* panelist would read the answer — which is useful, and is not the same as a prediction of outcome. Product copy should not overstate it.
 
