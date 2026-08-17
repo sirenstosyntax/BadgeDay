@@ -136,6 +136,31 @@ So that's where I'm at. I've got the certs, I've got the red card, I test everyw
 and I think I'm a stronger candidate than I was two years ago.
 """
 
+# The case the 2026-07-28 tightening left behind, and the one §10 named as where the boundary
+# would next be soft. He says *something* about what a step past the list changed — so the
+# clause's test, "can he say what it changed", is not cleanly unmet — but the account is one
+# clause thick and he never names anything he did differently afterwards.
+#
+# Deliberately far from both worked examples. The 60/60 clean re-run carried a caution that
+# both its fixtures sat close to the two examples the clause carries, one run citing an
+# example by name, so part of that zero was the scorer matching a worked example to roughly
+# the case it was written from. This fixture is neither example's territory, which is the only
+# way to learn whether the clause is unambiguous generally or only on the case that split it.
+C2_PARTIAL_ACCOUNT = """
+So I got my EMT-B a year and a half ago and I did the academy certificate program after
+that. I've been driving a delivery route since, mostly to keep the money coming in while I
+test.
+
+I did a ride-along with the county back in the spring. It was good, it was — it was
+eye-opening honestly. Definitely made it more real for me, seeing how they operate as a crew
+and how much of it is the medical side. I'd tell anyone to do one.
+
+And then I've just been testing wherever it comes up. I did this one in March, one in
+January over the other side of the county. I'm on two eligibility lists at the minute. I
+think I'd be good at it — I get on with people, I don't mind the hours, and I'm not
+squeamish.
+"""
+
 C2_STALE = """
 Yeah, so I took an EMT class, uh, that would have been back in 2021 I think. Maybe 2020.
 I passed it. I was going to do the academy but then my hours got picked up at work and it
@@ -273,6 +298,9 @@ RUBRICS = {
         "fixtures": [
             ("Past the list, cannot account for it", C2_PAST_LIST_NO_ACCOUNT, 20),
             ("Past the list, can account for it", C2_PAST_LIST_ACCOUNTED, 20),
+            # Between the two above, and near neither worked example. Where the boundary is
+            # expected to be soft; unrun as of 2026-08-17.
+            ("Past the list, accounted for thinly", C2_PARTIAL_ACCOUNT, 20),
             ("Stale preparation", C2_STALE, 10),
             ("Continuous, other-focused", C2_CONTINUOUS, 10),
         ],

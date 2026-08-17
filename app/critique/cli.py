@@ -25,7 +25,11 @@ from anthropic import Anthropic
 from app.config import get_settings
 from app.critique import rubric as rubric_module
 from app.critique.critiquer import critique_answer
-from app.critique.models import Critique
+
+# Re-exported: the run harnesses and the render tests import it from here, and the split
+# into render.py is about where a candidate-facing view lives, not about moving the
+# inspection one out from under its callers.
+from app.critique.render import render_critique, render_for_candidate  # noqa: F401
 
 QUESTIONS = {
     "c2": (
@@ -122,90 +126,6 @@ at work. I'm not sure what to tell you there.
 """,
     },
 }
-
-
-def render_critique(critique: Critique, draft: bool) -> None:
-    """Print a critique for inspection. Public because the run harnesses reuse it.
-
-    A second renderer beside this one would drift, and the point of the harnesses is to
-    look at what the pipeline actually produces — which is only true if they show what the
-    CLI shows.
-    """
-    print(f"\n=== {critique.criterion_name} ===")
-    if draft:
-        print("    (DRAFT RUBRIC — anchors are unreviewed; critique shown for inspection only)")
-
-    if critique.outcome == "not_assessable":
-        print("\n  NOT ASSESSABLE — this answer establishes the material is not in his history.")
-        print("  Not a low score. A finding, and one the points below have to support by")
-        print("  quoting him.")
-    elif critique.outcome == "not_answered":
-        print("\n  NOT ANSWERED — nothing here to judge either way.")
-        print("  Not a low score and not a finding about his life. He was silent on it,")
-        print("  which is not the same as never having done it. The points below ask.")
-    else:
-        # The score is internal and deliberately not rendered. It is printed here behind a
-        # label that says so, because this is an inspection tool for the SME rather than a
-        # candidate-facing surface, and step 3 is a judgment about whether the score and
-        # the critique agree.
-        route = f" ({critique.route})" if critique.route != "n/a" else ""
-        print(f"\n  [internal, never shown to a candidate: {critique.internal_score}{route}]")
-        # The determination is the part worth reading at step 3. The number says the anchors
-        # and the SME disagree; this says which clause did it and on what reading, which is
-        # the difference between a divergence you can act on and one you can only count.
-        if critique.deciding_clause:
-            print(f"  [decided by {critique.deciding_clause.clause_id}: {critique.determination}]")
-
-    def show(point) -> None:
-        anchor = point.clause.clause_id if point.clause else f"metric:{point.metric.name}"
-        print(f"\n  • [{anchor}] {point.anchor_label()}")
-        if point.answer_quote:
-            print(f'      you said: "{point.answer_quote}"')
-        print(f"      {point.observation}")
-        if point.ask:
-            print(f"      → {point.ask}")
-
-    # Three sections, because that is how feedback is read: what he did, then what to work
-    # on, then what to watch when he reuses this. The routing distinction sits underneath
-    # the middle one rather than beside the first — a man reading four headings, three of
-    # them faults, has been handed a verdict. One clause can appear in more than one
-    # section, and often should.
-    if critique.worked:
-        print("\n  WHAT YOU DID WELL")
-        for point in critique.worked:
-            show(point)
-
-    # Answer-specific coaching first and broader inventory gaps after, with the heading
-    # saying which is which. SME review 2026-08-06: an evidence-inventory gap was read as
-    # the primary weakness of a strong answer, which it was not — it would have been just
-    # as true of a better one. The order and the wording are what stop it being read that
-    # way, since whatever comes first is taken as the verdict.
-    work = [
-        ("in this answer — it is here and handled badly", critique.answer_gaps),
-        (
-            "beyond this answer — your stock of examples, not what you just said. "
-            "is there a better story? if not, that is the thing to go and get",
-            critique.inventory_gaps,
-        ),
-        ("beyond this answer — you said you have not done this", critique.development_gaps),
-    ]
-    if any(points for _, points in work):
-        print("\n  WHAT YOU COULD WORK ON")
-        for note, points in work:
-            if not points:
-                continue
-            print(f"\n    — {note}")
-            for point in points:
-                show(point)
-
-    # Its own section, and last. A risk is a caution attached to material that worked; among
-    # the gaps it reads as a fault, which is the one thing scoring note 10 says it is not.
-    if critique.risks:
-        print("\n  IF YOU USE THIS STORY AGAIN")
-        print("    Nothing below is wrong with the answer you gave. It is what would cost")
-        print("    you the next time you tell it.")
-        for point in critique.risks:
-            show(point)
 
 
 def _run_one(label: str, transcript: str, rubric, client, settings, draft: bool) -> bool:

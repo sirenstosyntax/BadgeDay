@@ -14,6 +14,7 @@ import pytest
 
 from app.critique.cli import render_critique
 from app.critique.models import Critique, Point
+from app.critique.render import REUSE, WORK_ON, WORKED, render_for_candidate, sections
 from app.critique.rubric import Clause
 
 ANCHOR_5 = Clause("c3.anchor.5", "anchor", "He demonstrably behaves well on a crew")
@@ -48,7 +49,11 @@ def critique() -> Critique:
                 "inventory",
                 NOTE_2,
                 "Nothing across your answers shows you telling somebody something unwelcome.",
-                ask="Has that happened? If it has not, that is the thing to go and get.",
+                # Phrased as a fork rather than an instruction. The obvious wording — "that
+                # is the thing to go and get" — is what `_PRESCRIBES_REMEDY` rejects, so a
+                # fixture using it is not a critique that could ship, and a rendering test
+                # should render something the gate would actually pass.
+                ask="Has that happened? If it has not, that is a real gap and a fixable one.",
             ),
             _point(
                 "risk",
@@ -101,3 +106,90 @@ def test_the_score_is_not_rendered_as_a_score(critique, capsys):
     render_critique(critique, draft=True)
     out = capsys.readouterr().out
     assert "[internal, never shown to a candidate: 5]" in out
+
+
+# --- The candidate's view ----------------------------------------------------
+#
+# The inspection view above prints clause ids, the internal score and the determination.
+# All three are things requirement 6 and §1 exist to keep from the candidate, and the
+# inspection view reads like a finished artifact — so the risk was never that somebody
+# would deliberately show it to him, it was that a UI would get built on top of the thing
+# that was already there.
+
+
+def test_the_candidate_is_never_shown_a_clause_id(critique, capsys):
+    render_for_candidate(critique)
+    out = capsys.readouterr().out
+    assert "c3.anchor.5" not in out
+    assert "c3.note.10" not in out
+    assert "c3.note.2" not in out
+
+
+def test_the_candidate_is_never_shown_the_anchor_label(critique, capsys):
+    """The rubric's own headings are the instrument talking about itself."""
+    render_for_candidate(critique)
+    out = capsys.readouterr().out
+    assert "He demonstrably behaves well on a crew" not in out
+    assert "Score the cast of the story" not in out
+
+
+def test_the_candidate_is_never_shown_the_score_or_the_determination(critique, capsys):
+    """Surfaced scores get optimised; surfaced gaps get worked on. §1."""
+    render_for_candidate(critique)
+    out = capsys.readouterr().out
+    assert "internal" not in out.lower()
+    assert "decided by" not in out
+    assert critique.determination not in out
+
+
+def test_the_candidate_still_gets_the_substance(critique, capsys):
+    """Stripping the instrument must not strip the feedback."""
+    render_for_candidate(critique)
+    out = capsys.readouterr().out
+    assert "Ryan went to the supervisor himself and you said so." in out
+    assert "Nothing across your answers shows you telling somebody something unwelcome." in out
+    assert "Has that happened?" in out
+
+
+def test_both_views_render_the_same_sections_in_the_same_order(critique):
+    """The anti-drift property, asserted rather than hoped for.
+
+    Two independent renderers would agree on the day they were written and not for long,
+    and the order carries a review finding — whatever comes first is taken as the verdict.
+    """
+    inspection = [heading for heading, _, _ in sections(critique)]
+    candidate = [heading for heading, _, _ in sections(critique, candidate_facing=True)]
+    assert inspection == candidate
+    assert inspection == [WORKED, WORK_ON, REUSE]
+
+
+def test_the_candidate_view_does_not_use_the_phrasing_the_gate_forbids(critique, capsys):
+    """It would be strange to reject "go and get" from the model and print it as a heading."""
+    render_for_candidate(critique)
+    out = capsys.readouterr().out
+    assert "the thing to go and get" not in out
+
+
+def test_a_not_assessable_critique_says_it_is_not_a_mark_against_him(capsys):
+    """The whole point of the third outcome: it is a finding, not a low score."""
+    critique = Critique(
+        criterion_id="c3",
+        criterion_name="Criterion 3 — Teamwork & Interpersonal",
+        outcome="not_assessable",
+        deciding_clause=NOTE_2,
+        determination="He has worked alone since he was twenty-one.",
+        internal_score=0,
+        route="n/a",
+        points=[
+            _point(
+                "inventory",
+                NOTE_2,
+                "You describe a working life with nobody else in it.",
+                ask="Military service, sport, a kitchen, a church group — any of those count.",
+            )
+        ],
+    )
+    render_for_candidate(critique)
+    out = capsys.readouterr().out
+    assert "not a mark against you" in out
+    assert "0" not in out.split("not a mark against you")[0]
