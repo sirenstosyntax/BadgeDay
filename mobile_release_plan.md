@@ -18,9 +18,13 @@ scope. That is reversed. Three decisions, taken together:
 The third decision is the one that sets the schedule, and it is worth being plain about
 what it means: **none of the work in this document puts money in the bank.** Recruit is on
 the critical path to revenue and everything here runs alongside it. What this work buys is
-that the store side is not *also* three months of lead time once Recruit is done — much of
-it (account enrolment, D-U-N-S, closed testing) is waiting rather than building, and
-waiting can be done in parallel.
+that the store side is not *also* a long lead time once Recruit is done.
+
+That lead time turned out to be shorter than feared. Both developer accounts already
+existed when this was written, and the Play one is an organisation — which exempts it from
+the only gate on the store side that could not be compressed by working harder. What
+remains is credentials, icons, and the iOS capability set, and none of those has a clock
+on it.
 
 ## What each store actually requires
 
@@ -60,10 +64,8 @@ Two hard dates and one exemption:
 - **Closed testing: 12 testers, opted in continuously for 14 days**, before production
   access — for **personal** developer accounts created after 2023-11-13. Since April 2026
   Google also rejects production requests where testers did not genuinely use the app.
-- **Organisation accounts are exempt from that entirely.** They require a D-U-N-S number.
-  Sirens to Syntax LLC has a legal entity, so **register the Play account as an
-  organisation.** This is the single highest-leverage scheduling decision in this
-  document: it removes a hard 14-day gate that cannot be compressed, and it is free.
+- **Organisation accounts are exempt from that entirely** — and BadgeDay's is one, so this
+  does not apply. See "Settled: the Play account is an organisation" below.
 
 ### Apple
 
@@ -201,33 +203,43 @@ Nothing below is code.
 **Both developer accounts already exist** (confirmed 2026-08-16), which removes what would
 otherwise have been the longest lead time on this list.
 
-1. **Check whether the Play account is an organisation or a personal account.** If it is
-   personal and was created after 2023-11-13, production access costs **12 testers opted in
-   continuously for 14 days**, with genuine usage — Google has rejected submissions for
-   inactive testers since April 2026. An organisation account (D-U-N-S) is exempt entirely.
-   If it is personal, either convert it or start recruiting twelve testers now, because
-   fourteen days is fourteen days and it cannot be compressed later.
-2. **Generate the credentials** for each store, per "What is still needed to switch each one
+1. **Generate the credentials** for each store, per "What is still needed to switch each one
    on" above. This is the only thing standing between the code and a working purchase.
-3. **Decide the two open questions above** — deletion-with-a-live-store-subscription, and
+2. **Decide the two open questions above** — deletion-with-a-live-store-subscription, and
    store pricing.
-4. **Create the in-app products** in both consoles once pricing is decided, and put their ids
+3. **Create the in-app products** in both consoles once pricing is decided, and put their ids
    in the app's configuration. They must match `PLAY_PRODUCT_ID_*` and `APPSTORE_PRODUCT_ID_*`
    exactly; a typo is a purchase flow that opens and then fails with an unhelpful store
    error.
-5. **Confirm the application id** before the first upload. `com.badgeday.app` is what the
+4. **Confirm the application id** before the first upload. `com.badgeday.app` is what the
    wrapper configs use, and neither store lets it change afterwards. If an app entry has
    already been created in either console, its id wins and the configs should be changed to
    match.
-6. **The icons.** See `web/public/icons/README.md`. Nothing builds without them.
-7. **Store listing assets**: screenshots at both stores' required sizes, a feature graphic
+5. **The icons.** See `web/public/icons/README.md`. Nothing builds without them.
+6. **Store listing assets**: screenshots at both stores' required sizes, a feature graphic
    for Play, description and keywords. The brand constants in
    `badgeday_infrastructure_map.md` govern, and the hard rule that Grant's fire department
    is never named or identifiable applies to every screenshot.
-8. **The data forms**: Apple's privacy nutrition labels and Play's Data safety form. Both
+7. **The data forms**: Apple's privacy nutrition labels and Play's Data safety form. Both
    must match what the app actually collects — uploaded documents, email, and (once Recruit
    ships) voice recordings, which are a sensitive category and are declared as transcribed,
    measured and discarded.
+
+### Settled: the Play account is an organisation
+
+Confirmed 2026-08-16. Sirens to Syntax LLC, developer account 7304930268481203834, owner
+grant@sirenstosyntax.com.
+
+**So the 12-testers-for-14-days requirement does not apply.** It binds personal accounts
+created after 2023-11-13; organisation accounts are exempt. That was the only deadline on
+the store side that could not be compressed by working harder, and it is gone — recorded
+here so nobody re-investigates it, and so nobody plans a fortnight of tester recruitment
+that was never owed.
+
+Closed testing is still worth running by choice, on a much shorter loop, because a TWA can
+fail on a real device in ways no build catches — Digital Asset Links not verifying leaves
+the address bar visible, and a purchase can fail against live Play Billing while working in
+every test written here.
 
 ## Order of work on our side
 
