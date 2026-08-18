@@ -44,6 +44,69 @@ create table public.recruit_critiques (
   criterion_name text
 );
 
+-- A completed attempt must have a matching recruit_critiques row. Abandoned and
+-- critique_failed stay without one. The check is DEFERRABLE INITIALLY DEFERRED so
+-- one transaction can insert the attempt and the critique; the rule is enforced
+-- at commit. The critique-side trigger covers deleting that row or changing its
+-- attempt_id while the attempt is still completed. Checking at commit (not
+-- immediately) also lets ON DELETE CASCADE remove a completed attempt and its
+-- critique in the same transaction.
+
+create function public.recruit_completed_requires_critique()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+declare
+  v_attempt_id uuid;
+begin
+  if tg_table_name = 'recruit_attempts' then
+    if new.status = 'completed'
+       and not exists (
+         select 1 from public.recruit_critiques c
+         where c.attempt_id = new.id
+       )
+    then
+      raise exception
+        'completed recruit_attempts row % requires a matching recruit_critiques row',
+        new.id
+        using errcode = '23514';
+    end if;
+    return new;
+  end if;
+
+  v_attempt_id := old.attempt_id;
+  if exists (
+       select 1 from public.recruit_attempts a
+       where a.id = v_attempt_id and a.status = 'completed'
+     )
+     and not exists (
+       select 1 from public.recruit_critiques c
+       where c.attempt_id = v_attempt_id
+     )
+  then
+    raise exception
+      'completed recruit_attempts row % requires a matching recruit_critiques row',
+      v_attempt_id
+      using errcode = '23514';
+  end if;
+  return coalesce(new, old);
+end;
+$$;
+
+create constraint trigger recruit_attempts_completed_requires_critique
+  after insert or update on public.recruit_attempts
+  deferrable initially deferred
+  for each row
+  when (new.status = 'completed')
+  execute function public.recruit_completed_requires_critique();
+
+create constraint trigger recruit_critiques_completed_requires_critique
+  after delete or update of attempt_id on public.recruit_critiques
+  deferrable initially deferred
+  for each row
+  execute function public.recruit_completed_requires_critique();
+
 alter table public.recruit_attempts enable row level security;
 alter table public.recruit_critiques enable row level security;
 
