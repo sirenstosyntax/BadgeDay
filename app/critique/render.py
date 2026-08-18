@@ -177,7 +177,7 @@ def candidate_lines(critique: Critique) -> list[str]:
 
     if critique.outcome == "not_assessable":
         lines.append(
-            "From what you said, this has not come up in your working life yet — so there is "
+            "From what you said, this has not come up yet — so there is "
             "nothing here to judge you on, and this is not a mark against you."
         )
     elif critique.outcome == "not_answered":
