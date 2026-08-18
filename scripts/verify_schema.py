@@ -145,6 +145,25 @@ class Api:
             json=row,
         )
 
+    def patch_as_user(
+        self, token: str, table: str, filter_query: str, patch: dict
+    ) -> httpx.Response:
+        """Update as the candidate. Used to prove a column he must not write stays unwritten.
+
+        A revoked column grant is not an error on PostgREST — the update succeeds and
+        silently changes nothing — so the check has to read the row back rather than trust
+        the status code.
+        """
+        return self.client.patch(
+            f"{self.url}/rest/v1/{table}?{filter_query}",
+            headers={
+                "apikey": self.anon_key,
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            json=patch,
+        )
+
 
 def _seed(api: Api, user_id: str, label: str) -> dict:
     document = api.insert_as_service(
@@ -218,6 +237,7 @@ def main() -> int:
         alice = _seed(api, alice_id, "alice")
         bob = _seed(api, bob_id, "bob")
         alice_token = api.sign_in(alice_email)
+        bob_token = api.sign_in(bob_email)
 
         print("\nReading as Alice:\n")
 
@@ -318,6 +338,63 @@ def main() -> int:
             "cannot grant herself a store subscription",
             self_granted.status_code >= 400,
             f"status {self_granted.status_code}",
+        )
+
+        print("\nQuestion reports:\n")
+
+        # A report can quote the question and describe what the candidate expected. That is
+        # his own work, and the isolation has to hold for it exactly as it does for his
+        # documents — a table added later is where this kind of leak actually appears.
+        mine = api.insert_as_user(
+            alice_token,
+            "question_reports",
+            {
+                "question_id": alice["question"]["id"],
+                "user_id": alice_id,
+                "reason": "not_in_document",
+                "detail": "Alice says this is not in her SOG.",
+            },
+        )
+        check("can report a question on her own document", mine.status_code < 400,
+              f"status {mine.status_code}")
+
+        forged_report = api.insert_as_user(
+            alice_token,
+            "question_reports",
+            {
+                "question_id": bob["question"]["id"],
+                "user_id": bob_id,
+                "reason": "other",
+            },
+        )
+        check(
+            "cannot file a report in Bob's name",
+            forged_report.status_code >= 400,
+            f"status {forged_report.status_code}",
+        )
+
+        bobs_reports = api.select_as_user(bob_token, "question_reports")
+        check(
+            "Bob cannot read Alice's report",
+            bobs_reports == [],
+            f"got {bobs_reports}",
+        )
+
+        # Triage is ours. A candidate marking his own complaint handled would make the open
+        # queue lie, which is the same reasoning as billing not being self-service.
+        resolved = api.patch_as_user(
+            alice_token,
+            "question_reports",
+            f"question_id=eq.{alice['question']['id']}",
+            {"resolved_at": "2026-07-28T00:00:00Z"},
+        )
+        still_open = api.select_as_user(
+            alice_token, "question_reports", "select=resolved_at"
+        )
+        check(
+            "cannot resolve her own report",
+            all(r["resolved_at"] is None for r in still_open),
+            f"patch status {resolved.status_code}, rows {still_open}",
         )
 
         print("\nSignup trigger:\n")

@@ -25,6 +25,13 @@ ROLE_PAGE_HEADER = "pageHeader"
 ROLE_PAGE_FOOTER = "pageFooter"
 ROLE_PAGE_NUMBER = "pageNumber"
 
+# Not a Document Intelligence role — one the analyzer assigns itself. Extraction reports
+# figures separately from paragraphs, but the *text inside* a figure still comes back as
+# ordinary paragraphs carrying no role, so a diagram is indistinguishable from body prose
+# by role alone. The analyzer resolves the two back together and stamps this, which lets
+# the chunker drop diagram text the same way it drops a running footer.
+ROLE_FIGURE = "figure"
+
 
 class AnalyzedBlock(BaseModel):
     """One contiguous block of extracted text — a paragraph, not a visual line.

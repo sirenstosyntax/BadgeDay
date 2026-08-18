@@ -7,11 +7,53 @@ the chunker and the citation resolver get real test coverage without an Azure ac
 a network call, or a real user document.
 """
 
+import re
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 from app.config import Settings
-from app.ingest.models import AnalyzedBlock, AnalyzedDocument
+from app.ingest.models import ROLE_FIGURE, AnalyzedBlock, AnalyzedDocument
+
+# Document Intelligence cross-references its own result with JSON pointers: a figure
+# lists `/paragraphs/7` to mean `result.paragraphs[7]`. Only paragraph pointers matter
+# here; a figure may also point at lines or words, which the analyzer never reads.
+_PARAGRAPH_POINTER = re.compile(r"^/paragraphs/(\d+)$")
+
+
+def figure_paragraph_indices(result: Any) -> set[int]:
+    """Indices of paragraphs that belong to a figure rather than to the guideline text.
+
+    Figures come back in `result.figures`, separately from `result.paragraphs` — but the
+    text *inside* a figure is still emitted as ordinary paragraphs with no role. An ICS
+    org chart therefore arrives as forty untagged fragments (`COMMAND`, `SAFETY`,
+    `LOGISTICS`, `BACKUP`) that look exactly like body prose, and lands in whichever
+    section happened to precede the diagram.
+
+    That is the worst shape of failure this pipeline has: a question generated from those
+    fragments cites the section they were absorbed into, the citation *resolves* because
+    the chunk really does contain that text, and verification passes. The candidate opens
+    the SOG at the cited item and finds something else entirely.
+
+    Each figure states its own contents as JSON pointers, so membership is exact and needs
+    no geometry. Captions and footnotes are pulled in too — they describe the diagram
+    rather than the guideline.
+
+    Written defensively: `figures`, `caption`, `footnotes`, and `elements` are all
+    optional in the response, and an older service version may omit them entirely. A
+    missing field means no figures are recognized, which is the pre-existing behaviour.
+    """
+    indices: set[int] = set()
+    for figure in getattr(result, "figures", None) or []:
+        sources = [figure, *(getattr(figure, "footnotes", None) or [])]
+        caption = getattr(figure, "caption", None)
+        if caption is not None:
+            sources.append(caption)
+        for source in sources:
+            for pointer in getattr(source, "elements", None) or []:
+                match = _PARAGRAPH_POINTER.match(str(pointer))
+                if match:
+                    indices.add(int(match.group(1)))
+    return indices
 
 
 class DocumentAnalyzer(Protocol):
@@ -54,6 +96,13 @@ class AzureDocumentAnalyzer:
     Roles are recorded, not acted on. Deciding that a page footer is not worth asking a
     question about is an editorial judgement, and it belongs in the chunker where it can
     be tested against a fixture.
+
+    The one role this class *assigns* rather than copies is `ROLE_FIGURE`. That is still
+    recording rather than judging: extraction already knows which paragraphs sit inside a
+    diagram, but says so in `result.figures` instead of on the paragraph. Resolving the
+    two back together is part of reading the response faithfully — see
+    `figure_paragraph_indices`. Whether diagram text is worth a question remains the
+    chunker's call.
     """
 
     def __init__(self, endpoint: str, key: str) -> None:
@@ -73,21 +122,22 @@ class AzureDocumentAnalyzer:
             poller = client.begin_analyze_document("prebuilt-layout", body=fh)
         result = poller.result()
 
+        figure_paragraphs = figure_paragraph_indices(result)
+
         blocks: list[AnalyzedBlock] = []
-        for paragraph in result.paragraphs or []:
+        for index, paragraph in enumerate(result.paragraphs or []):
             text = (paragraph.content or "").strip()
             if not text:
                 continue
             regions = paragraph.bounding_regions or []
             page = regions[0].page_number if regions else 1
-            role = paragraph.role
-            blocks.append(
-                AnalyzedBlock(
-                    text=text,
-                    page=page,
-                    role=getattr(role, "value", role),
-                )
-            )
+            role = getattr(paragraph.role, "value", paragraph.role)
+            if index in figure_paragraphs:
+                # Figure membership overrides whatever role the paragraph carries. A box
+                # in an org chart is often tagged `sectionHeading` on visual shape alone,
+                # and that is precisely the false heading the chunker must never see.
+                role = ROLE_FIGURE
+            blocks.append(AnalyzedBlock(text=text, page=page, role=role))
 
         return AnalyzedDocument(
             source_name=path.name,

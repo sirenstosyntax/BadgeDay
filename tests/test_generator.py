@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import pytest
+from pydantic import TypeAdapter, ValidationError
 
 from app.config import Settings
 from app.generate.generator import generate_for_chunk, generate_for_document
@@ -176,6 +177,66 @@ def test_api_failure_on_first_attempt_is_not_raised(chunk, settings) -> None:
     outcome = generate_for_chunk(chunk, client, settings)
     assert outcome.questions == []
     assert not outcome.skipped
+
+
+# --- Truncation --------------------------------------------------------------
+#
+# A response cut off mid-JSON raises from inside `messages.parse`, so the `stop_reason`
+# check written to catch it never ran. A batch is the likelier of the two callers to hit
+# the ceiling — four questions of JSON is more output than one critique — and the section's
+# questions were being lost to it without the log saying why. See `app/llm_output.py`.
+
+
+def _truncation_error() -> ValidationError:
+    """A real parse failure of the shape a cut-off response produces.
+
+    Built by validating genuinely truncated JSON through the same `TypeAdapter` call the
+    SDK makes, rather than by hand-rolling an error object — the classification under test
+    is pydantic's, so faking the error would test the fake.
+    """
+    try:
+        TypeAdapter(DraftBatch).validate_json('{"questions":[{"stem":"How many mem')
+    except ValidationError as exc:
+        return exc
+    raise AssertionError("that JSON should not have validated")
+
+
+def test_a_truncated_batch_is_retried_rather_than_lost(chunk, settings) -> None:
+    client = FakeClient([_truncation_error(), [_draft()]])
+    outcome = generate_for_chunk(chunk, client, settings, target_count=1)
+    assert outcome.attempts == 2
+    assert len(outcome.questions) == 1
+
+
+def test_the_retry_after_a_truncation_asks_again_unchanged(chunk, settings) -> None:
+    """There is no batch to feed back, so the rejection path has nothing to quote."""
+    client = FakeClient([_truncation_error(), [_draft()]])
+    generate_for_chunk(chunk, client, settings, target_count=1)
+    first, second = client.messages.calls
+    assert second["messages"] == first["messages"]
+
+
+def test_a_truncation_on_the_retry_keeps_what_the_first_attempt_verified(chunk, settings) -> None:
+    """The first attempt fell short, and the request that would have topped it up was cut off."""
+    client = FakeClient([[_draft(), _draft(quote="invented")], _truncation_error()])
+    outcome = generate_for_chunk(chunk, client, settings, target_count=4, max_attempts=2)
+    assert len(outcome.questions) == 1
+    assert outcome.attempts == 2
+
+
+def test_a_schema_violation_is_not_retried(chunk, settings) -> None:
+    """Complete JSON of the wrong shape reproduces on a bare retry, so the loop stops."""
+    try:
+        DraftBatch.model_validate_json('{"questions":[{"type":"not_a_question_type"}]}')
+    except ValidationError as exc:
+        shape_error = exc
+    else:
+        raise AssertionError("that shape should not have validated")
+
+    client = FakeClient([shape_error])
+    outcome = generate_for_chunk(chunk, client, settings, target_count=1, max_attempts=2)
+    assert outcome.attempts == 1
+    assert outcome.questions == []
 
 
 # --- Document level ----------------------------------------------------------

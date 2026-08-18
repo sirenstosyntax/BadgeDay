@@ -62,6 +62,18 @@ def fail(db: Client, job: Job, error: str) -> bool:
         db.table("jobs").update({"status": "failed", "last_error": detail}).eq(
             "id", job.id
         ).execute()
+        # ERROR, not warning, and not silence. This is the end of the line for a document a
+        # candidate uploaded and paid for: nothing will retry it, no process will look at it
+        # again, and he has not been told. The log line is the alerting hook — alert on it,
+        # and see public.dead_jobs for the standing list.
+        logger.error(
+            "job %s (%s) exhausted %d attempts and will not be retried; document=%s error=%s",
+            job.id,
+            job.kind,
+            job.max_attempts,
+            job.document_id,
+            detail,
+        )
         return False
 
     delay = RETRY_DELAYS[min(job.attempts - 1, len(RETRY_DELAYS) - 1)]

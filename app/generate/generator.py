@@ -13,12 +13,14 @@ import logging
 from dataclasses import dataclass, field
 
 from anthropic import Anthropic
+from pydantic import ValidationError
 
 from app.config import Settings
 from app.generate.models import DraftBatch, Question
 from app.generate.prompt import SYSTEM_PROMPT, build_retry_message, build_user_message
 from app.generate.verify import Rejection, is_generatable, verify_batch
 from app.ingest.models import Chunk
+from app.llm_output import TruncatedOutput, is_truncated_json
 
 logger = logging.getLogger(__name__)
 
@@ -53,17 +55,26 @@ def _request_drafts(
     strips the constraints structured outputs does not accept and re-validates them
     client-side. Hand-building the schema skips that transform and gets rejected.
     """
-    response = client.messages.parse(
-        model=settings.generation_model,
-        max_tokens=MAX_TOKENS,
-        system=SYSTEM_PROMPT,
-        messages=messages,
-        thinking={"type": "adaptive"},
-        output_config={"effort": settings.generation_effort},
-        output_format=DraftBatch,
-    )
-    if response.stop_reason == "max_tokens":
-        raise ValueError("Generation hit max_tokens; output truncated.")
+    try:
+        response = client.messages.parse(
+            model=settings.generation_model,
+            max_tokens=MAX_TOKENS,
+            system=SYSTEM_PROMPT,
+            messages=messages,
+            thinking={"type": "adaptive"},
+            output_config={"effort": settings.generation_effort},
+            output_format=DraftBatch,
+        )
+    except ValidationError as exc:
+        # Truncation surfaces here rather than on `stop_reason` below — the SDK validates
+        # the body inside the call. See `app/llm_output.py` for why the two are worth
+        # keeping apart. A batch is likelier to hit this than a critique: four questions
+        # of JSON is more output than one critique, and the ceiling is the same.
+        if is_truncated_json(exc):
+            raise TruncatedOutput("Generation hit max_tokens; output truncated.") from exc
+        raise
+    if response.stop_reason == "max_tokens":  # complete JSON that still ran out of room
+        raise TruncatedOutput("Generation hit max_tokens; output truncated.")
     if response.parsed_output is None:
         raise ValueError(
             f"Model returned no parseable output (stop_reason={response.stop_reason})."
@@ -91,6 +102,20 @@ def generate_for_chunk(
         outcome.attempts = attempt
         try:
             batch = _request_drafts(client, settings, messages)
+        except TruncatedOutput:
+            # Worth repeating unchanged: the request was sound and the model ran out of
+            # room mid-JSON, and adaptive thinking means the next attempt is not the same
+            # length. Silently losing a section's questions to this is exactly the quiet
+            # shortfall the generator is otherwise careful to report.
+            logger.warning(
+                "Generation truncated for chunk %s on attempt %d of %d",
+                chunk.chunk_id,
+                attempt,
+                max_attempts,
+            )
+            if attempt == max_attempts:
+                break
+            continue
         except Exception:
             logger.exception("Generation request failed for chunk %s", chunk.chunk_id)
             break
