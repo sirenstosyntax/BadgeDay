@@ -18,13 +18,14 @@ anyone having to write an answer first.
 import argparse
 import logging
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 from anthropic import Anthropic
 
 from app.config import get_settings
 from app.critique import rubric as rubric_module
-from app.critique.critiquer import critique_answer
+from app.critique.critiquer import RecruitPersist, critique_answer
 
 # Re-exported: the run harnesses and the render tests import it from here, and the split
 # into render.py is about where a candidate-facing view lives, not about moving the
@@ -128,7 +129,21 @@ at work. I'm not sure what to tell you there.
 }
 
 
-def _run_one(label: str, transcript: str, rubric, client, settings, draft: bool) -> bool:
+def _run_one(
+    label: str,
+    transcript: str,
+    rubric,
+    client,
+    settings,
+    draft: bool,
+    user_id: str | None = None,
+    scenario_id: str | None = None,
+) -> bool:
+    persist = (
+        RecruitPersist(user_id=user_id, scenario_id=scenario_id, started_at=datetime.now(UTC))
+        if user_id and scenario_id
+        else None
+    )
     print(f"\n{'-' * 78}\nfixture: {label}")
     outcome = critique_answer(
         rubric=rubric,
@@ -136,6 +151,7 @@ def _run_one(label: str, transcript: str, rubric, client, settings, draft: bool)
         transcript=transcript,
         client=client,
         settings=settings,
+        persist=persist,
     )
 
     for rejection in outcome.rejections:
@@ -157,6 +173,8 @@ def main() -> int:
     parser.add_argument("--fixture", choices=sorted(FIXTURES["c3"]), help="Use a built-in answer.")
     parser.add_argument("--all-fixtures", action="store_true", help="Run every built-in answer.")
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--user-id", help="Persist the attempt for this user.")
+    parser.add_argument("--scenario-id", help="Persist the attempt against this scenario.")
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -190,7 +208,19 @@ def main() -> int:
     print(f"rubric: {rubric.name}  ({len(rubric.clauses)} citable clauses)")
     print(f"scorer: {settings.generation_model}, effort={settings.generation_effort}")
 
-    ok = [_run_one(label, text, rubric, client, settings, is_draft) for label, text in jobs]
+    ok = [
+        _run_one(
+            label,
+            text,
+            rubric,
+            client,
+            settings,
+            is_draft,
+            user_id=args.user_id,
+            scenario_id=args.scenario_id,
+        )
+        for label, text in jobs
+    ]
     print(f"\n{'=' * 78}\n{sum(ok)}/{len(ok)} produced a verified critique")
     return 0 if all(ok) else 1
 
