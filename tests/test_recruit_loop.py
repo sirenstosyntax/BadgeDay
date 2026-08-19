@@ -4,9 +4,11 @@ No network. No Deepgram account. No Anthropic account.
 """
 
 from datetime import UTC, datetime
+from pathlib import Path
 
 from app.api.recruit import C2_SCENARIO_ID, RecruitResult
-from app.audio.deepgram import transcript_from_deepgram
+from app.audio.deepgram import DeepgramTranscriber, transcript_from_deepgram
+from app.audio.transcriber import FixtureTranscriber, get_transcriber
 from app.config import Settings
 from app.critique import rubric as rubric_module
 from app.critique.cli import QUESTIONS
@@ -65,6 +67,22 @@ def test_deepgram_payload_becomes_transcript_text() -> None:
     assert transcript.provider == "deepgram"
     assert transcript.audio_seconds == 2.5
     assert transcript.punctuated is True
+
+
+def test_get_transcriber_uses_fixture_when_unconfigured() -> None:
+    settings = Settings(deepgram_api_key="")
+    transcriber = get_transcriber(settings)
+    assert isinstance(transcriber, FixtureTranscriber)
+    path = Path("answer.webm")
+    transcript = transcriber.transcribe(path)
+    assert "volunteering" in transcript.text
+    assert transcript.provider == "fixture"
+
+
+def test_get_transcriber_uses_deepgram_when_keyed() -> None:
+    settings = Settings(deepgram_api_key="dg-test")
+    transcriber = get_transcriber(settings)
+    assert isinstance(transcriber, DeepgramTranscriber)
 
 
 def test_persist_is_not_called_unless_asked(monkeypatch) -> None:
@@ -129,6 +147,7 @@ def test_persist_after_verify_stores_points_without_score_in_points(monkeypatch)
     joined = "\n".join(lines)
     assert str(outcome.critique.internal_score) not in joined or outcome.critique.internal_score is None
     assert "[internal" not in joined
+    assert "WHAT YOU DID WELL" in joined or "WHAT YOU COULD WORK ON" in joined
 
 
 def test_draft_schema_still_parses() -> None:
