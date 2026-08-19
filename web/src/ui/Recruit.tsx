@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
 
-type Phase = 'loading' | 'ready' | 'recording' | 'recorded' | 'submitting' | 'done'
+type Phase = 'loading' | 'ready' | 'blocked' | 'recording' | 'recorded' | 'submitting' | 'done'
 
 function pickMime(): string {
   const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
@@ -41,7 +41,7 @@ export function Recruit({ onDone }: { onDone: () => void }) {
       .catch((caught: unknown) => {
         if (cancelled) return
         setError(caught instanceof Error ? caught.message : 'Could not load the question.')
-        setPhase('ready')
+        setPhase('blocked')
       })
     return () => {
       cancelled = true
@@ -55,6 +55,7 @@ export function Recruit({ onDone }: { onDone: () => void }) {
   }
 
   async function startRecording() {
+    if (!question) return
     setError(null)
     blob.current = null
     chunks.current = []
@@ -76,7 +77,7 @@ export function Recruit({ onDone }: { onDone: () => void }) {
       setPhase('recording')
     } catch {
       setError('The microphone was blocked. Allow it in the browser and try again.')
-      setPhase('ready')
+      setPhase(question ? 'ready' : 'blocked')
     }
   }
 
@@ -114,7 +115,7 @@ export function Recruit({ onDone }: { onDone: () => void }) {
 
       <h2 className="text-lg font-medium">{question || 'Loading…'}</h2>
 
-      {phase === 'ready' && (
+      {phase === 'ready' && question && (
         <button
           onClick={() => void startRecording()}
           className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900"
@@ -178,7 +179,7 @@ export function Recruit({ onDone }: { onDone: () => void }) {
         </div>
       )}
 
-      {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-700 dark:text-stone-400">{error}</p>}
     </div>
   )
 }
