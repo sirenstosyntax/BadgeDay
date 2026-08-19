@@ -101,6 +101,17 @@ export const api = {
       request<PracticeSession>(`/sessions/${sessionId}/complete`, { method: 'POST' }),
   },
 
+  // C2 spoken question. The result is candidate_lines only — no score on this payload.
+  recruit: {
+    question: () =>
+      request<{ scenario_id: string; question_text: string }>('/recruit/question'),
+    attempt: (file: File) => {
+      const form = new FormData()
+      form.append('audio', file)
+      return request<RecruitResult>('/recruit/attempts', { method: 'POST', body: form })
+    },
+  },
+
   coverage: (documentId?: string) =>
     request<Coverage[]>(`/coverage${documentId ? `?document_id=${documentId}` : ''}`),
 
@@ -116,4 +127,11 @@ export type AnswerBody = {
   selected_index?: number | null
   answered_boolean?: boolean | null
   answered_text?: string | null
+}
+
+export type RecruitResult = {
+  attempt_id: string | null
+  lines: string[]
+  failed: boolean
+  failure: string | null
 }
