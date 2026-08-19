@@ -26,7 +26,7 @@ def ready(settings: SettingsDep) -> dict[str, object]:
     """Report configuration state of each external dependency.
 
     This deliberately does not make network calls — it answers "is this wired up",
-    not "is this reachable".
+    not "is this reachable". No key material.
     """
     return {
         "status": "ok",
@@ -36,5 +36,6 @@ def ready(settings: SettingsDep) -> dict[str, object]:
             "azure_document_intelligence": settings.azure_docintel_configured,
             "supabase": bool(settings.supabase_url and settings.supabase_service_role_key),
             "stripe": settings.stripe_configured,
+            "transcription": settings.transcription_configured,
         },
     }
