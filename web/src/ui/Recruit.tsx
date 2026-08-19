@@ -13,6 +13,12 @@ function filenameFor(mime: string): string {
   return 'answer.webm'
 }
 
+/** Empty HTTP/2 statusText and a missing detail must not hide the failed submit. */
+export function submitErrorMessage(caught: unknown): string {
+  if (caught instanceof Error && caught.message.trim()) return caught.message.trim()
+  return 'That answer could not be critiqued.'
+}
+
 /**
  * One C2 spoken question. Record, submit, read the candidate critique.
  * The server never sends a score on this path; this screen does not invent one.
@@ -40,7 +46,7 @@ export function Recruit({ onDone }: { onDone: () => void }) {
       })
       .catch((caught: unknown) => {
         if (cancelled) return
-        setError(caught instanceof Error ? caught.message : 'Could not load the question.')
+        setError(submitErrorMessage(caught) === 'That answer could not be critiqued.' ? 'Could not load the question.' : submitErrorMessage(caught))
         setPhase('blocked')
       })
     return () => {
@@ -100,7 +106,7 @@ export function Recruit({ onDone }: { onDone: () => void }) {
       setPersistFailed(result.failed)
       setPhase('done')
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'That answer could not be critiqued.')
+      setError(submitErrorMessage(caught))
       setPhase('recorded')
     }
   }
