@@ -32,14 +32,22 @@ WEB_ENV_FILE="${WEB_ENV_FILE:-web/.env.local}"  # VITE_* build args (public)
 IMAGE="${ACR_NAME}.azurecr.io/badgeday:${IMAGE_TAG}"
 
 cd "$(dirname "$0")/.."   # repo root, regardless of where this is called from
+# shellcheck source=deploy/env_secrets.sh
+source "$(dirname "$0")/env_secrets.sh"
 
 say() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 
 # --- Preflight -------------------------------------------------------------------------
 command -v az >/dev/null || { echo "Azure CLI not found. See deploy/README.md."; exit 1; }
-az account show >/dev/null 2>&1 || { echo "Not logged in. Run: az login"; exit 1; }
 [[ -f "$ENV_FILE" ]] || { echo "Missing $ENV_FILE (runtime secrets)."; exit 1; }
 [[ -f "$WEB_ENV_FILE" ]] || { echo "Missing $WEB_ENV_FILE (VITE build vars)."; exit 1; }
+
+parse_env_file "$ENV_FILE"
+say "Secrets to push (names only)"
+env_secret_names | sed 's/^/    /'
+require_deepgram_if_production "$DEPLOY_ENVIRONMENT" "$ENV_FILE" || exit 1
+
+az account show >/dev/null 2>&1 || { echo "Not logged in. Run: az login"; exit 1; }
 
 SUB="$(az account show --query name -o tsv)"
 STRIPE_MODE="unknown"
@@ -86,19 +94,8 @@ az containerapp env show --name "$ENVIRONMENT_NAME" --resource-group "$RESOURCE_
   az containerapp env create --name "$ENVIRONMENT_NAME" --resource-group "$RESOURCE_GROUP" \
     --location "$LOCATION" -o none
 
-# --- Turn .env into Container Apps secrets + env references -----------------------------
-# Every configured line becomes a secret (name = KEY lowercased with dashes) and an env var
-# that references it, so nothing sensitive is passed as a plain value or shows in `az ... show`.
-say "Reading runtime config from $ENV_FILE"
-SECRETS=(); ENVREFS=()
-while IFS='=' read -r key value; do
-  [[ "$key" =~ ^[A-Z] ]] || continue          # skip comments and blank lines
-  [[ -n "$value" ]] || continue               # skip empty values
-  value="${value%$'\r'}"                        # tolerate CRLF
-  secret_name="$(echo "$key" | tr 'A-Z_' 'a-z-')"
-  SECRETS+=("${secret_name}=${value}")
-  ENVREFS+=("${key}=secretref:${secret_name}")
-done < "$ENV_FILE"
+# SECRETS / ENVREFS were parsed above, before any az call, so a missing Deepgram key
+# fails closed instead of shipping a 503 Oral board.
 
 ACR_PASS="$(az acr credential show --name "$ACR_NAME" --query 'passwords[0].value' -o tsv)"
 
