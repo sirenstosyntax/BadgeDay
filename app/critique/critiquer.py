@@ -12,6 +12,7 @@ a run that ends with nothing is surfaced as such rather than returned quietly.
 
 import logging
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from anthropic import Anthropic
 from pydantic import ValidationError
@@ -27,6 +28,7 @@ from app.llm_output import (
     is_truncated_json,
     is_unenforced_constraint,
 )
+from app.storage.client import service_client
 
 logger = logging.getLogger(__name__)
 
@@ -54,10 +56,19 @@ class CritiqueOutcome:
     rejections: list[Rejection] = field(default_factory=list)
     attempts: int = 0
     failure: str | None = None
+    attempt_id: str | None = None
 
     @property
     def failed(self) -> bool:
         return self.critique is None or not self.critique.points
+
+
+@dataclass
+class RecruitPersist:
+    user_id: str
+    scenario_id: str
+    started_at: datetime
+    audio_retained: bool = False
 
 
 def _request_draft(client: Anthropic, settings: Settings, messages: list[dict]) -> DraftCritique:
@@ -116,6 +127,7 @@ def critique_answer(
     settings: Settings,
     metrics: dict[str, Metric] | None = None,
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+    persist: RecruitPersist | None = None,
 ) -> CritiqueOutcome:
     """Produce a verified critique of one answer against one criterion."""
     metrics = metrics or {}
@@ -167,6 +179,45 @@ def critique_answer(
         # apply, and the honest report is short.
         enough = len(critique.points) >= (MIN_POINTS if critique.scored else 1)
         if enough and not rejections:
+            if persist is not None:
+                try:
+                    response = service_client(settings).rpc(
+                        "persist_recruit_completed_attempt",
+                        {
+                            "p_user_id": persist.user_id,
+                            "p_scenario_id": persist.scenario_id,
+                            "p_question_text": question,
+                            "p_started_at": persist.started_at.isoformat(),
+                            "p_transcript": transcript,
+                            "p_outcome": critique.outcome,
+                            "p_points": [
+                                {
+                                    "improvement": point.improvement,
+                                    "observation": point.observation,
+                                    "ask": point.ask,
+                                    "answer_quote": point.answer_quote,
+                                }
+                                for point in critique.points
+                            ],
+                            "p_internal_score": critique.internal_score,
+                            "p_route": critique.route,
+                            "p_determination": critique.determination,
+                            "p_deciding_clause_id": (
+                                critique.deciding_clause.clause_id
+                                if critique.deciding_clause
+                                else None
+                            ),
+                            "p_criterion_id": critique.criterion_id,
+                            "p_criterion_name": critique.criterion_name,
+                            "p_audio_retained": persist.audio_retained,
+                        },
+                    ).execute()
+                    data = response.data
+                    if isinstance(data, list) and data:
+                        data = data[0]
+                    outcome.attempt_id = str(data) if data else None
+                except Exception as exc:  # noqa: BLE001 - surfaced on the outcome, not raised
+                    outcome.failure = f"persist_failed: {exc}"
             break
         if attempt == max_attempts:
             break

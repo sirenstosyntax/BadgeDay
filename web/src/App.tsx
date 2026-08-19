@@ -7,6 +7,7 @@ import { Documents } from './ui/Documents'
 import { LegalLinks } from './ui/LegalLinks'
 import { Paywall } from './ui/Paywall'
 import { Quiz } from './ui/Quiz'
+import { Recruit } from './ui/Recruit'
 import { Review } from './ui/Review'
 import { Saved } from './ui/Saved'
 import { SignIn } from './ui/SignIn'
@@ -23,6 +24,7 @@ type View =
   | { name: 'account' }
   | { name: 'quiz'; sessionId: string }
   | { name: 'review'; sessionId: string }
+  | { name: 'recruit' }
 
 export default function App() {
   const { session, loading } = useSession()
@@ -116,6 +118,14 @@ export default function App() {
             BadgeDay
           </button>
           <div className="flex items-center gap-3 text-sm">
+            {view.name !== 'recruit' && (
+              <button
+                onClick={() => setView({ name: 'recruit' })}
+                className="text-stone-600 hover:underline dark:text-stone-400"
+              >
+                Oral board
+              </button>
+            )}
             {view.name !== 'saved' && (
               <button
                 onClick={() => setView({ name: 'saved' })}
@@ -181,6 +191,8 @@ export default function App() {
             onDeleted={() => void afterDeleted()}
             onDone={() => setView({ name: 'documents' })}
           />
+        ) : view.name === 'recruit' ? (
+          <Recruit onDone={() => setView({ name: 'documents' })} />
         ) : (
           <Documents
             entitled={entitled}

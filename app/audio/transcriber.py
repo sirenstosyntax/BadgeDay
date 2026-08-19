@@ -1,28 +1,17 @@
 """Transcription, behind a provider-neutral seam.
 
 Same pattern and same reason as `app/ingest/analyzer.py`: `Transcriber` is the only thing
-the rest of the pipeline knows about, so `metrics.py` gets real test coverage with no ASR
-account, no network call, and no real candidate's voice. The provider is an implementation
-detail behind the seam.
+the rest of the pipeline knows about, so the Recruit loop can run against Deepgram or a
+fixture without the API knowing which. `metrics.py` still gets coverage with no ASR
+account and no real candidate's voice.
 
-The seam matters more here than it did for Azure, because **which provider we use is not
-decided and one of the requirements may not be satisfiable.** `recruit_design_decisions.md`
-§5 flags it: most ASR strips disfluencies by default — Whisper in particular tends to drop
-"um" and "uh" and tidy false starts — and if that cannot be turned off, the filler half of
-the delivery metrics is measuring nothing. Building against a protocol means that finding
-changes one class rather than the pipeline.
+Two requirements a live provider has to meet (see `scripts/asr_check.py`):
 
-Two requirements, and a provider has to meet both:
+1. **Word-level timestamps.** Every metric in `metrics.py` is arithmetic over them.
+2. **Preserved disfluencies.** A transcript cleaned up into fluent prose is a *better*
+   transcript by the industry's measure and a useless one by ours.
 
-1. **Word-level timestamps.** Every metric in `metrics.py` is arithmetic over them. Without
-   them there is no pace, no pause, no stall, nothing. Commonly a priced add-on, and
-   effective cost can run several times the headline rate once enabled.
-2. **Preserved disfluencies.** Not "good accuracy" — the opposite of what most providers
-   optimise for. A transcript cleaned up into fluent prose is a *better* transcript by the
-   industry's measure and a useless one by ours.
-
-Nothing implements this against a real provider yet, deliberately. `scripts/asr_check.py`
-is the instrument for deciding which one, and it needs real speech to run.
+This slice uses the transcript text only. Filler and pace metrics are not computed here.
 """
 
 from dataclasses import dataclass
@@ -30,6 +19,7 @@ from pathlib import Path
 from typing import Protocol
 
 from app.audio.models import Transcript, Word
+from app.config import Settings
 
 
 class Transcriber(Protocol):
@@ -72,9 +62,18 @@ class FixtureTranscriber:
         if not fixture.exists():
             raise FileNotFoundError(
                 f"No transcript fixture for {path.name}. Expected {fixture}. "
-                "No ASR provider is wired yet — see scripts/asr_check.py."
+                "Set DEEPGRAM_API_KEY to transcribe real recordings."
             )
         return _from_json(fixture.read_text())
+
+
+def get_transcriber(settings: Settings, fixture_dir: Path | None = None) -> Transcriber:
+    """Deepgram when the key is set; the fixture transcriber otherwise."""
+    if settings.transcription_configured:
+        from app.audio.deepgram import DeepgramTranscriber
+
+        return DeepgramTranscriber(settings)
+    return FixtureTranscriber(fixture_dir or Path("tests/fixtures/transcripts"))
 
 
 def _from_json(raw: str) -> Transcript:
