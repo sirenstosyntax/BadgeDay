@@ -37,6 +37,9 @@ WORKDIR /app
 # dependencies and the console scripts (badgeday-worker) from pyproject.
 COPY pyproject.toml ./
 COPY app/ ./app/
+# C2 only. The image WORKDIR is /app; rubric.load reads this next to app/, not from CWD.
+# Do not copy recruit_rubric_c3_teamwork.md — C3 is not publishable.
+COPY recruit_rubric_c2_motivation.md ./
 RUN pip install -e .
 
 # The built SPA from stage 1, landing where app/spa.py looks for it (../web/dist).
