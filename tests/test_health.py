@@ -1,3 +1,5 @@
+import json
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -20,4 +22,10 @@ def test_ready_reports_each_dependency() -> None:
         "azure_document_intelligence",
         "supabase",
         "stripe",
+        "transcription",
     }
+    assert isinstance(configured["transcription"], bool)
+    dumped = json.dumps(response.json())
+    assert "api_key" not in dumped
+    assert "sk-" not in dumped
+    assert "Token " not in dumped
