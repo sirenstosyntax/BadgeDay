@@ -31,9 +31,9 @@ SCORER_START = "<!-- scorer:start"
 SCORER_END = "<!-- scorer:end -->"
 
 # `### 5 — Other people are real...` / `### 4 — Strong on one axis...`
-_ANCHOR_RE = re.compile(r"^###\s+(\d)\s*[—\-\u2013]\s*(.+?)\s*$", re.M)
+_ANCHOR_RE = re.compile(r"^###\s+(\d)\s*[—\-–]\s*(.+?)\s*$", re.M)
 # `**4A — Wants the crew; rough edges.**`
-_ROUTE_RE = re.compile(r"^\*\*(\d[A-Z])\s*[—\-\u2013]\s*(.+?)\.?\*\*\s*$", re.M)
+_ROUTE_RE = re.compile(r"^\*\*(\d[A-Z])\s*[—\-–]\s*(.+?)\.?\*\*\s*$", re.M)
 # `**3. Some candidates have no team history...**`
 _NOTE_RE = re.compile(r"^\*\*(\d+)\.\s+(.+?)\*\*\s*$", re.M)
 
