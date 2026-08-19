@@ -142,10 +142,12 @@ def test_persist_after_verify_stores_points_without_score_in_points(monkeypatch)
     assert args["p_audio_retained"] is False
     for point in args["p_points"]:
         assert set(point) <= {"improvement", "observation", "ask", "answer_quote"}
-    assert "internal_score" not in {key for point in args["p_points"] for key in point}
+    stored_keys = {key for point in args["p_points"] for key in point}
+    assert "internal_score" not in stored_keys
     lines = candidate_lines(outcome.critique)
     joined = "\n".join(lines)
-    assert str(outcome.critique.internal_score) not in joined or outcome.critique.internal_score is None
+    score = outcome.critique.internal_score
+    assert score is None or str(score) not in joined
     assert "[internal" not in joined
     assert "WHAT YOU DID WELL" in joined or "WHAT YOU COULD WORK ON" in joined
 
