@@ -4,9 +4,8 @@ One criterion. The question text is `QUESTIONS["c2"]` from the CLI — not a ban
 not C3. The response is `candidate_lines` only. Score, route, determination, and
 clause ids stay on the server via 0010; they are not in this payload.
 
-Transcription goes through `get_transcriber`: Deepgram when the key is set, the
-fixture transcriber otherwise. The upload keeps its original stem so a fixture
-named `answer.json` matches the web client's `answer.webm`.
+The live path uses Deepgram only. If the key is unset this returns 503 rather than
+critiquing a fixture. `get_transcriber` stays for tests.
 
 No subscription check. This slice is not a Stripe path.
 Audio is transcribed and discarded. `audio_retained` stays false.
@@ -21,7 +20,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUserDep, SettingsDep
-from app.audio.transcriber import get_transcriber
+from app.audio.deepgram import DeepgramTranscriber
 from app.critique import rubric as rubric_module
 from app.critique.cli import QUESTIONS
 from app.critique.critiquer import RecruitPersist, critique_answer
@@ -61,6 +60,11 @@ def submit_attempt(
     settings: SettingsDep,
     audio: UploadFile,
 ) -> RecruitResult:
+    if not settings.transcription_configured:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Transcription is not configured.",
+        )
     if not settings.anthropic_api_key:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -84,7 +88,7 @@ def submit_attempt(
         path = Path(tmpdir) / f"{stem}{suffix}"
         path.write_bytes(data)
         try:
-            transcript = get_transcriber(settings).transcribe(path)
+            transcript = DeepgramTranscriber(settings).transcribe(path)
         except Exception as exc:
             raise HTTPException(
                 status.HTTP_502_BAD_GATEWAY,
