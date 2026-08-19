@@ -31,9 +31,10 @@ ENV_FILE="${ENV_FILE:-.env}"                 # runtime secrets (backend)
 WEB_ENV_FILE="${WEB_ENV_FILE:-web/.env.local}"  # VITE_* build args (public)
 IMAGE="${ACR_NAME}.azurecr.io/badgeday:${IMAGE_TAG}"
 
-cd "$(dirname "$0")/.."   # repo root, regardless of where this is called from
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/.."   # repo root, regardless of where this is called from
 # shellcheck source=deploy/env_secrets.sh
-source "$(dirname "$0")/env_secrets.sh"
+source "$SCRIPT_DIR/env_secrets.sh"
 
 say() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 
