@@ -14,9 +14,12 @@ function filenameFor(mime: string): string {
 }
 
 /** Empty HTTP/2 statusText and a missing detail must not hide the failed submit. */
-export function submitErrorMessage(caught: unknown): string {
+export function submitErrorMessage(
+  caught: unknown,
+  fallback = 'That answer could not be critiqued.',
+): string {
   if (caught instanceof Error && caught.message.trim()) return caught.message.trim()
-  return 'That answer could not be critiqued.'
+  return fallback
 }
 
 /**
@@ -46,7 +49,7 @@ export function Recruit({ onDone }: { onDone: () => void }) {
       })
       .catch((caught: unknown) => {
         if (cancelled) return
-        setError(submitErrorMessage(caught) === 'That answer could not be critiqued.' ? 'Could not load the question.' : submitErrorMessage(caught))
+        setError(submitErrorMessage(caught, 'Could not load the question.'))
         setPhase('blocked')
       })
     return () => {
