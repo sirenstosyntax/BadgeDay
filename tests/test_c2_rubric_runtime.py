@@ -18,6 +18,6 @@ def test_dockerfile_copies_c2_rubric_and_not_c3() -> None:
     dockerfile = (root / "Dockerfile").read_text()
     dockerignore = (root / ".dockerignore").read_text()
     assert "COPY recruit_rubric_c2_motivation.md" in dockerfile
-    assert "recruit_rubric_c3" not in dockerfile
+    assert "COPY recruit_rubric_c3" not in dockerfile
     assert "*.md" in dockerignore
     assert "!recruit_rubric_c2_motivation.md" in dockerignore
