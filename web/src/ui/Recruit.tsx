@@ -179,7 +179,7 @@ export function Recruit({ onDone }: { onDone: () => void }) {
         </div>
       )}
 
-      {error && <p className="text-sm text-red-700 dark:text-stone-400">{error}</p>}
+      {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
     </div>
   )
 }
