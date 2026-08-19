@@ -31,9 +31,9 @@ SCORER_START = "<!-- scorer:start"
 SCORER_END = "<!-- scorer:end -->"
 
 # `### 5 — Other people are real...` / `### 4 — Strong on one axis...`
-_ANCHOR_RE = re.compile(r"^###\s+(\d)\s*[—\-–]\s*(.+?)\s*$", re.M)
+_ANCHOR_RE = re.compile(r"^###\s+(\d)\s*[—\-\u2013]\s*(.+?)\s*$", re.M)
 # `**4A — Wants the crew; rough edges.**`
-_ROUTE_RE = re.compile(r"^\*\*(\d[A-Z])\s*[—\-–]\s*(.+?)\.?\*\*\s*$", re.M)
+_ROUTE_RE = re.compile(r"^\*\*(\d[A-Z])\s*[—\-\u2013]\s*(.+?)\.?\*\*\s*$", re.M)
 # `**3. Some candidates have no team history...**`
 _NOTE_RE = re.compile(r"^\*\*(\d+)\.\s+(.+?)\*\*\s*$", re.M)
 
@@ -144,10 +144,14 @@ def available() -> list[str]:
     return sorted(RUBRIC_FILES)
 
 
+def _package_root() -> Path:
+    """Repo root on a laptop, /app in the image. Never CWD — Azure WORKDIR is /app."""
+    return Path(__file__).resolve().parents[2]
+
+
 def load(criterion_id: str, root: Path | None = None) -> Rubric:
     if criterion_id not in RUBRIC_FILES:
         raise KeyError(f"unknown rubric {criterion_id!r}; choose from {available()}")
-    path, name = RUBRIC_FILES[criterion_id]
-    if root is not None:
-        path = root / path
+    relative, name = RUBRIC_FILES[criterion_id]
+    path = (root if root is not None else _package_root()) / relative
     return load_rubric(criterion_id, path, name)
