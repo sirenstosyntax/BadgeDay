@@ -114,12 +114,12 @@ def submit_attempt(
     if outcome.critique is None or not outcome.critique.points:
         raise HTTPException(
             status.HTTP_502_BAD_GATEWAY,
-            outcome.failure or "The critique could not be verified.",
+            "The critique could not be verified.",
         )
 
     return RecruitResult(
         attempt_id=outcome.attempt_id,
         lines=candidate_lines(outcome.critique),
         failed=bool(outcome.failure),
-        failure=outcome.failure,
+        failure=None,
     )
