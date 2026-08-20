@@ -29,7 +29,7 @@ export function SignIn() {
           BadgeDay
         </h1>
         <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-          Upload your reading list. Drill cited questions until badge day.
+          Practice the oral board out loud, or study questions from your reading list.
         </p>
 
         {sent ? (

@@ -123,6 +123,11 @@ export function Recruit({ onDone }: { onDone: () => void }) {
       </div>
 
       <h2 className="text-lg font-medium">{question || 'Loading…'}</h2>
+      {question && (
+        <p className="text-sm text-stone-600 dark:text-stone-400">
+          Answer out loud. You’ll get notes on what went well and what to improve.
+        </p>
+      )}
 
       {phase === 'ready' && question && (
         <button
