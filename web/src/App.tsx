@@ -3,6 +3,7 @@ import { ApiError, api } from './lib/api'
 import { useAccount } from './lib/account'
 import { signOut, useSession } from './lib/auth'
 import { Account } from './ui/Account'
+import { Choose } from './ui/Choose'
 import { Documents } from './ui/Documents'
 import { LegalLinks } from './ui/LegalLinks'
 import { Paywall } from './ui/Paywall'
@@ -19,6 +20,7 @@ import { SignIn } from './ui/SignIn'
  * the back button — that is the moment to add a router, not before.
  */
 type View =
+  | { name: 'choose' }
   | { name: 'documents' }
   | { name: 'saved' }
   | { name: 'account' }
@@ -29,7 +31,7 @@ type View =
 export default function App() {
   const { session, loading } = useSession()
   const { account, entitled, refreshAccount } = useAccount(!!session)
-  const [view, setView] = useState<View>({ name: 'documents' })
+  const [view, setView] = useState<View>({ name: 'choose' })
   const [starting, setStarting] = useState(false)
   const [showPaywall, setShowPaywall] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
@@ -112,7 +114,7 @@ export default function App() {
       <header className="border-b border-stone-200 dark:border-stone-800">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <button
-            onClick={() => setView({ name: 'documents' })}
+            onClick={() => setView({ name: 'choose' })}
             className="font-semibold tracking-tight"
           >
             BadgeDay
@@ -182,22 +184,27 @@ export default function App() {
         ) : view.name === 'review' ? (
           <Review sessionId={view.sessionId} onDone={() => setView({ name: 'documents' })} />
         ) : view.name === 'saved' ? (
-          <Saved onDone={() => setView({ name: 'documents' })} />
+          <Saved onDone={() => setView({ name: 'choose' })} />
         ) : view.name === 'account' ? (
           <Account
             account={account}
             onManageBilling={() => void manageBilling()}
             onSubscribe={() => setShowPaywall(true)}
             onDeleted={() => void afterDeleted()}
-            onDone={() => setView({ name: 'documents' })}
+            onDone={() => setView({ name: 'choose' })}
           />
         ) : view.name === 'recruit' ? (
-          <Recruit onDone={() => setView({ name: 'documents' })} />
-        ) : (
+          <Recruit onDone={() => setView({ name: 'choose' })} />
+        ) : view.name === 'documents' ? (
           <Documents
             entitled={entitled}
             onNeedsAccess={needsAccess}
             onPractise={(id) => void practise(id)}
+          />
+        ) : (
+          <Choose
+            onOralBoard={() => setView({ name: 'recruit' })}
+            onReadingList={() => setView({ name: 'documents' })}
           />
         )}
       </main>

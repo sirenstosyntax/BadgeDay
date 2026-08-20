@@ -1,7 +1,7 @@
 {
   "name": "BadgeDay — Promotional exam prep",
   "short_name": "BadgeDay",
-  "description": "Upload your reading list. Drill cited questions until badge day.",
+  "description": "Practice the oral board out loud, or study questions from your reading list.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
