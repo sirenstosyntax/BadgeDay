@@ -4,15 +4,22 @@ Two thin wrappers around the same web app that runs at app.badgeday.com. There i
 second product codebase and there must not be one — a fix to the quiz loop should reach
 all three surfaces by being deployed, not by being ported.
 
-**The Android project under `mobile/android/app/` is generated and gitignored.** Run
-Bubblewrap from `twa-manifest.json` to produce it. A first compile still needs a JDK and
-the Android SDK; this file is not a claim that an AAB was built here.
+**Nothing in this directory has been compiled.** It was written in a container with neither
+Xcode nor the Android SDK, so every command below is from each tool's documentation rather
+than from a run that succeeded here. Treat the configs as a starting point that still owes
+you a first build, not as something known to work.
 
 ## Before either wrapper builds
 
-1. **The icons.** The Dawn Shield PNGs live in `web/public/icons/`. Bubblewrap reads them
-   out of the live web manifest. The 1024×1024 master is `icon-1024.png`.
-2. **Application id.** `com.badgeday.app` is locked. Do not change it.
+Both are blocked on the same two things:
+
+1. **The icons.** The Dawn Shield PNGs are in `web/public/icons/`. See that folder's
+   README. Bubblewrap reads them out of the web manifest to generate every Android density,
+   and both store listings require the 1024×1024 master.
+2. **The application id.** `com.badgeday.app` is locked. Do not change it. (DrillGround uses
+   `com.sirenstosyntax.drillground`; BadgeDay is a separate consumer brand per `CLAUDE.md`,
+   and badgeday.com is a domain the company controls, so the reversed-domain form is
+   legitimate.)
 
 ## Android — Trusted Web Activity
 
@@ -49,17 +56,58 @@ bar still visible.
 
 ### Play Billing
 
-`twa-manifest.json` keeps Play Billing **off**. Do not enable it. Official Play Billing
-Library v7's new-app cutoff is 2026-08-31; turning billing on with no products buys that
-deadline for nothing. Purchases stay on Stripe (test) in the browser until a later order
-names Play products.
+`twa-manifest.json` keeps Play Billing **off**. Do not enable `playBilling`. Official Play
+Billing Library v7's new-app cutoff is 2026-08-31; turning billing on with no products buys
+that deadline for nothing. The purchase flow in the browser stays Stripe (test).
 
 ## iOS — Capacitor
 
-Not this order. See `mobile_release_plan.md` section 4.2. Do not add Capacitor, StoreKit,
-or an iOS project here.
+Capacitor wraps the same site in a `WKWebView` and adds native plugins to it. The wrapper
+part is easy; **clearing App Review guideline 4.2 is the actual work**, and it is not a
+configuration setting. A WebView around a website is the textbook 4.2 rejection.
+
+```bash
+cd mobile/ios
+npm install
+npx cap add ios
+npx cap open ios     # needs Xcode, on a Mac
+```
+
+`capacitor.config.json` points `server.url` at app.badgeday.com, so the app loads the
+deployed site rather than a bundled copy. That keeps the wrapper thin and means a web
+deploy updates the iOS app without a submission — but note that Apple has been known to
+question apps that are *purely* remote, which is the same 4.2 conversation. The planned
+native capabilities are what answer it:
+
+| Capability | Plugin | Why it counts |
+|---|---|---|
+| Upload from Files / iCloud | `@capacitor/filesystem` | The app's central action, and genuinely better than mobile Safari's picker. |
+| Camera as a document scanner | `@capacitor/camera` | A candidate photographs an SOG packet instead of finding a scanner. |
+| Offline practice | app-side caching | Drilling on an engine with no signal. The website cannot do this. |
+| Local notifications | `@capacitor/local-notifications` | Practice streak, exam-date countdown. |
+| StoreKit purchase | a Play/StoreKit billing plugin | Required by 3.1.1 anyway, and evidence of an app rather than a shortcut. |
+
+None of these are implemented yet. They are step 4 in `mobile_release_plan.md`.
+
+### Universal links
+
+`apple-app-site-association` is served from **badgeday.com** (the marketing site, on
+Netlify) per the infrastructure map, not from this repo. The app side supplies the file's
+contents; the marketing side hosts it.
 
 ## What connects the wrappers to billing
 
-Store purchase endpoints currently answer **503**, on purpose. Do not create Play or App
-Store products from this wrap.
+Both apps buy through their own store, not through Stripe — see `mobile_release_plan.md` for
+why, and `app/billing/store*` for the server side. The flow is the same on both platforms:
+
+1. The app completes a purchase with the store's SDK, setting the account token to the
+   candidate's user id. **This is the only link between a purchase and an account**, and a
+   purchase made without it cannot be attributed to anyone afterwards.
+2. The app POSTs the purchase to `/billing/store/{play,appstore}/purchase`, which verifies
+   it against the store and unlocks immediately rather than waiting on a notification.
+3. Renewals, cancellations and refunds arrive later at
+   `/billing/store/{play,appstore}/notifications`.
+
+Those endpoints currently answer **503**, on purpose. The verification described at the top
+of `app/billing/store_gateway.py` does not exist yet, and a payment endpoint that cannot
+tell a real purchase from an invented one should refuse rather than guess.
