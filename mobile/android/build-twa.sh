@@ -236,18 +236,35 @@ print("Generated project ok: applicationId set, no Play Billing dependency")
 PY
 }
 
+# True when the path is a signed release APK. Unsigned / skip-signing
+# outputs contain "unsigned" in the name and are allowed.
+is_signed_release_apk() {
+  local base
+  base="$(basename "$1")"
+  case "$base" in
+    *unsigned*) return 1 ;;
+    *signed*.apk|app-release-signed.apk) return 0 ;;
+  esac
+  return 1
+}
+
 copy_artifacts() {
   mkdir -p "$TWA_ARTIFACT_DIR"
   local copied=0
   local src dest
   # Bubblewrap 1.25 --skipSigning writes the aligned APK at the project root
-  # and the bundle under app/build/outputs/bundle/release/.
+  # and the bundle under app/build/outputs/bundle/release/. Never pick up
+  # app-release-signed.apk even if a later Bubblewrap run emits one.
   for src in \
     "$ANDROID_DIR/app-release-unsigned-aligned.apk" \
     "$ANDROID_DIR/app-release-unsigned.apk" \
     "$ANDROID_DIR/app/build/outputs/apk/release/app-release-unsigned.apk" \
     "$ANDROID_DIR/app/build/outputs/bundle/release/app-release.aab"; do
     [ -f "$src" ] || continue
+    if is_signed_release_apk "$src"; then
+      echo "skipping signed release APK $src"
+      continue
+    fi
     case "$src" in
       *.aab) dest="$TWA_ARTIFACT_DIR/badgeday-twa-unsigned.aab" ;;
       *) dest="$TWA_ARTIFACT_DIR/badgeday-twa-unsigned.apk" ;;
@@ -257,7 +274,7 @@ copy_artifacts() {
     copied=1
   done
   if [ "$copied" -eq 0 ]; then
-    echo "error: build finished but no APK/AAB was found under $ANDROID_DIR" >&2
+    echo "error: build finished but no unsigned APK/AAB was found under $ANDROID_DIR" >&2
     exit 1
   fi
 }
