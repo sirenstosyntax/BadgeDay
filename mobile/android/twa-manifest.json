@@ -21,6 +21,7 @@
     "path": "./android.keystore",
     "alias": "android"
   },
+  "appVersion": "1.0.0",
   "appVersionName": "1.0.0",
   "appVersionCode": 1,
   "shortcuts": [],
