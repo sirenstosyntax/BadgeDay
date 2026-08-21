@@ -36,7 +36,10 @@ jobs:
       - name: Guardrails — packageId + Play Billing off
         run: |
           pip install pytest
-          python -m pytest tests/test_twa_billing_off.py -q
+          # The test only reads twa-manifest.json. Skip tests/conftest.py — that
+          # file imports the FastAPI app and would pull in pydantic and the rest
+          # of the backend just to check two JSON fields.
+          python -m pytest --noconftest tests/test_twa_billing_off.py -q
 
       - uses: actions/setup-java@v4
         with:
