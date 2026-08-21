@@ -30,6 +30,8 @@ BUBBLEWRAP_PKG='@bubblewrap/cli@1.25.0'
 ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$HOME/.android-sdk}"
 TWA_ARTIFACT_DIR="${TWA_ARTIFACT_DIR:-$REPO_ROOT/artifacts/twa}"
 TWA_SKIP_TOOLCHAIN="${TWA_SKIP_TOOLCHAIN:-0}"
+TWA_NPM_PREFIX="${TWA_NPM_PREFIX:-$HOME/.cache/badgeday-twa}"
+BUBBLEWRAP=""
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -169,17 +171,25 @@ install_android_sdk() {
 }
 
 install_bubblewrap() {
-  if command -v bubblewrap >/dev/null 2>&1; then
+  # User-local prefix: `npm install -g` needs write access to the global
+  # node_modules and this environment's npm prefix is not writable.
+  BUBBLEWRAP="$TWA_NPM_PREFIX/node_modules/.bin/bubblewrap"
+  if [ -x "$BUBBLEWRAP" ]; then
     return
   fi
   if [ "$TWA_SKIP_TOOLCHAIN" = 1 ]; then
-    echo "error: bubblewrap not on PATH and TWA_SKIP_TOOLCHAIN=1" >&2
+    if command -v bubblewrap >/dev/null 2>&1; then
+      BUBBLEWRAP="$(command -v bubblewrap)"
+      return
+    fi
+    echo "error: $BUBBLEWRAP_PKG not installed and TWA_SKIP_TOOLCHAIN=1" >&2
     exit 1
   fi
   require_cmd npm
-  npm install -g "$BUBBLEWRAP_PKG"
-  command -v bubblewrap >/dev/null 2>&1 || {
-    echo "error: npm install -g $BUBBLEWRAP_PKG succeeded but bubblewrap is not on PATH" >&2
+  mkdir -p "$TWA_NPM_PREFIX"
+  npm install --prefix "$TWA_NPM_PREFIX" "$BUBBLEWRAP_PKG"
+  [ -x "$BUBBLEWRAP" ] || {
+    echo "error: npm install --prefix $TWA_NPM_PREFIX $BUBBLEWRAP_PKG did not produce bubblewrap" >&2
     exit 1
   }
 }
@@ -279,20 +289,21 @@ main() {
 
   echo "Using JDK $jdk_path"
   echo "Using Android SDK $ANDROID_SDK_ROOT"
-  bubblewrap --version || true
+  echo "Using Bubblewrap $BUBBLEWRAP"
+  "$BUBBLEWRAP" --version || true
 
   # Regenerates mobile/android/app (gitignored) from the committed twa-manifest.json
   # without bumping appVersionCode and without rewriting the manifest.
   (
     cd "$ANDROID_DIR"
-    bubblewrap update --skipVersionUpgrade --manifest="$MANIFEST"
+    "$BUBBLEWRAP" update --skipVersionUpgrade --manifest="$MANIFEST"
   )
   assert_twa_guardrails
   assert_generated_project
 
   (
     cd "$ANDROID_DIR"
-    bubblewrap build --skipPwaValidation --skipSigning --manifest="$MANIFEST"
+    "$BUBBLEWRAP" build --skipPwaValidation --skipSigning --manifest="$MANIFEST"
   )
   assert_twa_guardrails
   copy_artifacts
