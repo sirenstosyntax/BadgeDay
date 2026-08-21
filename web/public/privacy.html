@@ -26,20 +26,27 @@
       <h1>Privacy Policy</h1>
       <p class="dates">
         BadgeDay, a product of Sirens to Syntax LLC<br />
-        Effective date: July 26, 2026 · Last updated: July 26, 2026
+        Effective date: July 26, 2026 · Last updated: August 21, 2026
       </p>
 
       <div class="summary">
         <h2>The short version</h2>
         <p>
-          You upload your department's documents. We turn them into practice questions for
-          you, and that is the only thing we do with them. Your documents are private to
-          your account, are never pooled with anyone else's, and are never used to train
-          anybody's model. We hold your email address so you can sign in, and a link to
-          your Stripe customer record so we know you have paid — we never see your card.
-          We run no analytics on this app, no advertising trackers, and no cross-site
-          tracking of any kind. You can delete any document, or your entire account and
-          everything in it, from inside the app at any time.
+          When you use Oral board, we record the answer you speak, send it to Deepgram to
+          turn into text, keep the text and the notes with your practice, and discard the
+          recording.
+        </p>
+        <p>
+          When you upload documents, we turn them into practice questions for you. Your
+          documents are private to your account, are never pooled with anyone else's, and
+          are never used to train anybody's model.
+        </p>
+        <p>
+          We hold your email address so you can sign in, and a link to your Stripe customer
+          record so we know you have paid — we never see your card. We run no analytics on
+          this app, no advertising trackers, and no cross-site tracking of any kind. You
+          can delete any document, or your entire account and everything in it, from
+          inside the app at any time.
         </p>
         <p>The rest of this document explains that in more detail.</p>
       </div>
@@ -90,6 +97,14 @@
         The extracted text is stored in full, because the citation on every question has to
         resolve back to the exact passage it was drawn from. That is the whole point of the
         product, and it is not achievable without keeping the text.
+      </p>
+
+      <h3>Your spoken answers</h3>
+      <p>
+        When you use Oral board, we record the answer you speak. We send that recording to
+        Deepgram to turn it into text. We use the text to write notes on what went well and
+        what to improve. We keep the transcript and those notes with your practice, the
+        same way we keep typed answers. We do not keep the recording.
       </p>
 
       <h3>Your practice</h3>
@@ -158,12 +173,14 @@
 
       <h2>Who processes it, and why</h2>
       <p>
-        Producing cited questions from a PDF means the text passes through a small number of
-        companies. You are entitled to know which, so here is the whole path: the file goes
-        to our storage; the text is extracted by Microsoft Azure's document analysis service;
-        the extracted sections are sent to Anthropic to draft questions from; the questions
-        come back and are stored against your account. Nothing else is done with it at any
-        stage.
+        Producing cited questions from a PDF, and notes from an Oral board answer, means
+        the material passes through a small number of companies. You are entitled to know
+        which, so here is the whole path. For documents: the file goes to our storage; the
+        text is extracted by Microsoft Azure's document analysis service; the extracted
+        sections are sent to Anthropic to draft questions from; the questions come back and
+        are stored against your account. For Oral board: spoken audio goes to Deepgram to
+        be turned into text; that text goes to Anthropic to draft notes. Nothing else is
+        done with it at any stage.
       </p>
       <div class="table-scroll">
         <table>
@@ -191,8 +208,17 @@
             <tr>
               <td>Anthropic</td>
               <td>
-                Receives the extracted sections in order to draft questions from them. Under
-                Anthropic's commercial terms this material is not used to train its models.
+                Receives the extracted sections in order to draft questions from them, and
+                receives Oral board transcripts in order to draft notes on what went well
+                and what to improve. Under Anthropic's commercial terms this material is
+                not used to train its models.
+              </td>
+            </tr>
+            <tr>
+              <td>Deepgram</td>
+              <td>
+                Receives the spoken answer to turn it into text. We do not store the
+                recording after transcription.
               </td>
             </tr>
             <tr>
