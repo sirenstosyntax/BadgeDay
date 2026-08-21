@@ -13,15 +13,13 @@ you a first build, not as something known to work.
 
 Both are blocked on the same two things:
 
-1. **The icons.** See `web/public/icons/README.md`. Bubblewrap reads them out of the web
-   manifest to generate every Android density, and both store listings require a 1024×1024
-   master. Nothing here works without them.
-2. **A decision on the application id.** `com.badgeday.app` is used throughout these
-   configs. It is **permanent** — neither store lets you change it after the first
-   submission, and a wrong one means a new listing and a new app. Confirm it before the
-   first upload. (DrillGround uses `com.sirenstosyntax.drillground`; BadgeDay is a separate
-   consumer brand per `CLAUDE.md`, and badgeday.com is a domain the company controls, so
-   the reversed-domain form is legitimate.)
+1. **The icons.** The Dawn Shield PNGs are in `web/public/icons/`. See that folder's
+   README. Bubblewrap reads them out of the web manifest to generate every Android density,
+   and both store listings require the 1024×1024 master.
+2. **The application id.** `com.badgeday.app` is locked. Do not change it. (DrillGround uses
+   `com.sirenstosyntax.drillground`; BadgeDay is a separate consumer brand per `CLAUDE.md`,
+   and badgeday.com is a domain the company controls, so the reversed-domain form is
+   legitimate.)
 
 ## Android — Trusted Web Activity
 
@@ -35,8 +33,8 @@ npm install -g @bubblewrap/cli
 cd mobile/android
 bubblewrap init --manifest https://app.badgeday.com/manifest.webmanifest
 # twa-manifest.json in this directory is the answer set for that prompt — copy it over the
-# generated one rather than answering by hand, so the Play Billing flag and the Billing
-# Library version are not lost the next time somebody regenerates.
+# generated one rather than answering by hand, so the Play Billing flag stays off the next
+# time somebody regenerates.
 bubblewrap build
 ```
 
@@ -58,17 +56,9 @@ bar still visible.
 
 ### Play Billing
 
-`twa-manifest.json` enables it. Two things to check on the first build, because both are
-easy to get wrong and neither fails loudly:
-
-- **Billing Library 8 or later is required for new apps from 2026-08-31.** That version
-  comes from the `android-browser-helper` dependency Bubblewrap generates, so pin it and
-  verify it in the generated `build.gradle` rather than trusting the default.
-- The purchase flow reaches the page through `PaymentRequest` with the
-  `https://play.google.com/billing` method, and `getDigitalGoodsService` is only defined
-  inside the TWA. Outside one it is `undefined`, which is what lets the same deployed page
-  be a purchasable app on a phone and a Stripe-billed website in a browser tab, with no
-  build split.
+`twa-manifest.json` keeps Play Billing **off**. Do not enable `playBilling`. Official Play
+Billing Library v7's new-app cutoff is 2026-08-31; turning billing on with no products buys
+that deadline for nothing. The purchase flow in the browser stays Stripe (test).
 
 ## iOS — Capacitor
 
