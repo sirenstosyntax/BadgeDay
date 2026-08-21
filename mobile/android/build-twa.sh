@@ -239,27 +239,23 @@ PY
 copy_artifacts() {
   mkdir -p "$TWA_ARTIFACT_DIR"
   local copied=0
-  local name
-  for name in \
-    app-release-unsigned.apk \
-    app-release-bundle.aab \
-    app-release-unsigned.aab \
-    app-release.aab \
-    app-release-signed.apk; do
-    if [ -f "$ANDROID_DIR/$name" ]; then
-      cp -f "$ANDROID_DIR/$name" "$TWA_ARTIFACT_DIR/$name"
-      echo "copied $name -> $TWA_ARTIFACT_DIR/$name"
-      copied=1
-    fi
-  done
-  # Gradle default outputs if bubblewrap left them in app/build.
-  local extra
-  while IFS= read -r extra; do
-    name="$(basename "$extra")"
-    cp -f "$extra" "$TWA_ARTIFACT_DIR/$name"
-    echo "copied $extra -> $TWA_ARTIFACT_DIR/$name"
+  local src dest
+  # Bubblewrap 1.25 --skipSigning writes the aligned APK at the project root
+  # and the bundle under app/build/outputs/bundle/release/.
+  for src in \
+    "$ANDROID_DIR/app-release-unsigned-aligned.apk" \
+    "$ANDROID_DIR/app-release-unsigned.apk" \
+    "$ANDROID_DIR/app/build/outputs/apk/release/app-release-unsigned.apk" \
+    "$ANDROID_DIR/app/build/outputs/bundle/release/app-release.aab"; do
+    [ -f "$src" ] || continue
+    case "$src" in
+      *.aab) dest="$TWA_ARTIFACT_DIR/badgeday-twa-unsigned.aab" ;;
+      *) dest="$TWA_ARTIFACT_DIR/badgeday-twa-unsigned.apk" ;;
+    esac
+    cp -f "$src" "$dest"
+    echo "copied $src -> $dest"
     copied=1
-  done < <(find "$ANDROID_DIR/app/build/outputs" -type f \( -name '*.apk' -o -name '*.aab' \) 2>/dev/null || true)
+  done
   if [ "$copied" -eq 0 ]; then
     echo "error: build finished but no APK/AAB was found under $ANDROID_DIR" >&2
     exit 1
