@@ -34,7 +34,9 @@ jobs:
           python-version: "3.12"
 
       - name: Guardrails — packageId + Play Billing off
-        run: python -m pytest tests/test_twa_billing_off.py -q
+        run: |
+          pip install pytest
+          python -m pytest tests/test_twa_billing_off.py -q
 
       - uses: actions/setup-java@v4
         with:
