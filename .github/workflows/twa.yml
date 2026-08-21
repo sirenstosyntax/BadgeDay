@@ -1,0 +1,60 @@
+# Compile the Play Trusted Web Activity. Not part of the default CI job: the
+# Android SDK download is large and this is not a store submit.
+#
+# Play Billing stays off. The application id stays com.badgeday.app. The
+# wrapper never signs with a release keystore and never calls Play.
+
+name: TWA
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "mobile/android/twa-manifest.json"
+      - "mobile/android/build-twa.sh"
+      - ".github/workflows/twa.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: twa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    name: Unsigned TWA (Play Billing off)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Guardrails — packageId + Play Billing off
+        run: python -m pytest tests/test_twa_billing_off.py -q
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Compile unsigned TWA
+        env:
+          ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
+          TWA_ARTIFACT_DIR: ${{ runner.temp }}/twa-artifacts
+        run: mobile/android/build-twa.sh
+
+      - name: Upload unsigned AAB/APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: badgeday-twa-unsigned
+          path: ${{ runner.temp }}/twa-artifacts/*
+          if-no-files-found: error
+          retention-days: 14

@@ -26,11 +26,25 @@ dist/
 # lost: it is the identity of the app, and Play will not accept an upload signed with a
 # different key. It belongs in a password manager, not in git and not only on a laptop.
 mobile/android/app/
+mobile/android/gradle/
+mobile/android/gradlew
+mobile/android/gradlew.bat
+mobile/android/build.gradle
+mobile/android/settings.gradle
+mobile/android/gradle.properties
+mobile/android/local.properties
+mobile/android/store_icon.png
+mobile/android/manifest-checksum.txt
+mobile/android/*.apk
+mobile/android/*.aab
 mobile/android/*.keystore
 mobile/android/*.jks
 mobile/android/*.keystore.json
 mobile/ios/ios/
 mobile/ios/App/
+
+# Local TWA compile output (unsigned AAB/APK). Not a store submit.
+artifacts/twa/
 
 # Editor / OS
 .DS_Store

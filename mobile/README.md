@@ -28,6 +28,22 @@ Android app. The address bar disappears only when Digital Asset Links verificati
 if it fails, the app still works but shows a URL bar, which is both ugly and a Play quality
 problem.
 
+The committed answer set is `mobile/android/twa-manifest.json`. To compile
+without answering `bubblewrap init` (and without turning Play Billing on):
+
+```bash
+mobile/android/build-twa.sh
+```
+
+That script installs JDK 17 and the Android command-line SDK if they are missing,
+regenerates the gitignored project with `bubblewrap update --skipVersionUpgrade`,
+and builds an **unsigned** AAB/APK. It refuses to run if `packageId` is not
+`com.badgeday.app` or if `features.playBilling.enabled` is not `false`. It never
+creates a keystore, never calls `bubblewrap play`, and never submits to Play.
+
+The older interactive path is still valid if you need to regenerate the answer
+set from the live web manifest:
+
 ```bash
 npm install -g @bubblewrap/cli
 cd mobile/android
