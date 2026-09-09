@@ -83,11 +83,28 @@ class Settings(BaseSettings):
     # upload cannot be read wholesale into the process memory of a request handler.
     max_upload_bytes: int = 25 * 1024 * 1024
 
+    # --- Recruit access (ship gate #3) ---------------------------------------
+    # Free first session(s) without a card. Further attempts need Recruit
+    # entitlement, which #4 will read from entitlements(user, module). Until
+    # then has_recruit_access is a stub that returns false.
+    recruit_free_sessions: int = 1
+    # Cost ceiling while the bank is still one C2 prompt. 10/day is enough for
+    # a real practice day and cheap enough that a leaked magic-link cannot run
+    # up an unbounded Anthropic bill. UTC day.
+    recruit_daily_attempt_limit: int = 10
+
     # --- Stripe --------------------------------------------------------------
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
     stripe_price_id_monthly: str = ""
     stripe_price_id_intensive_90day: str = ""
+    # Recruit prices — placeholders for ship gate #4. Leave blank. Do not invent
+    # live Stripe product IDs here; BadgeDay does not take real Recruit money
+    # until the entitlements table and store SKUs exist. Naming follows
+    # badgeday_pricing.md (monthly / 6-month / annual), not Promote's pair.
+    stripe_price_id_recruit_monthly: str = ""
+    stripe_price_id_recruit_6month: str = ""
+    stripe_price_id_recruit_annual: str = ""
     # Length of the one-time intensive pass. The price is set in Stripe; how long the pass
     # it buys grants access is our decision, kept here so "90-day" is not welded into a
     # timedelta at the point a webhook grants it.
@@ -117,6 +134,10 @@ class Settings(BaseSettings):
     play_package_name: str = ""
     play_product_id_monthly: str = ""
     play_product_id_intensive_90day: str = ""
+    # Recruit Play SKUs — placeholders for #4. Blank; do not invent live IAP ids.
+    play_product_id_recruit_monthly: str = ""
+    play_product_id_recruit_6month: str = ""
+    play_product_id_recruit_annual: str = ""
     # The service account that may read purchase state from the Play Developer API, as the
     # JSON key file's contents. A purchase token means nothing without this call — the
     # notification carries no expiry date.
@@ -130,6 +151,10 @@ class Settings(BaseSettings):
     appstore_bundle_id: str = ""
     appstore_product_id_monthly: str = ""
     appstore_product_id_intensive_90day: str = ""
+    # Recruit App Store SKUs — placeholders for #4. Blank; do not invent live IAP ids.
+    appstore_product_id_recruit_monthly: str = ""
+    appstore_product_id_recruit_6month: str = ""
+    appstore_product_id_recruit_annual: str = ""
     # App Store Server API credentials, used to check a transaction against Apple rather
     # than trust the receipt the device presented.
     appstore_issuer_id: str = ""

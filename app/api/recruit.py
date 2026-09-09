@@ -1,42 +1,45 @@
-"""C2 spoken question: issue the CLI prompt, transcribe, persist a verified critique.
+"""C2 spoken question: issue the prompt, enqueue the critique, poll the result.
 
 One criterion. The question text is `QUESTIONS["c2"]` from the CLI — not a bank,
-not C3. The response is `candidate_lines` only. Score, route, determination, and
-clause ids stay on the server via 0010; they are not in this payload.
+not C3. The poll payload is `candidate_lines` only. Score, route, determination,
+and clause ids stay on the server via 0010 / 0011; they are not in this payload.
 
-The live path uses Deepgram only. If the key is unset this returns 503 rather than
-critiquing a fixture. `get_transcriber` stays for tests.
+The live worker uses Deepgram only. If the key is unset this returns 503 rather
+than enqueueing work that cannot run. `get_transcriber` stays for tests.
 
-Word timestamps from that transcript are run through `metrics.compute` and passed
-into `critique_answer`. Without them the prompt falls back to "no delivery metrics
-were computed" and production critiques cannot cite pace, pauses, or filler.
+Word timestamps from that transcript are run through `metrics.compute` on the
+worker and passed into `critique_answer`. Without them the prompt falls back to
+"no delivery metrics were computed" and production critiques cannot cite pace,
+pauses, or filler.
 
-No subscription check. This slice is not a Stripe path.
 Audio is transcribed and discarded. `audio_retained` stays false.
 """
 
-import tempfile
 from datetime import UTC, datetime
-from pathlib import Path
+from typing import Literal
 
-from anthropic import Anthropic
 from fastapi import APIRouter, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
-from app.api.deps import CurrentUserDep, SettingsDep
-from app.audio.deepgram import DeepgramTranscriber
+from app.api.deps import CurrentUserDep, DbDep, SettingsDep
 from app.audio.metrics import compute
 from app.audio.models import Transcript
-from app.critique import rubric as rubric_module
 from app.critique.cli import QUESTIONS
-from app.critique.critiquer import RecruitPersist, critique_answer
 from app.critique.models import Metric
-from app.critique.render import candidate_lines
+from app.recruit.gate import RecruitAccessDenied, check_recruit_access
+from app.storage.recruit import (
+    count_attempts,
+    create_queued_attempt,
+    get_attempt,
+    utc_day_start,
+)
 
 router = APIRouter(prefix="/recruit", tags=["recruit"])
 
 C2_SCENARIO_ID = "c2"
 MAX_AUDIO_BYTES = 10 * 1024 * 1024
+
+AttemptViewStatus = Literal["queued", "running", "completed", "critique_failed"]
 
 
 class RecruitQuestion(BaseModel):
@@ -45,10 +48,15 @@ class RecruitQuestion(BaseModel):
 
 
 class RecruitResult(BaseModel):
-    """What the mic screen is allowed to show. No score field on purpose."""
+    """What the mic screen is allowed to show. No score field on purpose.
+
+    Used for both the 202 enqueue acknowledgement and the poll payload.
+    `lines` is empty until the worker finishes.
+    """
 
     attempt_id: str | None
-    lines: list[str]
+    status: AttemptViewStatus = "queued"
+    lines: list[str] = []
     failed: bool = False
     failure: str | None = None
 
@@ -78,12 +86,20 @@ def issued_question(_user: CurrentUserDep) -> RecruitQuestion:
     )
 
 
-@router.post("/attempts", status_code=status.HTTP_201_CREATED)
+@router.post("/attempts", status_code=status.HTTP_202_ACCEPTED)
 def submit_attempt(
     user: CurrentUserDep,
+    db: DbDep,
     settings: SettingsDep,
     audio: UploadFile,
 ) -> RecruitResult:
+    """Accept a recording and return 202. The worker transcribes and critiques.
+
+    Auth is required. The first `recruit_free_sessions` attempts (default 1)
+    need no card. Further attempts need Recruit entitlement (#4) or this
+    answers 402. A UTC daily ceiling (`recruit_daily_attempt_limit`, default
+    10) answers 429 even for an entitled candidate.
+    """
     if not settings.transcription_configured:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -95,7 +111,6 @@ def submit_attempt(
             "Critique is not configured.",
         )
 
-    started_at = datetime.now(UTC)
     data = audio.file.read(MAX_AUDIO_BYTES + 1)
     if len(data) > MAX_AUDIO_BYTES:
         raise HTTPException(
@@ -105,50 +120,43 @@ def submit_attempt(
     if not data:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "That recording is empty.")
 
-    name = Path(audio.filename or "answer.webm")
-    suffix = name.suffix or ".webm"
-    stem = name.stem or "answer"
-    with tempfile.TemporaryDirectory() as tmpdir:
-        path = Path(tmpdir) / f"{stem}{suffix}"
-        path.write_bytes(data)
-        try:
-            transcript = DeepgramTranscriber(settings).transcribe(path)
-        except Exception as exc:
-            raise HTTPException(
-                status.HTTP_502_BAD_GATEWAY,
-                "The recording could not be transcribed.",
-            ) from exc
-
-    if transcript.is_empty or not transcript.text.strip():
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "There was not enough in that recording to make a transcript.",
+    try:
+        check_recruit_access(
+            db,
+            user.id,
+            settings,
+            today_count=count_attempts(db, started_on_or_after=utc_day_start()),
+            lifetime_count=count_attempts(db),
         )
+    except RecruitAccessDenied as exc:
+        raise HTTPException(exc.status_code, exc.detail) from exc
 
-    rubric = rubric_module.load(C2_SCENARIO_ID)
-    outcome = critique_answer(
-        rubric=rubric,
-        question=QUESTIONS[C2_SCENARIO_ID],
-        transcript=transcript.text,
-        client=Anthropic(api_key=settings.anthropic_api_key),
-        settings=settings,
-        metrics=metrics_for_critique(transcript),
-        persist=RecruitPersist(
-            user_id=user.id,
-            scenario_id=C2_SCENARIO_ID,
-            started_at=started_at,
-        ),
+    started_at = datetime.now(UTC)
+    record = create_queued_attempt(
+        db,
+        user.id,
+        scenario_id=C2_SCENARIO_ID,
+        question_text=QUESTIONS[C2_SCENARIO_ID],
+        started_at=started_at,
+        filename=audio.filename or "answer.webm",
+        data=data,
     )
+    return RecruitResult(attempt_id=record.id, status="queued")
 
-    if outcome.critique is None or not outcome.critique.points:
-        raise HTTPException(
-            status.HTTP_502_BAD_GATEWAY,
-            "The critique could not be verified.",
-        )
 
+@router.get("/attempts/{attempt_id}")
+def read_attempt(attempt_id: str, db: DbDep) -> RecruitResult:
+    """Poll one attempt. 404 for missing and for somebody else's id."""
+    record = get_attempt(db, attempt_id)
+    if record is None or record.status == "abandoned":
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such attempt.")
+    if record.status not in ("queued", "running", "completed", "critique_failed"):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such attempt.")
+    failed = record.status == "critique_failed"
     return RecruitResult(
-        attempt_id=outcome.attempt_id,
-        lines=candidate_lines(outcome.critique),
-        failed=bool(outcome.failure),
-        failure=None,
+        attempt_id=record.id,
+        status=record.status,
+        lines=record.candidate_lines if record.status == "completed" else [],
+        failed=failed or bool(record.error and record.status == "completed"),
+        failure=record.error if failed else None,
     )

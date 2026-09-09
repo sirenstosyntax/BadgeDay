@@ -17,7 +17,7 @@ from supabase import Client
 
 logger = logging.getLogger(__name__)
 
-JobKind = Literal["ingest", "generate"]
+JobKind = Literal["ingest", "generate", "recruit_critique"]
 JobStatus = Literal["queued", "running", "succeeded", "failed"]
 
 # Backoff between attempts, indexed by the attempt that just failed. Ingestion failures
@@ -34,7 +34,8 @@ STALE_AFTER = timedelta(minutes=30)
 class Job(BaseModel):
     id: str
     kind: JobKind
-    document_id: str
+    document_id: str | None = None
+    attempt_id: str | None = None
     status: JobStatus
     attempts: int
     max_attempts: int
@@ -67,11 +68,13 @@ def fail(db: Client, job: Job, error: str) -> bool:
         # again, and he has not been told. The log line is the alerting hook — alert on it,
         # and see public.dead_jobs for the standing list.
         logger.error(
-            "job %s (%s) exhausted %d attempts and will not be retried; document=%s error=%s",
+            "job %s (%s) exhausted %d attempts and will not be retried; "
+            "document=%s attempt=%s error=%s",
             job.id,
             job.kind,
             job.max_attempts,
             job.document_id,
+            job.attempt_id,
             detail,
         )
         return False
@@ -89,13 +92,26 @@ def fail(db: Client, job: Job, error: str) -> bool:
     return True
 
 
-def enqueue(db: Client, kind: JobKind, document_id: str) -> None:
-    """Queue follow-on work. Ingestion enqueues generation once chunks exist.
+def enqueue(
+    db: Client,
+    kind: JobKind,
+    document_id: str | None = None,
+    *,
+    attempt_id: str | None = None,
+) -> None:
+    """Queue follow-on work.
 
-    Upload-time enqueueing is not done here — that is a trigger, so that a document
-    cannot be created without being queued. See migration 0002.
+    Ingestion enqueues generation once chunks exist. Recruit attempts are
+    enqueued by `submit_queued_recruit_attempt` (migration 0011) so the HTTP
+    handler never holds a service-role client. This helper is the Python side
+    of the same insert, used by tests and by generate follow-on work.
     """
-    db.table("jobs").insert({"kind": kind, "document_id": document_id}).execute()
+    row: dict = {"kind": kind}
+    if document_id is not None:
+        row["document_id"] = document_id
+    if attempt_id is not None:
+        row["attempt_id"] = attempt_id
+    db.table("jobs").insert(row).execute()
 
 
 def requeue_stale(db: Client) -> int:

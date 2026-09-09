@@ -20,6 +20,7 @@ from pydantic import ValidationError
 from app.config import Settings
 from app.critique.models import Critique, DraftCritique, Metric
 from app.critique.prompt import SYSTEM_PROMPT, build_retry_message, build_user_message
+from app.critique.render import candidate_lines
 from app.critique.rubric import Rubric
 from app.critique.verify import Rejection, verify_critique
 from app.llm_output import (
@@ -69,6 +70,63 @@ class RecruitPersist:
     scenario_id: str
     started_at: datetime
     audio_retained: bool = False
+    # When set, complete the pre-created queued row (async path) rather than
+    # inserting a new completed attempt (CLI / older persist).
+    attempt_id: str | None = None
+
+
+def _persist_verified(
+    persist: RecruitPersist,
+    question: str,
+    transcript: str,
+    critique: Critique,
+    settings: Settings,
+) -> str | None:
+    """Write a verified critique. Two RPCs: complete a queued row, or insert one."""
+    points = [
+        {
+            "improvement": point.improvement,
+            "observation": point.observation,
+            "ask": point.ask,
+            "answer_quote": point.answer_quote,
+        }
+        for point in critique.points
+    ]
+    shared = {
+        "p_transcript": transcript,
+        "p_outcome": critique.outcome,
+        "p_points": points,
+        "p_internal_score": critique.internal_score,
+        "p_route": critique.route,
+        "p_determination": critique.determination,
+        "p_deciding_clause_id": (
+            critique.deciding_clause.clause_id if critique.deciding_clause else None
+        ),
+        "p_criterion_id": critique.criterion_id,
+        "p_criterion_name": critique.criterion_name,
+    }
+    if persist.attempt_id:
+        name = "complete_queued_recruit_attempt"
+        args = {
+            "p_attempt_id": persist.attempt_id,
+            "p_candidate_lines": candidate_lines(critique),
+            **shared,
+        }
+    else:
+        name = "persist_recruit_completed_attempt"
+        args = {
+            "p_user_id": persist.user_id,
+            "p_scenario_id": persist.scenario_id,
+            "p_question_text": question,
+            "p_started_at": persist.started_at.isoformat(),
+            "p_audio_retained": persist.audio_retained,
+            **shared,
+        }
+    response = service_client(settings).rpc(name, args).execute()
+    data = response.data
+    if isinstance(data, list) and data:
+        data = data[0]
+    return str(data) if data else persist.attempt_id
 
 
 def _request_draft(client: Anthropic, settings: Settings, messages: list[dict]) -> DraftCritique:
@@ -181,41 +239,9 @@ def critique_answer(
         if enough and not rejections:
             if persist is not None:
                 try:
-                    response = service_client(settings).rpc(
-                        "persist_recruit_completed_attempt",
-                        {
-                            "p_user_id": persist.user_id,
-                            "p_scenario_id": persist.scenario_id,
-                            "p_question_text": question,
-                            "p_started_at": persist.started_at.isoformat(),
-                            "p_transcript": transcript,
-                            "p_outcome": critique.outcome,
-                            "p_points": [
-                                {
-                                    "improvement": point.improvement,
-                                    "observation": point.observation,
-                                    "ask": point.ask,
-                                    "answer_quote": point.answer_quote,
-                                }
-                                for point in critique.points
-                            ],
-                            "p_internal_score": critique.internal_score,
-                            "p_route": critique.route,
-                            "p_determination": critique.determination,
-                            "p_deciding_clause_id": (
-                                critique.deciding_clause.clause_id
-                                if critique.deciding_clause
-                                else None
-                            ),
-                            "p_criterion_id": critique.criterion_id,
-                            "p_criterion_name": critique.criterion_name,
-                            "p_audio_retained": persist.audio_retained,
-                        },
-                    ).execute()
-                    data = response.data
-                    if isinstance(data, list) and data:
-                        data = data[0]
-                    outcome.attempt_id = str(data) if data else None
+                    outcome.attempt_id = _persist_verified(
+                        persist, question, transcript, critique, settings
+                    )
                 except Exception as exc:  # noqa: BLE001 - surfaced on the outcome, not raised
                     outcome.failure = f"persist_failed: {exc}"
             break
