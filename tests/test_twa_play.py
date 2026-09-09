@@ -60,6 +60,25 @@ def test_build_script_does_not_invent_a_sku() -> None:
     assert reads_env
 
 
+def test_billing_permission_is_inserted_inside_the_manifest_element() -> None:
+    """The first '>' in a Bubblewrap manifest is <?xml ...?>. Putting BILLING
+    there makes processReleaseMainManifest fail to parse the file."""
+    import re
+
+    sample = """<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application />
+</manifest>
+"""
+    match = re.search(r"<manifest\b[^>]*>", sample)
+    assert match is not None
+    insert = '\n    <uses-permission android:name="com.android.vending.BILLING" />'
+    patched = sample[: match.end()] + insert + sample[match.end() :]
+    assert patched.startswith("<?xml")
+    assert "<manifest" in patched.split("uses-permission")[0]
+    assert "com.android.vending.BILLING" in patched
+
+
 def test_frontend_play_billing_has_no_hardcoded_product_or_price() -> None:
     """Grant has not named the paid offer. The client must not invent one."""
     source = PLAY_BILLING_TS.read_text() + "\n" + PAYWALL.read_text()

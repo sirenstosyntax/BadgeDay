@@ -305,6 +305,7 @@ ensure_billing_permission() {
     exit 1
   }
   python3 - "$manifest" "$BILLING_PERMISSION" <<'PY'
+import re
 from pathlib import Path
 import sys
 path, permission = Path(sys.argv[1]), sys.argv[2]
@@ -313,15 +314,13 @@ needle = f'android:name="{permission}"'
 if needle in text:
     print(f"AndroidManifest already declares {permission}")
     raise SystemExit(0)
-# Insert immediately after the root <manifest ...> tag so merge-order cannot
-# drop it. The billingclient AAR also declares this; declaring it ourselves
-# is what we can assert without unpacking the AAR.
-insert = f'    <uses-permission android:name="{permission}" />\n'
-idx = text.find(">")
-if idx == -1:
-    sys.exit("error: AndroidManifest.xml has no root tag")
-# First '>' may be on <manifest ...>.
-text = text[: idx + 1] + "\n" + insert + text[idx + 1 :]
+# After the <manifest ...> opening tag — not after <?xml ...?>, which is the
+# first '>' and would put a permission outside the root element.
+match = re.search(r"<manifest\b[^>]*>", text)
+if not match:
+    sys.exit("error: AndroidManifest.xml has no <manifest> tag")
+insert = f'\n    <uses-permission android:name="{permission}" />'
+text = text[: match.end()] + insert + text[match.end() :]
 path.write_text(text, encoding="utf-8")
 print(f"Declared {permission} in AndroidManifest.xml")
 PY
