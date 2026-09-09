@@ -90,10 +90,11 @@ verification the same as none, and looks configured.
 The TWA host is `app.badgeday.com`. The marketing site on `badgeday.com` is the
 wrong origin for this file.
 
-Verify after deploy (expect HTTP 200 and `Content-Type: application/json`):
+Verify after deploy (expect HTTP 200 and `Content-Type: application/json`).
+Use GET — `curl -I` sends HEAD, and the SPA catch-all is GET-only (405):
 
 ```bash
-curl -sSI https://app.badgeday.com/.well-known/assetlinks.json
+curl -sSI -X GET https://app.badgeday.com/.well-known/assetlinks.json
 curl -sS https://app.badgeday.com/.well-known/assetlinks.json
 ```
 
