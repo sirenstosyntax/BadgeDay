@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 # Compile the BadgeDay Play TWA from mobile/android/twa-manifest.json.
 #
-# Unsigned / skip-signing on purpose: this is a first compile, not a store submit.
-# Play Billing stays off. The application id stays com.badgeday.app. This script
-# never calls bubblewrap play, never creates IAP, and never writes a keystore.
+# Play Billing is on: the generated AAB must carry BILLING and the Digital
+# Goods / PaymentActivity wiring so a SKU can be attached later. This script
+# never invents an in-app product, never calls `bubblewrap play`, and never
+# writes a keystore unless CI/env already supplied one.
+#
+# Signing (optional): if TWA_KEYSTORE_BASE64, TWA_KEYSTORE_PASSWORD,
+# TWA_KEY_ALIAS and TWA_KEY_PASSWORD are all set, the AAB is signed with that
+# upload key. Passwords are read from the environment only — never printed,
+# never written into the repo. Without those four, the AAB is unsigned and
+# Play Console will not accept it until Grant signs it.
 #
 # Usage (from anywhere):
 #   mobile/android/build-twa.sh
@@ -13,6 +20,9 @@
 #   TWA_JDK_PATH         JDK 17 home (auto-detected when unset)
 #   TWA_ARTIFACT_DIR     where to copy the AAB/APK (default: $PWD/artifacts/twa)
 #   TWA_SKIP_TOOLCHAIN=1 skip JDK / SDK / bubblewrap installs (CI with preinstalled tools)
+#   TWA_KEYSTORE_BASE64  upload keystore, base64 (CI secret; not a password)
+#   TWA_KEYSTORE_PASSWORD / TWA_KEY_ALIAS / TWA_KEY_PASSWORD
+#   TWA_SKIP_SIGNING=1   force unsigned even if signing secrets are present
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -26,12 +36,19 @@ COMPILE_SDK='36'
 CMDLINE_TOOLS_URL='https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip'
 CMDLINE_TOOLS_SHA256='4e4c464f145a7512b57d088ac6c278c03c9eea610886b35a5e0804e74eedf583'
 BUBBLEWRAP_PKG='@bubblewrap/cli@1.25.0'
+# Bubblewrap 1.25's PlayBillingFeature pins this helper; its POM pulls
+# com.android.billingclient:billing:8.3.0 (Play's v8+ new-app requirement).
+BILLING_HELPER='com.google.androidbrowserhelper:billing:1.2.0'
+BILLING_PERMISSION='com.android.vending.BILLING'
 
 ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$HOME/.android-sdk}"
 TWA_ARTIFACT_DIR="${TWA_ARTIFACT_DIR:-$REPO_ROOT/artifacts/twa}"
 TWA_SKIP_TOOLCHAIN="${TWA_SKIP_TOOLCHAIN:-0}"
+TWA_SKIP_SIGNING="${TWA_SKIP_SIGNING:-0}"
 TWA_NPM_PREFIX="${TWA_NPM_PREFIX:-$HOME/.cache/badgeday-twa}"
 BUBBLEWRAP=""
+SIGNED_RELEASE=0
+KEYSTORE_FILE=""
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -51,14 +68,19 @@ errors = []
 if manifest.get("packageId") != expected:
     errors.append(f"packageId is {manifest.get('packageId')!r}, expected {expected!r}")
 billing = (manifest.get("features") or {}).get("playBilling") or {}
-if billing.get("enabled") is not False:
-    errors.append(f"features.playBilling.enabled is {billing.get('enabled')!r}, expected False")
+if billing.get("enabled") is not True:
+    errors.append(f"features.playBilling.enabled is {billing.get('enabled')!r}, expected True")
+alpha = manifest.get("alphaDependencies") or {}
+if alpha.get("enabled") is not True:
+    errors.append(f"alphaDependencies.enabled is {alpha.get('enabled')!r}, expected True")
+if manifest.get("host") != "app.badgeday.com":
+    errors.append(f"host is {manifest.get('host')!r}, expected 'app.badgeday.com'")
 if errors:
     print("TWA guardrail failed:", file=sys.stderr)
     for item in errors:
         print(f"  - {item}", file=sys.stderr)
     sys.exit(1)
-print(f"TWA guardrails ok: packageId={expected} playBilling=false")
+print(f"TWA guardrails ok: packageId={expected} playBilling=true host=app.badgeday.com")
 PY
 }
 
@@ -134,7 +156,7 @@ install_android_sdk() {
     mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
     rm -f "$zip"
     ln -sfn cmdline-tools/latest/bin "$ANDROID_SDK_ROOT/bin"
-    sdkmanager="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+    sdkmanager="$ANDROID_SDK_ROOT/bin/sdkmanager"
   fi
 
   # sdkmanager is a wrapper that lives next to lib/; calling the symlink at
@@ -206,77 +228,224 @@ open(path, "a").write("\n")
 PY
 }
 
+signing_secrets_present() {
+  [ -n "${TWA_KEYSTORE_BASE64:-}" ] \
+    && [ -n "${TWA_KEYSTORE_PASSWORD:-}" ] \
+    && [ -n "${TWA_KEY_ALIAS:-}" ] \
+    && [ -n "${TWA_KEY_PASSWORD:-}" ]
+}
+
+prepare_upload_keystore() {
+  SIGNED_RELEASE=0
+  KEYSTORE_FILE=""
+  if [ "$TWA_SKIP_SIGNING" = 1 ]; then
+    echo "Signing skipped (TWA_SKIP_SIGNING=1). The AAB will be unsigned."
+    return
+  fi
+  if ! signing_secrets_present; then
+    echo "No upload-keystore secrets in the environment. The AAB will be unsigned."
+    echo "Grant: add TWA_KEYSTORE_BASE64 / TWA_KEYSTORE_PASSWORD / TWA_KEY_ALIAS / TWA_KEY_PASSWORD as CI secrets to produce a Play-uploadable signed AAB."
+    return
+  fi
+  local dest="${TWA_KEYSTORE_FILE:-${RUNNER_TEMP:-/tmp}/badgeday-upload.keystore}"
+  mkdir -p "$(dirname "$dest")"
+  python3 - "$dest" <<'PY'
+import base64, os, sys
+path = sys.argv[1]
+raw = os.environ["TWA_KEYSTORE_BASE64"].strip()
+# Tolerate whitespace / newlines that GitHub secrets sometimes grow.
+raw = "".join(raw.split())
+data = base64.b64decode(raw)
+if len(data) < 32:
+    sys.exit("error: TWA_KEYSTORE_BASE64 did not decode to a keystore")
+with open(path, "wb") as fh:
+    fh.write(data)
+os.chmod(path, 0o600)
+PY
+  KEYSTORE_FILE="$dest"
+  SIGNED_RELEASE=1
+  echo "Upload keystore written for this build only (not in the repo)."
+}
+
+# After bubblewrap update: require the Digital Goods / Play Billing wiring,
+# and pin the helper version that carries Billing Library 8.3.0.
 assert_generated_project() {
   local gradle="$ANDROID_DIR/app/build.gradle"
+  local manifest="$ANDROID_DIR/app/src/main/AndroidManifest.xml"
   [ -f "$gradle" ] || {
     echo "error: generated $gradle missing" >&2
     exit 1
   }
-  python3 - "$gradle" "$EXPECTED_PACKAGE" <<'PY'
+  python3 - "$gradle" "$manifest" "$EXPECTED_PACKAGE" "$BILLING_HELPER" <<'PY'
 import sys
-gradle, expected = open(sys.argv[1], encoding="utf-8").read(), sys.argv[2]
+gradle_path, manifest_path, expected, helper = sys.argv[1:5]
+gradle = open(gradle_path, encoding="utf-8").read()
+manifest = open(manifest_path, encoding="utf-8").read() if manifest_path else ""
 errors = []
 if f'applicationId "{expected}"' not in gradle and f"applicationId '{expected}'" not in gradle:
     errors.append(f"generated app/build.gradle does not set applicationId {expected}")
-billing_needles = (
-    "play-services-billing",
-    "billing.Billing",
-    "DigitalGoods",
-    "com.android.billingclient",
-)
-for needle in billing_needles:
-    if needle.lower() in gradle.lower():
-        errors.append(f"generated app/build.gradle mentions Play Billing ({needle})")
+if helper not in gradle and "androidbrowserhelper:billing" not in gradle:
+    errors.append("generated app/build.gradle is missing the Play Billing helper")
+needles = ("PaymentActivity", "DigitalGoodsRequestHandler", "play.google.com/billing")
+if manifest and not any(n in manifest for n in needles):
+    errors.append("generated AndroidManifest.xml has no Play Billing / Digital Goods component")
 if errors:
     print("Generated project guardrail failed:", file=sys.stderr)
     for item in errors:
         print(f"  - {item}", file=sys.stderr)
     sys.exit(1)
-print("Generated project ok: applicationId set, no Play Billing dependency")
+print("Generated project ok: applicationId set, Play Billing helper present")
 PY
 }
 
-# True when the path is a signed release APK. Unsigned / skip-signing
-# outputs contain "unsigned" in the name and are allowed.
-is_signed_release_apk() {
-  local base
-  base="$(basename "$1")"
-  case "$base" in
-    *unsigned*) return 1 ;;
-    *signed*.apk|app-release-signed.apk) return 0 ;;
-  esac
-  return 1
+ensure_billing_permission() {
+  local manifest="$ANDROID_DIR/app/src/main/AndroidManifest.xml"
+  [ -f "$manifest" ] || {
+    echo "error: generated $manifest missing" >&2
+    exit 1
+  }
+  python3 - "$manifest" "$BILLING_PERMISSION" <<'PY'
+from pathlib import Path
+import sys
+path, permission = Path(sys.argv[1]), sys.argv[2]
+text = path.read_text(encoding="utf-8")
+needle = f'android:name="{permission}"'
+if needle in text:
+    print(f"AndroidManifest already declares {permission}")
+    raise SystemExit(0)
+# Insert immediately after the root <manifest ...> tag so merge-order cannot
+# drop it. The billingclient AAR also declares this; declaring it ourselves
+# is what we can assert without unpacking the AAR.
+insert = f'    <uses-permission android:name="{permission}" />\n'
+idx = text.find(">")
+if idx == -1:
+    sys.exit("error: AndroidManifest.xml has no root tag")
+# First '>' may be on <manifest ...>.
+text = text[: idx + 1] + "\n" + insert + text[idx + 1 :]
+path.write_text(text, encoding="utf-8")
+print(f"Declared {permission} in AndroidManifest.xml")
+PY
+}
+
+# Gradle reads the four signing env vars. Passwords stay in the process
+# environment; they are not written to a properties file in the tree.
+apply_release_signing() {
+  [ "$SIGNED_RELEASE" = 1 ] || return 0
+  local gradle="$ANDROID_DIR/app/build.gradle"
+  python3 - "$gradle" "$KEYSTORE_FILE" <<'PY'
+from pathlib import Path
+import sys
+path, keystore = Path(sys.argv[1]), sys.argv[2]
+text = path.read_text(encoding="utf-8")
+if "signingConfig signingConfigs.release" in text:
+    print("Release signing config already present")
+    raise SystemExit(0)
+block = """
+    signingConfigs {
+        release {
+            storeFile file(%r)
+            storePassword System.getenv("TWA_KEYSTORE_PASSWORD")
+            keyAlias System.getenv("TWA_KEY_ALIAS")
+            keyPassword System.getenv("TWA_KEY_PASSWORD")
+        }
+    }
+""" % keystore
+# Place signingConfigs inside the android { } block, before buildTypes if we can.
+marker = "    buildTypes {"
+if marker in text:
+    text = text.replace(marker, block + marker, 1)
+else:
+    text = text.replace("android {", "android {\n" + block, 1)
+text = text.replace(
+    "        release {\n",
+    "        release {\n            signingConfig signingConfigs.release\n",
+    1,
+)
+path.write_text(text, encoding="utf-8")
+print("Release signing config applied from CI env (passwords not written to disk)")
+PY
 }
 
 copy_artifacts() {
   mkdir -p "$TWA_ARTIFACT_DIR"
   local copied=0
-  local src dest
-  # Bubblewrap 1.25 --skipSigning writes the aligned APK at the project root
-  # and the bundle under app/build/outputs/bundle/release/. Never pick up
-  # app-release-signed.apk even if a later Bubblewrap run emits one.
-  for src in \
-    "$ANDROID_DIR/app-release-unsigned-aligned.apk" \
-    "$ANDROID_DIR/app-release-unsigned.apk" \
-    "$ANDROID_DIR/app/build/outputs/apk/release/app-release-unsigned.apk" \
-    "$ANDROID_DIR/app/build/outputs/bundle/release/app-release.aab"; do
-    [ -f "$src" ] || continue
-    if is_signed_release_apk "$src"; then
-      echo "skipping signed release APK $src"
-      continue
+  local src dest note
+  local aab="$ANDROID_DIR/app/build/outputs/bundle/release/app-release.aab"
+  local apk_unsigned="$ANDROID_DIR/app/build/outputs/apk/release/app-release-unsigned.apk"
+  local apk_signed="$ANDROID_DIR/app/build/outputs/apk/release/app-release.apk"
+
+  if [ -f "$aab" ]; then
+    if [ "$SIGNED_RELEASE" = 1 ]; then
+      dest="$TWA_ARTIFACT_DIR/badgeday-twa.aab"
+    else
+      dest="$TWA_ARTIFACT_DIR/badgeday-twa-unsigned.aab"
     fi
-    case "$src" in
-      *.aab) dest="$TWA_ARTIFACT_DIR/badgeday-twa-unsigned.aab" ;;
-      *) dest="$TWA_ARTIFACT_DIR/badgeday-twa-unsigned.apk" ;;
-    esac
+    cp -f "$aab" "$dest"
+    echo "copied $aab -> $dest"
+    copied=1
+  fi
+
+  # APK is optional; Play wants the AAB. Keep one around for sideload smoke tests.
+  for src in "$apk_unsigned" "$apk_signed"; do
+    [ -f "$src" ] || continue
+    dest="$TWA_ARTIFACT_DIR/badgeday-twa-unsigned.apk"
+    [ "$SIGNED_RELEASE" = 1 ] && dest="$TWA_ARTIFACT_DIR/badgeday-twa.apk"
     cp -f "$src" "$dest"
     echo "copied $src -> $dest"
     copied=1
+    break
   done
+
   if [ "$copied" -eq 0 ]; then
-    echo "error: build finished but no unsigned APK/AAB was found under $ANDROID_DIR" >&2
+    echo "error: build finished but no AAB/APK was found under $ANDROID_DIR" >&2
     exit 1
   fi
+
+  # Confirm the packaged AAB still names the billing permission. The proto-xml
+  # inside an AAB keeps the permission string in cleartext.
+  if [ -f "$aab" ]; then
+    python3 - "$aab" "$BILLING_PERMISSION" <<'PY'
+import sys, zipfile
+aab, permission = sys.argv[1], sys.argv[2]
+with zipfile.ZipFile(aab) as zf:
+    names = zf.namelist()
+    payload = b""
+    for name in names:
+        if name.endswith("AndroidManifest.xml"):
+            payload += zf.read(name)
+    if permission.encode() not in payload:
+        sys.exit(f"error: {aab} AndroidManifest does not mention {permission}")
+print(f"AAB declares {permission}")
+PY
+  fi
+
+  note="$TWA_ARTIFACT_DIR/BUILD_NOTES.txt"
+  {
+    echo "packageId=$EXPECTED_PACKAGE"
+    echo "host=app.badgeday.com"
+    echo "playBilling=true"
+    echo "signed=$SIGNED_RELEASE"
+    echo "billingPermission=$BILLING_PERMISSION"
+    echo "billingHelper=$BILLING_HELPER"
+    if [ "$SIGNED_RELEASE" = 1 ]; then
+      echo "playUpload=ready (signed with the CI upload keystore)"
+    else
+      echo "playUpload=blocked-until-signed"
+      echo "Grant: create an upload keystore, add the four TWA_* CI secrets, re-run this workflow — or sign this AAB locally. Do not commit the keystore or its passwords."
+    fi
+  } > "$note"
+}
+
+bundle_release() {
+  local wrapper="$ANDROID_DIR/gradlew"
+  [ -x "$wrapper" ] || {
+    echo "error: generated $wrapper missing; bubblewrap update did not produce a Gradle wrapper" >&2
+    exit 1
+  }
+  (
+    cd "$ANDROID_DIR"
+    ./gradlew --no-daemon :app:bundleRelease
+  )
 }
 
 main() {
@@ -294,6 +463,7 @@ main() {
   install_android_sdk
   install_bubblewrap
   write_bubblewrap_config "$jdk_path"
+  prepare_upload_keystore
 
   export JAVA_HOME="$jdk_path"
   export ANDROID_HOME="$ANDROID_SDK_ROOT"
@@ -313,11 +483,12 @@ main() {
   )
   assert_twa_guardrails
   assert_generated_project
+  ensure_billing_permission
+  apply_release_signing
 
-  (
-    cd "$ANDROID_DIR"
-    "$BUBBLEWRAP" build --skipPwaValidation --skipSigning --manifest="$MANIFEST"
-  )
+  # Gradle bundle, not `bubblewrap build`: that command prompts for a keystore
+  # password. Signing, when requested, is the env-driven gradle config above.
+  bundle_release
   assert_twa_guardrails
   copy_artifacts
   echo "TWA compile finished. Artifacts in $TWA_ARTIFACT_DIR"

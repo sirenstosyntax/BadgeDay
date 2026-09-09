@@ -1,8 +1,9 @@
 # Compile the Play Trusted Web Activity. Not part of the default CI job: the
 # Android SDK download is large and this is not a store submit.
 #
-# Play Billing stays off. The application id stays com.badgeday.app. The
-# wrapper never signs with a release keystore and never calls Play.
+# Play Billing is on. The application id stays com.badgeday.app. Signing uses
+# repository secrets when present (upload keystore) and produces an unsigned
+# AAB otherwise — never a password committed to the repo.
 
 name: TWA
 
@@ -12,6 +13,8 @@ on:
     paths:
       - "mobile/android/twa-manifest.json"
       - "mobile/android/build-twa.sh"
+      - "mobile/android/assetlinks.template.json"
+      - "tests/test_twa_play.py"
       - ".github/workflows/twa.yml"
 
 permissions:
@@ -23,7 +26,7 @@ concurrency:
 
 jobs:
   compile:
-    name: Unsigned TWA (Play Billing off)
+    name: Play TWA AAB (billing on)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -33,13 +36,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Guardrails — packageId + Play Billing off
+      - name: Guardrails — packageId + Play Billing on
         run: |
           pip install pytest
-          # The test only reads twa-manifest.json. Skip tests/conftest.py — that
+          # The test only reads committed files. Skip tests/conftest.py — that
           # file imports the FastAPI app and would pull in pydantic and the rest
-          # of the backend just to check two JSON fields.
-          python -m pytest --noconftest tests/test_twa_billing_off.py -q
+          # of the backend just to check JSON and source text.
+          python -m pytest --noconftest tests/test_twa_play.py -q
 
       - uses: actions/setup-java@v4
         with:
@@ -50,16 +53,20 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Compile unsigned TWA
+      - name: Compile TWA AAB
         env:
           ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
           TWA_ARTIFACT_DIR: ${{ runner.temp }}/twa-artifacts
+          TWA_KEYSTORE_BASE64: ${{ secrets.TWA_KEYSTORE_BASE64 }}
+          TWA_KEYSTORE_PASSWORD: ${{ secrets.TWA_KEYSTORE_PASSWORD }}
+          TWA_KEY_ALIAS: ${{ secrets.TWA_KEY_ALIAS }}
+          TWA_KEY_PASSWORD: ${{ secrets.TWA_KEY_PASSWORD }}
         run: mobile/android/build-twa.sh
 
-      - name: Upload unsigned AAB/APK
+      - name: Upload Play AAB
         uses: actions/upload-artifact@v4
         with:
-          name: badgeday-twa-unsigned
+          name: badgeday-twa
           path: ${{ runner.temp }}/twa-artifacts/*
           if-no-files-found: error
           retention-days: 14
