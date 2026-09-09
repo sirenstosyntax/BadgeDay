@@ -1,5 +1,34 @@
 import { useEffect, useRef, useState } from 'react'
-import { api } from '../lib/api'
+import { api, ApiError, type RecruitResult } from '../lib/api'
+
+const POLL_MS = 2000
+const POLL_TIMEOUT_MS = 15 * 60 * 1000
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/** POST returns 202; keep asking GET until the worker writes a terminal status. */
+async function pollRecruitAttempt(
+  attemptId: string,
+  isCancelled: () => boolean = () => false,
+): Promise<RecruitResult> {
+  const started = Date.now()
+  while (!isCancelled()) {
+    const view = await api.recruit.get(attemptId)
+    if (view.status === 'completed' || view.status === 'critique_failed') {
+      return view
+    }
+    if (Date.now() - started > POLL_TIMEOUT_MS) {
+      throw new ApiError(
+        504,
+        'That critique is taking too long. Leave and open Oral board again in a moment.',
+      )
+    }
+    await sleep(POLL_MS)
+  }
+  throw new ApiError(499, 'Left before the critique finished.')
+}
 
 type Phase = 'loading' | 'ready' | 'blocked' | 'recording' | 'recorded' | 'submitting' | 'done'
 
@@ -37,23 +66,24 @@ export function Recruit({ onDone }: { onDone: () => void }) {
   const recorder = useRef<MediaRecorder | null>(null)
   const stream = useRef<MediaStream | null>(null)
   const blob = useRef<Blob | null>(null)
+  const left = useRef(false)
 
   useEffect(() => {
-    let cancelled = false
+    left.current = false
     void api.recruit
       .question()
       .then((issued) => {
-        if (cancelled) return
+        if (left.current) return
         setQuestion(issued.question_text)
         setPhase('ready')
       })
       .catch((caught: unknown) => {
-        if (cancelled) return
+        if (left.current) return
         setError(submitErrorMessage(caught, 'Could not load the question.'))
         setPhase('blocked')
       })
     return () => {
-      cancelled = true
+      left.current = true
       stopTracks()
     }
   }, [])
@@ -105,9 +135,17 @@ export function Recruit({ onDone }: { onDone: () => void }) {
     try {
       const mime = blob.current.type || 'audio/webm'
       const file = new File([blob.current], filenameFor(mime), { type: mime })
-      const result = await api.recruit.attempt(file)
+      const accepted = await api.recruit.attempt(file)
+      if (!accepted.attempt_id) {
+        throw new ApiError(502, 'That answer was accepted but no attempt id came back.')
+      }
+      const result = await pollRecruitAttempt(accepted.attempt_id, () => left.current)
+      if (left.current) return
       setLines(result.lines)
-      setPersistFailed(result.failed)
+      setPersistFailed(result.failed && result.status === 'completed')
+      if (result.status === 'critique_failed') {
+        setError(result.failure?.trim() || 'That answer could not be critiqued.')
+      }
       setPhase('done')
     } catch (caught) {
       setError(submitErrorMessage(caught))

@@ -109,7 +109,8 @@ export const api = {
       request<PracticeSession>(`/sessions/${sessionId}/complete`, { method: 'POST' }),
   },
 
-  // C2 spoken question. The result is candidate_lines only — no score on this payload.
+  // C2 spoken question. POST returns 202; poll GET until completed or failed.
+  // The result is candidate_lines only — no score on this payload.
   recruit: {
     question: () =>
       request<{ scenario_id: string; question_text: string }>('/recruit/question'),
@@ -118,6 +119,7 @@ export const api = {
       form.append('audio', file)
       return request<RecruitResult>('/recruit/attempts', { method: 'POST', body: form })
     },
+    get: (attemptId: string) => request<RecruitResult>(`/recruit/attempts/${attemptId}`),
   },
 
   coverage: (documentId?: string) =>
@@ -137,8 +139,11 @@ export type AnswerBody = {
   answered_text?: string | null
 }
 
+export type RecruitAttemptStatus = 'queued' | 'running' | 'completed' | 'critique_failed'
+
 export type RecruitResult = {
   attempt_id: string | null
+  status: RecruitAttemptStatus
   lines: string[]
   failed: boolean
   failure: string | null
