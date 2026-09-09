@@ -11,7 +11,8 @@ Two requirements a live provider has to meet (see `scripts/asr_check.py`):
 2. **Preserved disfluencies.** A transcript cleaned up into fluent prose is a *better*
    transcript by the industry's measure and a useless one by ours.
 
-This slice uses the transcript text only. Filler and pace metrics are not computed here.
+The live `/recruit/attempts` path computes delivery metrics from the returned
+words; this module does not. It only turns audio into a `Transcript`.
 """
 
 from dataclasses import dataclass

@@ -7,6 +7,10 @@ clause ids stay on the server via 0010; they are not in this payload.
 The live path uses Deepgram only. If the key is unset this returns 503 rather than
 critiquing a fixture. `get_transcriber` stays for tests.
 
+Word timestamps from that transcript are run through `metrics.compute` and passed
+into `critique_answer`. Without them the prompt falls back to "no delivery metrics
+were computed" and production critiques cannot cite pace, pauses, or filler.
+
 No subscription check. This slice is not a Stripe path.
 Audio is transcribed and discarded. `audio_retained` stays false.
 """
@@ -21,9 +25,12 @@ from pydantic import BaseModel
 
 from app.api.deps import CurrentUserDep, SettingsDep
 from app.audio.deepgram import DeepgramTranscriber
+from app.audio.metrics import compute
+from app.audio.models import Transcript
 from app.critique import rubric as rubric_module
 from app.critique.cli import QUESTIONS
 from app.critique.critiquer import RecruitPersist, critique_answer
+from app.critique.models import Metric
 from app.critique.render import candidate_lines
 
 router = APIRouter(prefix="/recruit", tags=["recruit"])
@@ -44,6 +51,23 @@ class RecruitResult(BaseModel):
     lines: list[str]
     failed: bool = False
     failure: str | None = None
+
+
+def metrics_for_critique(transcript: Transcript) -> dict[str, Metric]:
+    """Map timestamp arithmetic onto the Metric type `critique_answer` already accepts.
+
+    `compute` returns an audio-side dataclass with notes the prompt does not take.
+    The four fields here are the ones the prompt and the verification gate cite.
+    """
+    return {
+        metric.name: Metric(
+            name=metric.name,
+            value=metric.value,
+            display=metric.display,
+            band=metric.band,
+        )
+        for metric in compute(transcript).metrics
+    }
 
 
 @router.get("/question")
@@ -108,6 +132,7 @@ def submit_attempt(
         transcript=transcript.text,
         client=Anthropic(api_key=settings.anthropic_api_key),
         settings=settings,
+        metrics=metrics_for_critique(transcript),
         persist=RecruitPersist(
             user_id=user.id,
             scenario_id=C2_SCENARIO_ID,
