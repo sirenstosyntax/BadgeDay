@@ -244,9 +244,9 @@ every test written here.
 ## Order of work on our side
 
 1. ~~Store entitlement path — schema, mapping, endpoints, tests.~~ **Done.**
-2. ~~Wrapper configs — TWA and Capacitor.~~ **Written, never compiled**; neither Xcode nor
-   the Android SDK is present in the container this was written in, and the icons are
-   missing.
+2. ~~Wrapper configs — TWA and Capacitor.~~ The Android TWA wrapper has been compiled —
+   Play Billing on, AAB produced, TWA CI green on PR 35 (run 34300563670). Capacitor/iOS
+   is still written, never compiled; there is no Xcode in this container.
 3. ~~The two gateway implementations.~~ **Written, never run against a store.** Now blocked
    only on the credentials in Grant's step 2.
 4. The iOS capability set that clears 4.2 — upload from Files and camera, offline practice,
