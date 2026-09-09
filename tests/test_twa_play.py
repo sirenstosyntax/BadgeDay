@@ -1,5 +1,6 @@
 """Play TWA wrapper: package id locked, billing on, no invented SKU."""
 
+import importlib.util
 import json
 from pathlib import Path
 
@@ -13,6 +14,15 @@ PAYWALL = ROOT / "web/src/ui/Paywall.tsx"
 
 def _manifest() -> dict:
     return json.loads(MANIFEST.read_text())
+
+
+def _twa_gradle():
+    path = ROOT / "mobile/android/twa_gradle.py"
+    spec = importlib.util.spec_from_file_location("twa_gradle", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_package_id_is_permanent() -> None:
@@ -52,10 +62,11 @@ def test_build_script_does_not_invent_a_sku() -> None:
     assert '"$BUBBLEWRAP" play' not in script
     assert "$BUBBLEWRAP play" not in script
     assert "TWA_KEYSTORE_PASSWORD" in script
+    helper = (ROOT / "mobile/android/twa_gradle.py").read_text()
     # The four signing values are env reads, not literals.
     reads_env = (
-        "storePassword System.getenv" in script
-        or 'os.environ["TWA_KEYSTORE_PASSWORD"]' in script
+        "storePassword System.getenv" in helper
+        or 'os.environ["TWA_KEYSTORE_PASSWORD"]' in helper
     )
     assert reads_env
 
@@ -77,6 +88,56 @@ def test_billing_permission_is_inserted_inside_the_manifest_element() -> None:
     assert patched.startswith("<?xml")
     assert "<manifest" in patched.split("uses-permission")[0]
     assert "com.android.vending.BILLING" in patched
+
+
+_MINIMAL_ANDROID = """
+android {
+    compileSdk 36
+    defaultConfig {
+        applicationId "com.badgeday.app"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}
+"""
+
+
+def test_signing_config_attaches_under_build_types_release_not_signing_configs() -> None:
+    """A first-match replace of `release {` hits signingConfigs.release and never signs."""
+    gradle = _twa_gradle()
+    out = gradle.apply_release_signing(_MINIMAL_ANDROID, "/tmp/upload.keystore")
+    assert gradle.signing_config_is_under_build_types_release(out)
+    assert not gradle.signing_config_is_inside_signing_configs_release(out)
+    assert out.count("signingConfig signingConfigs.release") == 1
+    assert "storeFile file(" in out and "/tmp/upload.keystore" in out
+    # Second pass must not duplicate the attach or move it.
+    again = gradle.apply_release_signing(out, "/tmp/upload.keystore")
+    assert gradle.signing_config_is_under_build_types_release(again)
+    assert not gradle.signing_config_is_inside_signing_configs_release(again)
+    assert again.count("signingConfig signingConfigs.release") == 1
+
+
+def test_billing_pin_rejects_an_unpinned_or_old_helper() -> None:
+    """Fail closed: any androidbrowserhelper:billing is not enough."""
+    gradle = _twa_gradle()
+    helper = gradle.PINNED_BILLING_HELPER
+    base = 'applicationId "com.badgeday.app"\n'
+    assert gradle.billing_pin_errors(base + helper) == []
+    assert (
+        gradle.billing_pin_errors(base + "com.android.billingclient:billing:8.3.0") == []
+    )
+    assert (
+        gradle.billing_pin_errors(base + "com.android.billingclient:billing:8.4.1") == []
+    )
+    assert gradle.billing_pin_errors(base + "com.android.billingclient:billing:8.2.0")
+    assert gradle.billing_pin_errors(
+        base + "com.google.androidbrowserhelper:billing:1.1.0"
+    )
+    assert gradle.billing_pin_errors(base + "androidbrowserhelper:billing")
+    assert gradle.billing_pin_errors(base)
 
 
 def test_frontend_play_billing_has_no_hardcoded_product_or_price() -> None:

@@ -40,6 +40,7 @@ BUBBLEWRAP_PKG='@bubblewrap/cli@1.25.0'
 # com.android.billingclient:billing:8.3.0 (Play's v8+ new-app requirement).
 BILLING_HELPER='com.google.androidbrowserhelper:billing:1.2.0'
 BILLING_PERMISSION='com.android.vending.BILLING'
+TWA_GRADLE_PY="$ANDROID_DIR/twa_gradle.py"
 
 ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$HOME/.android-sdk}"
 TWA_ARTIFACT_DIR="${TWA_ARTIFACT_DIR:-$REPO_ROOT/artifacts/twa}"
@@ -276,26 +277,7 @@ assert_generated_project() {
     echo "error: generated $gradle missing" >&2
     exit 1
   }
-  python3 - "$gradle" "$manifest" "$EXPECTED_PACKAGE" "$BILLING_HELPER" <<'PY'
-import sys
-gradle_path, manifest_path, expected, helper = sys.argv[1:5]
-gradle = open(gradle_path, encoding="utf-8").read()
-manifest = open(manifest_path, encoding="utf-8").read() if manifest_path else ""
-errors = []
-if f'applicationId "{expected}"' not in gradle and f"applicationId '{expected}'" not in gradle:
-    errors.append(f"generated app/build.gradle does not set applicationId {expected}")
-if helper not in gradle and "androidbrowserhelper:billing" not in gradle:
-    errors.append("generated app/build.gradle is missing the Play Billing helper")
-needles = ("PaymentActivity", "DigitalGoodsRequestHandler", "play.google.com/billing")
-if manifest and not any(n in manifest for n in needles):
-    errors.append("generated AndroidManifest.xml has no Play Billing / Digital Goods component")
-if errors:
-    print("Generated project guardrail failed:", file=sys.stderr)
-    for item in errors:
-        print(f"  - {item}", file=sys.stderr)
-    sys.exit(1)
-print("Generated project ok: applicationId set, Play Billing helper present")
-PY
+  python3 "$TWA_GRADLE_PY" assert-generated "$gradle" "$manifest" "$EXPECTED_PACKAGE" "$BILLING_HELPER"
 }
 
 ensure_billing_permission() {
@@ -331,38 +313,7 @@ PY
 apply_release_signing() {
   [ "$SIGNED_RELEASE" = 1 ] || return 0
   local gradle="$ANDROID_DIR/app/build.gradle"
-  python3 - "$gradle" "$KEYSTORE_FILE" <<'PY'
-from pathlib import Path
-import sys
-path, keystore = Path(sys.argv[1]), sys.argv[2]
-text = path.read_text(encoding="utf-8")
-if "signingConfig signingConfigs.release" in text:
-    print("Release signing config already present")
-    raise SystemExit(0)
-block = """
-    signingConfigs {
-        release {
-            storeFile file(%r)
-            storePassword System.getenv("TWA_KEYSTORE_PASSWORD")
-            keyAlias System.getenv("TWA_KEY_ALIAS")
-            keyPassword System.getenv("TWA_KEY_PASSWORD")
-        }
-    }
-""" % keystore
-# Place signingConfigs inside the android { } block, before buildTypes if we can.
-marker = "    buildTypes {"
-if marker in text:
-    text = text.replace(marker, block + marker, 1)
-else:
-    text = text.replace("android {", "android {\n" + block, 1)
-text = text.replace(
-    "        release {\n",
-    "        release {\n            signingConfig signingConfigs.release\n",
-    1,
-)
-path.write_text(text, encoding="utf-8")
-print("Release signing config applied from CI env (passwords not written to disk)")
-PY
+  python3 "$TWA_GRADLE_PY" apply-signing "$gradle" "$KEYSTORE_FILE"
 }
 
 copy_artifacts() {
