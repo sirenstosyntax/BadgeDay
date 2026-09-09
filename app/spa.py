@@ -20,6 +20,19 @@ def _is_inside(path: Path) -> bool:
     return path == _DIST or _DIST in path.parents
 
 
+def _file_response(path: Path) -> FileResponse:
+    """Serve a build file, with an explicit type for JSON.
+
+    Play's Digital Asset Links crawler requires ``Content-Type: application/json``
+    for ``/.well-known/assetlinks.json``. ``python:3.12-slim`` does not guarantee
+    a ``.json`` entry in the mimetypes table, and FileResponse would otherwise
+    fall back to ``text/plain``.
+    """
+    if path.suffix == ".json":
+        return FileResponse(path, media_type="application/json")
+    return FileResponse(path)
+
+
 def mount_spa(app: FastAPI) -> bool:
     """Mount the SPA if it has been built. Returns whether it was mounted.
 
@@ -43,7 +56,7 @@ def mount_spa(app: FastAPI) -> bool:
         target = (_DIST / full_path).resolve()
         if full_path and _is_inside(target):
             if target.is_file():
-                return FileResponse(target)
+                return _file_response(target)
 
             # /privacy and /terms are static pages rather than app views, and they are the
             # one part of this product that has to render for someone with no account and
@@ -55,8 +68,8 @@ def mount_spa(app: FastAPI) -> bool:
             if not target.suffix:
                 page = target.with_name(f"{target.name}.html")
                 if _is_inside(page) and page.is_file():
-                    return FileResponse(page)
+                    return _file_response(page)
 
-        return FileResponse(_DIST / "index.html")
+        return _file_response(_DIST / "index.html")
 
     return True

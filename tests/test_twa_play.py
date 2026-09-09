@@ -8,8 +8,13 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "mobile/android/twa-manifest.json"
 BUILD_SCRIPT = ROOT / "mobile/android/build-twa.sh"
 ASSETLINKS = ROOT / "mobile/android/assetlinks.template.json"
+SERVED_ASSETLINKS = ROOT / "web/public/.well-known/assetlinks.json"
 PLAY_BILLING_TS = ROOT / "web/src/lib/playBilling.ts"
 PAYWALL = ROOT / "web/src/ui/Paywall.tsx"
+# Play Console → Setup → App integrity → app signing certificate (classical SHA-256).
+PLAY_APP_SIGNING_SHA256 = (
+    "7F:0E:ED:C2:68:25:86:D0:74:72:EB:DB:8C:AD:39:25:0C:DD:3D:89:F9:3D:28:12:32:04:76:FD:FE:EB:9A:6A"
+)
 
 
 def _manifest() -> dict:
@@ -49,12 +54,22 @@ def test_version_was_bumped_for_the_billing_build() -> None:
     assert manifest["appVersion"] == manifest["appVersionName"]
 
 
-def test_assetlinks_template_has_no_placeholder_served_as_live() -> None:
-    """A served assetlinks.json with REPLACE_WITH_… fails DAL worse than none at all."""
+def test_assetlinks_names_the_play_app_and_signing_cert() -> None:
+    """Play verifies com.badgeday.app against this file on app.badgeday.com."""
     template = json.loads(ASSETLINKS.read_text())
-    assert template[0]["target"]["package_name"] == "com.badgeday.app"
-    served = ROOT / "web/public/.well-known/assetlinks.json"
-    assert not served.exists()
+    live = json.loads(SERVED_ASSETLINKS.read_text())
+    assert template == live
+    statement = live[0]
+    assert statement["relation"] == ["delegate_permission/common.handle_all_urls"]
+    target = statement["target"]
+    assert target["namespace"] == "android_app"
+    assert target["package_name"] == "com.badgeday.app"
+    assert target["sha256_cert_fingerprints"] == [PLAY_APP_SIGNING_SHA256]
+    parts = PLAY_APP_SIGNING_SHA256.split(":")
+    assert len(parts) == 32
+    assert all(len(part) == 2 and part == part.upper() and int(part, 16) >= 0 for part in parts)
+    blob = ASSETLINKS.read_text() + SERVED_ASSETLINKS.read_text()
+    assert "REPLACE_WITH" not in blob
 
 
 def test_build_script_does_not_invent_a_sku() -> None:

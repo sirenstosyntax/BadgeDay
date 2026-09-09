@@ -75,3 +75,17 @@ jobs:
       # image build time and nothing here needs their values to prove the app compiles.
       - name: Build
         run: npm run build
+
+      # Vite must copy public/.well-known into dist. If it dropped the file,
+      # Play's Digital Asset Links fetch would get the SPA HTML instead.
+      - name: Digital Asset Links in dist
+        run: |
+          test -f dist/.well-known/assetlinks.json
+          python3 -c "
+          import json
+          from pathlib import Path
+          data = json.loads(Path('dist/.well-known/assetlinks.json').read_text())
+          target = data[0]['target']
+          assert target['package_name'] == 'com.badgeday.app'
+          assert 'REPLACE_WITH' not in Path('dist/.well-known/assetlinks.json').read_text()
+          "
