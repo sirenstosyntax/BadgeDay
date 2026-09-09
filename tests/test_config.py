@@ -35,6 +35,15 @@ def test_rejection_message_names_the_variable_and_where_to_find_it() -> None:
     assert "Keys and Endpoint" in message
 
 
+def test_recruit_access_defaults() -> None:
+    settings = Settings()
+    assert settings.recruit_free_sessions == 1
+    assert settings.recruit_daily_attempt_limit == 10
+    assert settings.stripe_price_id_recruit_monthly == ""
+    assert settings.play_product_id_recruit_monthly == ""
+    assert settings.appstore_product_id_recruit_monthly == ""
+
+
 def test_configured_requires_both_endpoint_and_key() -> None:
     endpoint = "https://sts-docintel.cognitiveservices.azure.com/"
     assert not Settings(

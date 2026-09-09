@@ -10,19 +10,15 @@ No network. No Deepgram account. No Anthropic account.
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-
-from app.api.deps import CurrentUser, current_user, get_settings
-from app.api.recruit import C2_SCENARIO_ID, RecruitResult, metrics_for_critique, router
+from app.api.recruit import C2_SCENARIO_ID, RecruitResult, metrics_for_critique
 from app.audio.deepgram import DeepgramTranscriber, transcript_from_deepgram
 from app.audio.metrics import compute
 from app.audio.transcriber import FixtureTranscriber, get_transcriber
 from app.config import Settings
 from app.critique import rubric as rubric_module
 from app.critique.cli import QUESTIONS
-from app.critique.critiquer import CritiqueOutcome, RecruitPersist, critique_answer
-from app.critique.models import Critique, DraftCritique, Point
+from app.critique.critiquer import RecruitPersist, critique_answer
+from app.critique.models import DraftCritique
 from app.critique.prompt import build_user_message
 from app.critique.render import candidate_lines
 from tests.test_critiquer import FakeClient, _draft, _run
@@ -116,6 +112,7 @@ def test_recruit_result_has_no_score_field() -> None:
     assert "score" not in RecruitResult.model_fields
     assert "lines" in RecruitResult.model_fields
     assert "attempt_id" in RecruitResult.model_fields
+    assert "status" in RecruitResult.model_fields
 
 
 def test_deepgram_payload_becomes_transcript_text() -> None:
@@ -231,42 +228,16 @@ def test_recruit_ui_has_no_rerecord_after_the_first_take() -> None:
     assert "Record answer" in source
 
 
+def test_recruit_ui_polls_after_202() -> None:
+    source = Path(__file__).resolve().parents[1].joinpath("web/src/ui/Recruit.tsx").read_text()
+    assert "pollRecruitAttempt" in source
+    assert "api.recruit.get" in source
+    assert "api.recruit.attempt" in source
+    api_src = Path(__file__).resolve().parents[1].joinpath("web/src/lib/api.ts").read_text()
+    assert "`/recruit/attempts/${attemptId}`" in api_src or "/recruit/attempts/" in api_src
+
+
 # --- Ship gate #2: delivery metrics on the live attempt → critique path ------
-
-
-def _ok_outcome() -> CritiqueOutcome:
-    return CritiqueOutcome(
-        critique=Critique(
-            criterion_id="c2",
-            criterion_name="Motivation",
-            outcome="scored",
-            determination="He named one thing he has done.",
-            internal_score=3,
-            route="n/a",
-            points=[
-                Point(
-                    kind="rubric",
-                    improvement="inventory",
-                    observation="You named one thing you have done.",
-                    ask=(
-                        "Is there a second step you have taken? "
-                        "If not, that absence is worth knowing."
-                    ),
-                )
-            ],
-        ),
-        attempt_id="attempt-1",
-    )
-
-
-def _recruit_client(settings: Settings) -> TestClient:
-    app = FastAPI()
-    app.include_router(router)
-    app.dependency_overrides[current_user] = lambda: CurrentUser(
-        id=USER_ID, email="c@example.com", access_token="t"
-    )
-    app.dependency_overrides[get_settings] = lambda: settings
-    return TestClient(app)
 
 
 def test_deepgram_word_timestamps_become_critique_metrics() -> None:
@@ -331,49 +302,40 @@ def test_critique_answer_receives_live_metrics_in_the_user_message() -> None:
     assert "filler_per_100" in content
 
 
-def test_submit_attempt_passes_computed_metrics_into_critique_answer(
-    monkeypatch,
-) -> None:
-    """The HTTP handler is the ship-gate item. Metrics must leave this function."""
-    captured: dict = {}
-    transcript = transcript_from_deepgram(DEEPGRAM_PAYLOAD)
+def test_persist_with_attempt_id_completes_the_queued_row(monkeypatch) -> None:
+    calls: list[tuple[str, dict]] = []
 
-    class FakeTranscriber:
-        def __init__(self, settings: Settings) -> None:
-            self.settings = settings
+    class FakeRpc:
+        def rpc(self, name, args):
+            calls.append((name, args))
+            return self
 
-        def transcribe(self, path: Path):
-            assert path.read_bytes() == b"fake-audio"
-            return transcript
+        def execute(self):
+            return type("R", (), {"data": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"})()
 
-    def fake_critique_answer(**kwargs):
-        captured.update(kwargs)
-        return _ok_outcome()
-
-    monkeypatch.setattr("app.api.recruit.DeepgramTranscriber", FakeTranscriber)
-    monkeypatch.setattr("app.api.recruit.critique_answer", fake_critique_answer)
-
-    settings = Settings(
-        deepgram_api_key="dg-test",
-        anthropic_api_key="sk-test",
-        generation_model="claude-sonnet-5",
-        generation_effort="high",
+    monkeypatch.setattr("app.critique.critiquer.service_client", lambda _settings: FakeRpc())
+    rubric = rubric_module.load("c3")
+    settings = Settings(generation_model="claude-sonnet-5", generation_effort="high")
+    started = datetime(2026, 8, 18, 18, 0, tzinfo=UTC)
+    outcome = critique_answer(
+        rubric=rubric,
+        question=QUESTIONS["c2"],
+        transcript=(
+            "There was a lad on my shift at the depot, Ryan, who was turning up late fairly "
+            "regularly. So I asked him about it."
+        ),
+        client=FakeClient([_draft()]),
+        settings=settings,
+        persist=RecruitPersist(
+            user_id="user-1",
+            scenario_id="c2",
+            started_at=started,
+            attempt_id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        ),
     )
-    response = _recruit_client(settings).post(
-        "/recruit/attempts",
-        files={"audio": ("answer.webm", b"fake-audio", "audio/webm")},
-    )
-    assert response.status_code == 201, response.text
-    assert captured["transcript"] == transcript.text
-    assert captured["metrics"], "submit_attempt omitted metrics — critiques get the fallback"
-    expected = metrics_for_critique(transcript)
-    assert set(captured["metrics"]) == set(expected)
-    for name, metric in expected.items():
-        got = captured["metrics"][name]
-        assert got.name == metric.name
-        assert got.value == metric.value
-        assert got.display == metric.display
-        assert got.band == metric.band
-    assert captured["persist"] is not None
-    assert captured["persist"].user_id == USER_ID
-    assert captured["persist"].audio_retained is False
+    assert outcome.failure is None
+    assert calls and calls[0][0] == "complete_queued_recruit_attempt"
+    args = calls[0][1]
+    assert args["p_attempt_id"] == "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    assert isinstance(args["p_candidate_lines"], list)
+    assert args["p_candidate_lines"]

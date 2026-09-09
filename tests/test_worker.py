@@ -12,11 +12,12 @@ import pytest
 
 from app.config import Settings
 from app.worker.jobs import RETRY_DELAYS, Job, claim, fail, succeed
-from app.worker.pipeline import DocumentGone
+from app.worker.pipeline import AttemptGone, DocumentGone, EmptyRecruitAudio
 from app.worker.runner import run_one
 
 SETTINGS = Settings(supabase_url="https://x.supabase.co", supabase_anon_key="k")
 DOC = "22222222-2222-2222-2222-222222222222"
+ATT = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 
 
 def job(**overrides) -> Job:
@@ -224,4 +225,54 @@ def test_a_successful_job_is_marked_and_the_document_untouched(
     db = _claimable()
     assert _run(db, lambda *a: None, monkeypatch) is True
     assert db.updates("jobs")[0]["status"] == "succeeded"
+    assert db.updates("documents") == []
+
+
+def test_a_deleted_attempt_is_not_a_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    def gone(*_: object) -> None:
+        raise AttemptGone(ATT)
+
+    db = _claimable(kind="recruit_critique", document_id=None, attempt_id=ATT)
+    monkeypatch.setattr("app.worker.runner.HANDLERS", {"recruit_critique": gone})
+    assert run_one(db, SETTINGS, "w1") is True
+    assert db.updates("jobs")[0]["status"] == "succeeded"
+    assert db.updates("documents") == []
+
+
+def test_empty_recruit_audio_marks_the_attempt_and_succeeds_the_job(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def empty(*_: object) -> None:
+        raise EmptyRecruitAudio(ATT, "There was not enough in that recording to make a transcript.")
+
+    db = _claimable(kind="recruit_critique", document_id=None, attempt_id=ATT)
+    monkeypatch.setattr("app.worker.runner.HANDLERS", {"recruit_critique": empty})
+    monkeypatch.setattr("app.worker.runner.get_attempt", lambda *_: None)
+    monkeypatch.setattr("app.worker.runner.delete_audio", lambda *_: None)
+    assert run_one(db, SETTINGS, "w1") is True
+    assert db.updates("jobs")[0]["status"] == "succeeded"
+    assert db.updates("recruit_attempts")[0]["status"] == "critique_failed"
+    assert db.updates("documents") == []
+
+
+def test_the_final_recruit_failure_marks_the_attempt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def explode(*_: object) -> None:
+        raise RuntimeError("still broken")
+
+    db = _claimable(
+        kind="recruit_critique",
+        document_id=None,
+        attempt_id=ATT,
+        attempts=3,
+        max_attempts=3,
+    )
+    monkeypatch.setattr("app.worker.runner.HANDLERS", {"recruit_critique": explode})
+    monkeypatch.setattr("app.worker.runner.get_attempt", lambda *_: None)
+    monkeypatch.setattr("app.worker.runner.delete_audio", lambda *_: None)
+    run_one(db, SETTINGS, "w1")
+
+    assert db.updates("jobs")[0]["status"] == "failed"
+    assert db.updates("recruit_attempts")[0]["status"] == "critique_failed"
     assert db.updates("documents") == []
