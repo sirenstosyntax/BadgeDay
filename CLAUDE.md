@@ -270,7 +270,8 @@ are recorded there.
 - Never generate model answers, sample language, or example responses.
   Critique names what is missing and asks for the candidate's own material.
 - Every practice session uses a question the candidate has not seen.
-  No preview, no re-record.
+  No preview, no re-record. The post-take Record again control was
+  removed 2026-09-09 (Grant) so the UI matches this constraint.
 - Do not score answers independently and sum them.
 - Do not build voice-based confidence or emotion detection.
 - Scores are internal. Report progress as behaviors acquired, not as a number.

@@ -155,3 +155,17 @@ def test_persist_after_verify_stores_points_without_score_in_points(monkeypatch)
 def test_draft_schema_still_parses() -> None:
     """Guard: the fake draft used above is still a real DraftCritique."""
     DraftCritique.model_validate(_draft())
+
+
+def test_recruit_ui_has_no_rerecord_after_the_first_take() -> None:
+    """Grant 2026-09-09: no preview, no re-record. The post-take control is gone."""
+    source = Path(__file__).resolve().parents[1].joinpath("web/src/ui/Recruit.tsx").read_text()
+    assert "Record again" not in source
+    assert "phase !== 'ready'" in source
+    _before, sep, rest = source.partition("{phase === 'recorded' && (")
+    assert sep
+    recorded_block, end, _tail = rest.partition("{phase === 'submitting'")
+    assert end
+    assert "Submit" in recorded_block
+    assert "startRecording" not in recorded_block
+    assert "Record answer" in source

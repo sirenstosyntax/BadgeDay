@@ -341,6 +341,7 @@ The distinction already existed in the `improvement` field and was invisible on 
 ## 4. Practice loop
 
 **[SETTLED] Novel question every session. No preview. Timed. No re-record.**
+The post-take Record again control was removed 2026-09-09 (Grant) so the UI matches this constraint.
 
 *Rationale — this is the core insight of the session.* The skill a board tests is not "answer this question well," it is "construct an answer to something you haven't seen, right now." Repeating a question trains the former and produces a candidate who is excellent at one question and back to square one on the next. Allowing a re-record converts construction into rehearsal and the actual skill never gets exercised.
 
