@@ -248,7 +248,10 @@ def _ok_outcome() -> CritiqueOutcome:
                     kind="rubric",
                     improvement="inventory",
                     observation="You named one thing you have done.",
-                    ask="Is there a second step you have taken? If not, that absence is worth knowing.",
+                    ask=(
+                        "Is there a second step you have taken? "
+                        "If not, that absence is worth knowing."
+                    ),
                 )
             ],
         ),
@@ -312,7 +315,7 @@ def test_critique_answer_receives_live_metrics_in_the_user_message() -> None:
     transcript = transcript_from_deepgram(DEEPGRAM_PAYLOAD)
     client = FakeClient([_draft()])
     settings = Settings(generation_model="claude-sonnet-5", generation_effort="high")
-    outcome = critique_answer(
+    critique_answer(
         rubric=rubric_module.load("c3"),
         question=QUESTIONS["c2"],
         transcript=transcript.text,
