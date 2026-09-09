@@ -6,6 +6,8 @@ The rest is the ordinary SPA arrangement — index.html for client routes, real 
 assets.
 """
 
+import json
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -56,6 +58,26 @@ def test_a_real_asset_is_served_as_itself(client: TestClient) -> None:
     response = client.get("/favicon.svg")
     assert response.status_code == 200
     assert "<svg>" in response.text
+
+
+def test_assetlinks_is_json_not_the_spa(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Play fetches /.well-known/assetlinks.json and requires application/json."""
+    dist = (tmp_path / "dist").resolve()
+    well_known = dist / ".well-known"
+    well_known.mkdir(parents=True)
+    (dist / "assets").mkdir()
+    (dist / "index.html").write_text("<!doctype html><title>BadgeDay</title>")
+    statement = [{"relation": ["delegate_permission/common.handle_all_urls"]}]
+    (well_known / "assetlinks.json").write_text(json.dumps(statement))
+    monkeypatch.setattr(spa_module, "_DIST", dist)
+
+    app = FastAPI()
+    assert mount_spa(app) is True
+    response = TestClient(app).get("/.well-known/assetlinks.json")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/json")
+    assert response.json() == statement
+    assert "BadgeDay" not in response.text
 
 
 def test_a_legal_page_is_served_at_a_clean_url(client: TestClient) -> None:

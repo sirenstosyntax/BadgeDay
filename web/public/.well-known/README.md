@@ -1,12 +1,17 @@
 # `/.well-known` on app.badgeday.com
 
-Digital Asset Links for the Play TWA (`com.badgeday.app`) must be served from
+Digital Asset Links for the Play TWA (`com.badgeday.app`) are served from
 **this host** — `https://app.badgeday.com/.well-known/assetlinks.json` — not
 from the marketing site.
 
-`mobile/android/assetlinks.template.json` already has the Play app-signing
-SHA-256. `assetlinks.json` is still absent here. The remaining step is to copy
-that filled template to `web/public/.well-known/assetlinks.json` and deploy so
-it is served at `https://app.badgeday.com/.well-known/assetlinks.json`.
+`assetlinks.json` is the filled statement list: package `com.badgeday.app` and
+the Play **app signing** SHA-256 (classical) from Play Console → Setup →
+App integrity. Vite copies this directory into `web/dist` on `npm run build`;
+`app/spa.py` then serves any real file under the build, so the production
+path is that JSON at `/.well-known/assetlinks.json` after the next Azure
+image deploy (`./deploy/azure-deploy.sh`).
+
+Do not replace the fingerprint with a placeholder. A wrong hash fails
+verification the same as none, and looks configured.
 
 See `mobile/android/PLAY_CONSOLE.md`.

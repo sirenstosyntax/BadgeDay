@@ -75,18 +75,34 @@ Links or Play Billing on a real device in ways this build cannot see.
 
 ## 5. Digital Asset Links
 
-`mobile/android/assetlinks.template.json` already has the Play app-signing
-SHA-256 for `com.badgeday.app`. Do not fill or replace a placeholder.
+The statement list is filled: package `com.badgeday.app` and the Play **app
+signing** SHA-256 (classical) from Setup → App integrity. It lives at
+`mobile/android/assetlinks.template.json` and is copied to
+`web/public/.well-known/assetlinks.json`.
 
-The remaining step is copy and deploy:
+That public file is what Vite puts in `web/dist`. After the next Azure image
+deploy (`./deploy/azure-deploy.sh`), `app/spa.py` serves it at
+`https://app.badgeday.com/.well-known/assetlinks.json`.
 
-1. Copy `mobile/android/assetlinks.template.json` to
-   `web/public/.well-known/assetlinks.json`.
-2. Deploy the app so that file is served at
-   `https://app.badgeday.com/.well-known/assetlinks.json`.
+Do **not** put a placeholder fingerprint there — a wrong hash fails
+verification the same as none, and looks configured.
 
 The TWA host is `app.badgeday.com`. The marketing site on `badgeday.com` is the
 wrong origin for this file.
+
+Verify after deploy (expect HTTP 200 and `Content-Type: application/json`).
+Use GET — `curl -I` sends HEAD, and the SPA catch-all is GET-only (405):
+
+```bash
+curl -sSI -X GET https://app.badgeday.com/.well-known/assetlinks.json
+curl -sS https://app.badgeday.com/.well-known/assetlinks.json
+```
+
+Play's statement list for the same host:
+
+```text
+https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://app.badgeday.com&relation=delegate_permission/common.handle_all_urls
+```
 
 ## 6. Do not create a paid SKU yet
 

@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.badgeday.app",
+      "sha256_cert_fingerprints": [
+        "7F:0E:ED:C2:68:25:86:D0:74:72:EB:DB:8C:AD:39:25:0C:DD:3D:89:F9:3D:28:12:32:04:76:FD:FE:EB:9A:6A"
+      ]
+    }
+  }
+]

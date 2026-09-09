@@ -58,19 +58,19 @@ bubblewrap build
 
 ### Digital Asset Links
 
-`bubblewrap build` prints the SHA-256 fingerprint of the signing key it just used. That
-fingerprint goes into `assetlinks.template.json`, and the result is copied to
-`web/public/.well-known/assetlinks.json` so it is served from app.badgeday.com — the SPA's
-catch-all serves any real file under the build directory, so nothing else needs wiring.
+The filled statement list is `mobile/android/assetlinks.template.json`, copied to
+`web/public/.well-known/assetlinks.json`. Vite copies that into `web/dist` on build; the
+SPA's catch-all serves any real file under the build directory, so
+`https://app.badgeday.com/.well-known/assetlinks.json` is live after the next Azure
+image deploy. Nothing else needs wiring.
 
-The template is not in `web/public` already, and deliberately: a served assetlinks.json
-carrying a placeholder fingerprint is worse than none at all. It fails verification just the
-same, and it looks configured.
+The fingerprint is Play's **app signing** SHA-256 (classical) from *Setup → App
+integrity*, not the upload keystore `bubblewrap build` prints. Those are different
+keys, and using the local one is the single most common reason a TWA ships with an
+address bar still visible.
 
-**Use Play App Signing.** If you do, the fingerprint that matters is the one Play shows
-under *Setup → App integrity*, not the one from your local keystore — they are different
-keys, and using the local one is the single most common reason a TWA ships with an address
-bar still visible.
+A served assetlinks.json carrying a placeholder fingerprint is worse than none at
+all. It fails verification just the same, and it looks configured.
 
 ### Play Billing
 
