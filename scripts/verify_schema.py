@@ -164,6 +164,17 @@ class Api:
             json=patch,
         )
 
+    def rpc_as_user(self, token: str, name: str, payload: dict) -> httpx.Response:
+        return self.client.post(
+            f"{self.url}/rest/v1/rpc/{name}",
+            headers={
+                "apikey": self.anon_key,
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+        )
+
 
 def _seed(api: Api, user_id: str, label: str) -> dict:
     document = api.insert_as_service(
@@ -338,6 +349,78 @@ def main() -> int:
             "cannot grant herself a store subscription",
             self_granted.status_code >= 400,
             f"status {self_granted.status_code}",
+        )
+
+        self_module = api.insert_as_user(
+            alice_token,
+            "entitlements",
+            {
+                "user_id": alice_id,
+                "module": "recruit",
+                "subscription_status": "active",
+            },
+        )
+        check(
+            "cannot grant herself a Recruit entitlement",
+            self_module.status_code >= 400,
+            f"status {self_module.status_code}",
+        )
+
+        print("\nPer-module entitlements:\n")
+
+        # Service-role writes, candidate-token reads — the same split billing uses.
+        # Promote and Recruit must not grant each other.
+        none_yet = api.rpc_as_user(
+            alice_token, "has_recruit_access", {"candidate": alice_id}
+        )
+        check(
+            "Recruit access is false with no entitlements row",
+            none_yet.status_code < 400 and none_yet.json() is False,
+            f"status {none_yet.status_code}, body {none_yet.text}",
+        )
+
+        api.insert_as_service(
+            "entitlements",
+            {
+                "user_id": alice_id,
+                "module": "promote",
+                "subscription_status": "active",
+            },
+        )
+        promote_only = api.rpc_as_user(
+            alice_token, "has_recruit_access", {"candidate": alice_id}
+        )
+        check(
+            "a Promote row does not grant Recruit",
+            promote_only.status_code < 400 and promote_only.json() is False,
+            f"status {promote_only.status_code}, body {promote_only.text}",
+        )
+        promote_ok = api.rpc_as_user(
+            alice_token,
+            "has_module_access",
+            {"candidate": alice_id, "p_module": "promote"},
+        )
+        check(
+            "a Promote row grants the Promote module",
+            promote_ok.status_code < 400 and promote_ok.json() is True,
+            f"status {promote_ok.status_code}, body {promote_ok.text}",
+        )
+
+        api.insert_as_service(
+            "entitlements",
+            {
+                "user_id": alice_id,
+                "module": "recruit",
+                "subscription_status": "active",
+            },
+        )
+        recruit_ok = api.rpc_as_user(
+            alice_token, "has_recruit_access", {"candidate": alice_id}
+        )
+        check(
+            "an active Recruit row grants Recruit",
+            recruit_ok.status_code < 400 and recruit_ok.json() is True,
+            f"status {recruit_ok.status_code}, body {recruit_ok.text}",
         )
 
         print("\nQuestion reports:\n")
@@ -531,6 +614,10 @@ def main() -> int:
             # and a renewal notification arriving later would update a purchase with no
             # owner rather than being noticed as unattributable.
             ("store_purchases", f"user_id=eq.{alice_id}"),
+            # Same privacy + billing reason as store_purchases: a Recruit or
+            # Promote row that outlives the account is personal data nobody can
+            # now reach, and a later grant would update a user who is gone.
+            ("entitlements", f"user_id=eq.{alice_id}"),
         ]
         for table, query in orphans:
             rows = api.select_as_service(table, query)

@@ -83,10 +83,10 @@ class Settings(BaseSettings):
     # upload cannot be read wholesale into the process memory of a request handler.
     max_upload_bytes: int = 25 * 1024 * 1024
 
-    # --- Recruit access (ship gate #3) ---------------------------------------
-    # Free first session(s) without a card. Further attempts need Recruit
-    # entitlement, which #4 will read from entitlements(user, module). Until
-    # then has_recruit_access is a stub that returns false.
+    # --- Recruit access (ship gate #4) ---------------------------------------
+    # Free first session(s) without a card. Further attempts need a Recruit
+    # row on entitlements(user, module). Promote's has_access is a different
+    # product and is never consulted.
     recruit_free_sessions: int = 1
     # Cost ceiling while the bank is still one C2 prompt. 10/day is enough for
     # a real practice day and cheap enough that a leaked magic-link cannot run
@@ -98,16 +98,18 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     stripe_price_id_monthly: str = ""
     stripe_price_id_intensive_90day: str = ""
-    # Recruit prices — placeholders for ship gate #4. Leave blank. Do not invent
-    # live Stripe product IDs here; BadgeDay does not take real Recruit money
-    # until the entitlements table and store SKUs exist. Naming follows
-    # badgeday_pricing.md (monthly / 6-month / annual), not Promote's pair.
+    # Recruit prices — held, blank. Grant's held offer (docs only, no checkout
+    # go-live): first session free, no card; $24.99/mo; $59 / 90-day; $119/yr.
+    # Do not invent live Stripe product IDs. Stripe stays in test mode until
+    # Grant says go live. Mapping from a filled ID to the recruit module is
+    # `billing.module.module_for_stripe_price`.
     stripe_price_id_recruit_monthly: str = ""
-    stripe_price_id_recruit_6month: str = ""
+    stripe_price_id_recruit_intensive_90day: str = ""
     stripe_price_id_recruit_annual: str = ""
     # Length of the one-time intensive pass. The price is set in Stripe; how long the pass
     # it buys grants access is our decision, kept here so "90-day" is not welded into a
-    # timedelta at the point a webhook grants it.
+    # timedelta at the point a webhook grants it. Recruit's 90-day pass uses the same
+    # duration when checkout is later wired; it is not a second constant.
     intensive_pass_days: int = 90
 
     # Where the browser app lives, used to build the URLs Stripe returns the candidate to
@@ -134,9 +136,10 @@ class Settings(BaseSettings):
     play_package_name: str = ""
     play_product_id_monthly: str = ""
     play_product_id_intensive_90day: str = ""
-    # Recruit Play SKUs — placeholders for #4. Blank; do not invent live IAP ids.
+    # Recruit Play SKUs — held, blank. Same three offers as the Stripe
+    # placeholders. Do not invent live IAP public SKUs.
     play_product_id_recruit_monthly: str = ""
-    play_product_id_recruit_6month: str = ""
+    play_product_id_recruit_intensive_90day: str = ""
     play_product_id_recruit_annual: str = ""
     # The service account that may read purchase state from the Play Developer API, as the
     # JSON key file's contents. A purchase token means nothing without this call — the
@@ -151,9 +154,10 @@ class Settings(BaseSettings):
     appstore_bundle_id: str = ""
     appstore_product_id_monthly: str = ""
     appstore_product_id_intensive_90day: str = ""
-    # Recruit App Store SKUs — placeholders for #4. Blank; do not invent live IAP ids.
+    # Recruit App Store SKUs — held, blank. Same three offers. Do not invent
+    # live IAP public SKUs.
     appstore_product_id_recruit_monthly: str = ""
-    appstore_product_id_recruit_6month: str = ""
+    appstore_product_id_recruit_intensive_90day: str = ""
     appstore_product_id_recruit_annual: str = ""
     # App Store Server API credentials, used to check a transaction against Apple rather
     # than trust the receipt the device presented.
@@ -203,7 +207,16 @@ class Settings(BaseSettings):
         `store_payloads.parse_appstore_payload`.
         """
         return frozenset(
-            p for p in (self.play_product_id_monthly, self.appstore_product_id_monthly) if p
+            p
+            for p in (
+                self.play_product_id_monthly,
+                self.appstore_product_id_monthly,
+                self.play_product_id_recruit_monthly,
+                self.play_product_id_recruit_annual,
+                self.appstore_product_id_recruit_monthly,
+                self.appstore_product_id_recruit_annual,
+            )
+            if p
         )
 
     @field_validator("azure_docintel_endpoint")

@@ -1,7 +1,7 @@
-"""Ship gate #3: free first session(s), daily cap, paid-path stub.
+"""Ship gate #3 + #4: free first session(s), daily cap, entitlements gate.
 
-Pure decisions — no database. `has_recruit_access` is stubbed at the HTTP
-layer in test_recruit_attempts.py; this file pins the numbers.
+Pure decisions — no database. The table check is `has_recruit_access` at the
+HTTP layer in test_recruit_attempts.py; this file pins the numbers.
 """
 
 import pytest

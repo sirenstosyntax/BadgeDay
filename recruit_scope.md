@@ -160,8 +160,8 @@ Decisions I am making by default. Change them deliberately.
 | Audio retention | Transcribe, compute, discard. Retained only on explicit opt-in for self-review. | Voice is sensitive in a way typed answers are not and several states regulate it specifically. Playback of a candidate's own answer is likely a strong feature, but it is opt-in, not a reason to keep everything. |
 | Scoring shape | Answers are **not** scored independently and summed | Real panels build a picture: a flag raised early shapes how later answers are read. A pipeline that scores each answer in isolation and adds them up will not reproduce board behavior. |
 | Model role | Applies a rubric to an answer. Never authors a rubric that reaches a candidate unreviewed. | The bounded-reviewable-asset argument only holds if the asset stays bounded. A model may *draft* rubric candidates for SME review — that is generation into the review chain, not publication. |
-| Entitlement | **Per-module.** A new `entitlements` table keyed on (user, module), replacing the single `subscription_status` / `access_expires_at` pair on `profiles` | Recruit is a separate plan (decided 2026-07-26), so one entitlement per account no longer expresses what a candidate has bought. A table beats adding `promote_*` / `recruit_*` column pairs: a third module would need another migration and every gate would need editing, where a row does not. Keep the service-role-only write rule from migration 0005 — a candidate must not be able to grant themselves either module. |
-| Stripe mapping | Price ID → module, resolved server-side from config | Recruit needs its own price IDs alongside `STRIPE_PRICE_ID_MONTHLY` / `STRIPE_PRICE_ID_INTENSIVE_90DAY`. The webhook must decide *which module* a completed checkout grants, and that mapping belongs in config next to the price IDs, never inferred from the checkout's metadata alone. |
+| Entitlement | **Per-module.** `entitlements` keyed on (user, module) — migration 0012, ship gate #4. Recruit reads this table via `has_recruit_access`. Promote's live path still uses profiles + store_purchases / `has_access`. | Recruit is a separate plan (decided 2026-07-26), so one entitlement per account no longer expresses what a candidate has bought. A table beats adding `promote_*` / `recruit_*` column pairs: a third module would need another migration and every gate would need editing, where a row does not. Keep the service-role-only write rule from migration 0005 — a candidate must not be able to grant themselves either module. Pricing is held; checkout is not open. |
+| Stripe mapping | Price ID → module, resolved server-side from config (`app/billing/module.py`) | Recruit has its own held price IDs alongside `STRIPE_PRICE_ID_MONTHLY` / `STRIPE_PRICE_ID_INTENSIVE_90DAY`. The webhook must decide *which module* a completed checkout grants. Mapping is in place; checkout is not open until Grant says go live. |
 | Testing | The critique pipeline gets real coverage first, against fixture rubrics and fixture answers | Same reasoning as Promote's chunker and citation resolver: it is the component where silent failure destroys the product. A critique that quietly stops referencing criteria still *looks* like good feedback. |
 
 ### On reusing DrillGround's review chain
@@ -246,7 +246,10 @@ Promote's pipeline was CLI-testable before it had a frontend.
 7. **Readiness gap analysis.** Intake, scoring against its rubric, the time-phased plan.
 8. **Frontend.** Module selection, the practice loop, attempt history, the plan view,
    progress reported as behaviors acquired rather than a rising number.
-9. **Entitlement wiring**, per the packaging decision (separate plan — see Settled).
+9. ~~**Entitlement wiring**, per the packaging decision (separate plan — see Settled).~~
+   **Table and Recruit gate landed 2026-09-09 (ship gate #4).** `entitlements(user,
+   module)`, `has_recruit_access` reads that table, price/SKU placeholders are blank.
+   Checkout is not open; Stripe stays in test mode until Grant says go live.
 
 Steps 2–3 are small, cheap, and answer the question that decides whether the rest are
 worth doing.
