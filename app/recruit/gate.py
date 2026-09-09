@@ -8,8 +8,9 @@ questions that remain after they have signed in:
    entitlement?
 
 Promote's `has_access` is a different product and is never consulted. Paid
-Recruit access is `has_recruit_access`, a stub that returns false until ship
-gate #4 lands the entitlements(user, module) table and real product IDs.
+Recruit access is `has_recruit_access`, which reads entitlements(user,
+'recruit'). A Promote row, or a Promote subscription on profiles, does not
+grant Recruit.
 """
 
 from dataclasses import dataclass
@@ -17,6 +18,7 @@ from dataclasses import dataclass
 from supabase import Client
 
 from app.config import Settings
+from app.storage.entitlements import has_recruit_access
 
 
 class RecruitAccessDenied(Exception):
@@ -72,14 +74,12 @@ def evaluate_recruit_gate(
 
 
 def recruit_entitled(db: Client, user_id: str) -> bool:
-    """Paid Recruit access. #4 will read entitlements(user, 'recruit').
+    """Paid Recruit access, from entitlements(user, 'recruit').
 
-    Until that table exists this is `has_recruit_access`, which returns false.
     Empty Stripe / Play / App Store Recruit price IDs in Settings must not be
-    treated as a grant — they are placeholders.
+    treated as a grant — they are held placeholders. The table is the grant.
     """
-    result = db.rpc("has_recruit_access", {"candidate": user_id}).execute().data
-    return bool(result)
+    return has_recruit_access(db, user_id)
 
 
 def check_recruit_access(

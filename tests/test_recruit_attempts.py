@@ -1,4 +1,4 @@
-"""Ship gate #3: enqueue, poll, cap, free-first stub.
+"""Ship gate #3 + #4: enqueue, poll, cap, free-first, entitlements gate.
 
 No network. The HTTP handler must return 202 without calling Deepgram or
 Anthropic. The worker is where metrics still have to reach critique_answer
@@ -147,10 +147,13 @@ def test_unauthenticated_submit_is_401(monkeypatch) -> None:
 def test_empty_recruit_price_ids_are_placeholders() -> None:
     settings = Settings()
     assert settings.stripe_price_id_recruit_monthly == ""
-    assert settings.stripe_price_id_recruit_6month == ""
+    assert settings.stripe_price_id_recruit_intensive_90day == ""
     assert settings.stripe_price_id_recruit_annual == ""
     assert settings.play_product_id_recruit_monthly == ""
+    assert settings.play_product_id_recruit_intensive_90day == ""
     assert settings.appstore_product_id_recruit_monthly == ""
+    assert settings.appstore_product_id_recruit_intensive_90day == ""
+    assert settings.appstore_product_id_recruit_annual == ""
 
 
 # --- Cap and free-first ------------------------------------------------------
@@ -186,7 +189,7 @@ def test_used_free_session_without_entitlement_is_402(monkeypatch) -> None:
     assert "Recruit plan" in response.json()["detail"]
 
 
-def test_entitlement_stub_is_has_recruit_access_not_has_access(monkeypatch) -> None:
+def test_recruit_entitlement_is_has_recruit_access_not_has_access() -> None:
     calls: list[tuple[str, dict]] = []
 
     class FakeRpc:
@@ -201,6 +204,29 @@ def test_entitlement_stub_is_has_recruit_access_not_has_access(monkeypatch) -> N
 
     assert recruit_entitled(FakeRpc(), USER_ID) is False
     assert calls == [("has_recruit_access", {"candidate": USER_ID})]
+
+
+def test_a_recruit_entitlement_row_lets_the_second_attempt_through(monkeypatch) -> None:
+    """The free session is used; the entitlements table is what opens the next one."""
+    created: list[str] = []
+
+    def fake_create(db, user_id, **kwargs):
+        created.append(user_id)
+        return _record()
+
+    def counts(db, started_on_or_after=None):
+        return 1
+
+    monkeypatch.setattr("app.api.recruit.count_attempts", counts)
+    monkeypatch.setattr("app.recruit.gate.recruit_entitled", lambda *a: True)
+    monkeypatch.setattr("app.api.recruit.create_queued_attempt", fake_create)
+
+    response = _client(_settings(), monkeypatch).post(
+        "/recruit/attempts",
+        files={"audio": ("answer.webm", b"x", "audio/webm")},
+    )
+    assert response.status_code == 202
+    assert created == [USER_ID]
 
 
 # --- Poll --------------------------------------------------------------------

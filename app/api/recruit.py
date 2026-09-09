@@ -96,7 +96,7 @@ def submit_attempt(
     """Accept a recording and return 202. The worker transcribes and critiques.
 
     Auth is required. The first `recruit_free_sessions` attempts (default 1)
-    need no card. Further attempts need Recruit entitlement (#4) or this
+    need no card. Further attempts need a Recruit row on entitlements or this
     answers 402. A UTC daily ceiling (`recruit_daily_attempt_limit`, default
     10) answers 429 even for an entitled candidate.
     """

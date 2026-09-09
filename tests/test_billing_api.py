@@ -120,6 +120,14 @@ def test_checkout_rejects_a_plan_it_does_not_sell(monkeypatch: pytest.MonkeyPatc
     assert response.status_code == 422
 
 
+def test_checkout_does_not_sell_recruit_yet(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ship gate #4 holds Recruit pricing. A Recruit plan name must not open Stripe."""
+    client, gateway, _ = _harness(monkeypatch)
+    response = client.post("/billing/checkout", json={"plan": "recruit_monthly"})
+    assert response.status_code == 422
+    assert gateway.checkouts == []
+
+
 # --- Portal ------------------------------------------------------------------
 
 

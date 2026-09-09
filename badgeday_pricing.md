@@ -7,6 +7,25 @@ Stripe stays in test mode until both modules ship (`CLAUDE.md`).*
 
 ---
 
+## Held — Grant, 2026-09-09 (ship gate #4)
+
+**Not live.** Checkout, Stripe live mode, and Play / App Store public SKUs stay off
+until Grant says go live. Env vars are blank placeholders.
+
+| Module | Offer | Held amount |
+|---|---|---|
+| **Recruit** | First oral-board session | Free, no card (`RECRUIT_FREE_SESSIONS=1`) |
+| **Recruit** | Monthly | **$24.99/mo** — `STRIPE_PRICE_ID_RECRUIT_MONTHLY` / Play / App Store counterparts |
+| **Recruit** | 90-day pass | **$59** — `STRIPE_PRICE_ID_RECRUIT_INTENSIVE_90DAY` |
+| **Recruit** | Annual | **$119/yr** — `STRIPE_PRICE_ID_RECRUIT_ANNUAL` |
+
+This supersedes the 2026-07-29 recommendation below ($29 / $119 six-month / $179 annual,
+no 90-day) for what we will configure when checkout opens. The competitive write-up
+under that recommendation is still the reasoning record; the numbers Grant is holding
+are the ones above. Config names follow Promote's pair plus annual, not a 6-month SKU.
+
+---
+
 ## The market, priced
 
 Everything below was retrieved 2026-07-29.
@@ -119,11 +138,12 @@ So price on position and value, not on cost. There is no cost argument for being
 plans, no bundle. A serving Lieutenant candidate and a pre-hire applicant are different
 people and a combined plan sells each of them half a product. Structurally this means new
 `STRIPE_PRICE_ID_RECRUIT_*` entries alongside the existing pair in `app/config.py`, with the
-price-ID → module mapping resolved server-side per the architecture table.
+price-ID → module mapping resolved server-side per the architecture table
+(`app/billing/module.py`).
 
-Note the naming: Promote's existing `STRIPE_PRICE_ID_INTENSIVE_90DAY` has no Recruit
-counterpart, so the config gains `STRIPE_PRICE_ID_RECRUIT_MONTHLY`,
-`..._RECRUIT_6MONTH`, `..._RECRUIT_ANNUAL` — three, not a mirror of Promote's two.
+Held naming (Grant, 2026-09-09): `STRIPE_PRICE_ID_RECRUIT_MONTHLY`,
+`..._RECRUIT_INTENSIVE_90DAY`, `..._RECRUIT_ANNUAL` — monthly, a 90-day pass, and
+annual. The 6-month SKU from the 2026-07-29 recommendation is not what we are holding.
 
 ---
 

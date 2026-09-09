@@ -40,8 +40,29 @@ def test_recruit_access_defaults() -> None:
     assert settings.recruit_free_sessions == 1
     assert settings.recruit_daily_attempt_limit == 10
     assert settings.stripe_price_id_recruit_monthly == ""
+    assert settings.stripe_price_id_recruit_intensive_90day == ""
+    assert settings.stripe_price_id_recruit_annual == ""
     assert settings.play_product_id_recruit_monthly == ""
+    assert settings.play_product_id_recruit_intensive_90day == ""
+    assert settings.play_product_id_recruit_annual == ""
     assert settings.appstore_product_id_recruit_monthly == ""
+    assert settings.appstore_product_id_recruit_intensive_90day == ""
+    assert settings.appstore_product_id_recruit_annual == ""
+
+
+def test_recruit_subscription_product_ids_are_included_when_named() -> None:
+    """A filled Recruit monthly/annual SKU is recurring; the 90-day pass is not."""
+    settings = Settings(
+        play_product_id_recruit_monthly="badgeday.recruit.monthly",
+        play_product_id_recruit_annual="badgeday.recruit.annual",
+        play_product_id_recruit_intensive_90day="badgeday.recruit.90day",
+        appstore_product_id_recruit_monthly="ios.recruit.monthly",
+    )
+    ids = settings.subscription_product_ids
+    assert "badgeday.recruit.monthly" in ids
+    assert "badgeday.recruit.annual" in ids
+    assert "ios.recruit.monthly" in ids
+    assert "badgeday.recruit.90day" not in ids
 
 
 def test_configured_requires_both_endpoint_and_key() -> None:
