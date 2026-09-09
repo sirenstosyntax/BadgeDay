@@ -4,10 +4,10 @@ Two thin wrappers around the same web app that runs at app.badgeday.com. There i
 second product codebase and there must not be one — a fix to the quiz loop should reach
 all three surfaces by being deployed, not by being ported.
 
-**Nothing in this directory has been compiled.** It was written in a container with neither
-Xcode nor the Android SDK, so every command below is from each tool's documentation rather
-than from a run that succeeded here. Treat the configs as a starting point that still owes
-you a first build, not as something known to work.
+The Play TWA is compiled by `mobile/android/build-twa.sh` and by the **TWA** GitHub
+Actions workflow, which uploads an AAB. Signing uses CI secrets when present; without
+them the AAB is unsigned (Play will not accept it until Grant adds an upload keystore).
+See `mobile/android/PLAY_CONSOLE.md`. iOS is still uncompiled here.
 
 ## Before either wrapper builds
 
@@ -29,7 +29,7 @@ if it fails, the app still works but shows a URL bar, which is both ugly and a P
 problem.
 
 The committed answer set is `mobile/android/twa-manifest.json`. To compile
-without answering `bubblewrap init` (and without turning Play Billing on):
+without answering `bubblewrap init`:
 
 ```bash
 mobile/android/build-twa.sh
@@ -37,9 +37,11 @@ mobile/android/build-twa.sh
 
 That script installs JDK 17 and the Android command-line SDK if they are missing,
 regenerates the gitignored project with `bubblewrap update --skipVersionUpgrade`,
-and builds an **unsigned** AAB/APK. It refuses to run if `packageId` is not
-`com.badgeday.app` or if `features.playBilling.enabled` is not `false`. It never
-creates a keystore, never calls `bubblewrap play`, and never submits to Play.
+and builds an AAB. It refuses to run if `packageId` is not `com.badgeday.app` or
+if `features.playBilling.enabled` is not `true`. It never creates a keystore,
+never calls `bubblewrap play`, and never submits to Play. If the four `TWA_*`
+signing secrets are set, the AAB is signed with that upload key; otherwise it is
+unsigned.
 
 The older interactive path is still valid if you need to regenerate the answer
 set from the live web manifest:
@@ -49,7 +51,7 @@ npm install -g @bubblewrap/cli
 cd mobile/android
 bubblewrap init --manifest https://app.badgeday.com/manifest.webmanifest
 # twa-manifest.json in this directory is the answer set for that prompt — copy it over the
-# generated one rather than answering by hand, so the Play Billing flag stays off the next
+# generated one rather than answering by hand, so Play Billing stays on the next
 # time somebody regenerates.
 bubblewrap build
 ```
@@ -72,9 +74,23 @@ bar still visible.
 
 ### Play Billing
 
-`twa-manifest.json` keeps Play Billing **off**. Do not enable `playBilling`. Official Play
-Billing Library v7's new-app cutoff is 2026-08-31; turning billing on with no products buys
-that deadline for nothing. The purchase flow in the browser stays Stripe (test).
+`twa-manifest.json` keeps Play Billing **on**, and Bubblewrap 1.25 pulls
+`com.google.androidbrowserhelper:billing:1.2.0`, which depends on Play Billing
+Library 8.3.0 (the new-app floor). The AAB therefore carries `BILLING` and the
+Digital Goods / PaymentActivity wiring.
+
+There is still **no Play SKU and no price in the UI**. Grant has not named the
+offer. The TWA paywall shows a Play buy button only after `/me` returns configured
+`PLAY_PRODUCT_ID_*` values *and* Digital Goods `getDetails` recognises them. A
+browser tab keeps Stripe test checkout. Do not invent a product id to make the
+button appear.
+
+Acknowledgement is server-side: the page POSTs the purchase token to
+`/billing/store/play/purchase`, which verifies against Google and acknowledges.
+Digital Goods v2.1 has no `acknowledge()` for a subscription; `consume()` would
+revoke it. Same lesson as DrillGround.
+
+Exact Play Console steps: `mobile/android/PLAY_CONSOLE.md`.
 
 ## iOS — Capacitor
 

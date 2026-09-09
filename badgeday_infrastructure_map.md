@@ -40,7 +40,7 @@
 
 1. **PUBLIC\_WEB\_URL** (app) \= [https://app.badgeday.com](https://app.badgeday.com) — drives Stripe's return URLs. Set by `deploy/azure-deploy.sh`, not by hand: it uses the canonical host once that hostname is bound to the web app, and the ingress FQDN before then. Don't edit it in the Azure portal; the next deploy overwrites it.  
 2. At app launch: marketing site adds "Open the app → app.badgeday.com" and app-store badges. Marketing side handles this.  
-3. Future mobile apps: universal links / assetlinks files (apple-app-site-association, assetlinks.json) would be served from badgeday.com — marketing/Netlify side hosts them; app side supplies the file contents.  
+3. TWA Digital Asset Links (`assetlinks.json`) must be served from **app.badgeday.com** (the TWA start-URL host), not the marketing apex. Template: `mobile/android/assetlinks.template.json`. Do not ship a placeholder fingerprint. Apple `apple-app-site-association` stays on badgeday.com (marketing/Netlify).  
 4. Waitlist emails (Kit list) become launch-announcement audience — marketing side sends.
 
 ## Brand constants (for anything user-facing either side builds)

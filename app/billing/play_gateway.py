@@ -140,7 +140,7 @@ class PlayGateway:
                 f"{purchase.get('subscriptionState')}"
             )
 
-        return PurchaseFacts(
+        facts = PurchaseFacts(
             platform="play",
             product_id=product_id,
             purchase_identifier=purchase_token,
@@ -149,6 +149,11 @@ class PlayGateway:
             expires_at=_latest_expiry(purchase),
             user_id=user_id or _account_id(purchase),
         )
+        # Play refunds an unacknowledged purchase after three days. Digital
+        # Goods v2.1 has no acknowledge() for a subscription, so this is the
+        # production path — same reason DrillGround posts to its ack endpoint.
+        self._acknowledge(product_id, purchase_token, subscription=True)
+        return facts
 
     def _product_facts(
         self,
@@ -170,7 +175,7 @@ class PlayGateway:
             else:
                 raise StoreVerificationError("purchase is still pending")
 
-        return PurchaseFacts(
+        facts = PurchaseFacts(
             platform="play",
             product_id=product_id,
             purchase_identifier=purchase_token,
@@ -181,6 +186,8 @@ class PlayGateway:
             expires_at=None,
             user_id=user_id or purchase.get("obfuscatedExternalAccountId") or None,
         )
+        self._acknowledge(product_id, purchase_token, subscription=False)
+        return facts
 
     def verify_appstore_purchase(self, *, transaction_id: str, user_id: str) -> PurchaseFacts:
         raise StoreVerificationError("This gateway is Google Play only.")
@@ -239,6 +246,51 @@ class PlayGateway:
             raise StoreVerificationError("push token carries an unverified email claim")
         if claims.get("email") != self._service_account:
             raise StoreVerificationError("push token was signed by an unexpected account")
+
+    def _acknowledge(self, product_id: str, purchase_token: str, *, subscription: bool) -> None:
+        """Tell Play we have the purchase. Failure here must not un-grant.
+
+        The candidate has paid. An acknowledgement problem is ours to chase —
+        Play may reverse the charge after three days — and must never look to
+        them like the purchase failed. Already-acknowledged is success.
+        """
+        try:
+            publisher = self._androidpublisher()
+            if subscription:
+                (
+                    publisher.purchases()
+                    .subscriptions()
+                    .acknowledge(
+                        packageName=self._package,
+                        subscriptionId=product_id,
+                        token=purchase_token,
+                        body={},
+                    )
+                    .execute()
+                )
+            else:
+                (
+                    publisher.purchases()
+                    .products()
+                    .acknowledge(
+                        packageName=self._package,
+                        productId=product_id,
+                        token=purchase_token,
+                        body={},
+                    )
+                    .execute()
+                )
+        except Exception as exc:
+            if acknowledge_already_done(exc):
+                logger.info("Play purchase already acknowledged: %s", product_id)
+                return
+            logger.error("Play acknowledge failed for %s: %s", product_id, exc)
+
+
+def acknowledge_already_done(exc: BaseException) -> bool:
+    """Google answers 400 when the token was acknowledged on an earlier pass."""
+    text = str(exc).lower()
+    return "already" in text and "acknowledg" in text
 
 
 def _decode_pubsub_envelope(payload: bytes) -> dict:

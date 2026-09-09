@@ -13,13 +13,21 @@ pressing on.
 """
 
 from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel
 
-from app.api.deps import CurrentUserDep, DbDep, GatewayDep, ServiceDbDep
+from app.api.deps import CurrentUserDep, DbDep, GatewayDep, ServiceDbDep, SettingsDep
 from app.storage.account import purge_account
 from app.storage.billing import Entitlement, customer_id_for, entitlement
 from app.storage.store import managed_elsewhere
 
 router = APIRouter(tags=["account"])
+
+
+class PlayProducts(BaseModel):
+    """Play product ids as configured. Empty strings become null — never invented."""
+
+    monthly: str | None = None
+    intensive_90day: str | None = None
 
 
 class Account(Entitlement):
@@ -31,16 +39,21 @@ class Account(Entitlement):
     # Store cannot be cancelled from our billing portal, and offering that candidate a
     # portal button is how a cancellation becomes a chargeback.
     managed_by: str | None = None
+    play_products: PlayProducts
 
 
 @router.get("/me")
-def me(user: CurrentUserDep, db: DbDep) -> Account:
+def me(user: CurrentUserDep, db: DbDep, settings: SettingsDep) -> Account:
     state = entitlement(db, user.id)
     store = managed_elsewhere(db, user.id)
     return Account(
         id=user.id,
         email=user.email,
         managed_by=store.platform if store else None,
+        play_products=PlayProducts(
+            monthly=settings.play_product_id_monthly or None,
+            intensive_90day=settings.play_product_id_intensive_90day or None,
+        ),
         **state.model_dump(),
     )
 

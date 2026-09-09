@@ -21,25 +21,25 @@
     "path": "./android.keystore",
     "alias": "android"
   },
-  "appVersion": "1.0.0",
-  "appVersionName": "1.0.0",
-  "appVersionCode": 1,
+  "appVersion": "1.1.0",
+  "appVersionName": "1.1.0",
+  "appVersionCode": 2,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://app.badgeday.com/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {
     "playBilling": {
-      "enabled": false
+      "enabled": true
     }
   },
   "alphaDependencies": {
-    "enabled": false
+    "enabled": true
   },
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
   "fullScopeUrl": "https://app.badgeday.com/",
-  "minSdkVersion": 23,
+  "minSdkVersion": 24,
   "orientationLock": false
 }

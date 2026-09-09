@@ -71,6 +71,14 @@ export const api = {
         body: JSON.stringify({ plan }),
       }),
     portal: () => request<{ url: string }>('/billing/portal', { method: 'POST' }),
+    // The TWA reports a Play token. The server verifies it against Google and
+    // acknowledges it. No product id is hardcoded here — the caller passes
+    // whatever Digital Goods listed or `/me` configured.
+    reportPlayPurchase: (purchaseToken: string, productId: string) =>
+      request<{ entitled: boolean; product_id: string }>('/billing/store/play/purchase', {
+        method: 'POST',
+        body: JSON.stringify({ purchase_token: purchaseToken, product_id: productId }),
+      }),
   },
 
   documents: {

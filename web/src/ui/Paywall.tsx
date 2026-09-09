@@ -1,5 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ApiError, api } from '../lib/api'
+import {
+  browserPlayBilling,
+  configuredSkus,
+  type PlayItemDetails,
+  type PlayProductIds,
+} from '../lib/playBilling'
 import type { Plan } from '../lib/types'
 
 /**
@@ -7,10 +13,9 @@ import type { Plan } from '../lib/types'
  * start a session — without an active plan. Reading and deleting are never gated, so this
  * is an overlay over their documents, not a wall that replaces them.
  *
- * No prices are printed here. The amount lives in Stripe (the brief keeps pricing out of
- * the code), and the candidate sees it on the checkout page a click away. Describing the
- * two plans without a dollar figure is deliberate, not a stub — a number typed here would
- * be a second source of truth that drifts the first time the price changes.
+ * No prices are printed here as ours. On the web, the amount lives in Stripe. Inside the
+ * TWA, Play is the till — and until Grant names a Play offer, there is nothing to buy
+ * and no figure to show. A number typed here would be a second source of truth.
  */
 const PLANS: { plan: Plan; name: string; blurb: string }[] = [
   {
@@ -25,11 +30,53 @@ const PLANS: { plan: Plan; name: string; blurb: string }[] = [
   },
 ]
 
-export function Paywall({ onClose }: { onClose: () => void }) {
-  const [pending, setPending] = useState<Plan | null>(null)
-  const [error, setError] = useState<string | null>(null)
+type Till = 'checking' | 'stripe' | 'play' | 'play-unlisted'
 
-  async function choose(plan: Plan) {
+export function Paywall({
+  onClose,
+  playProducts,
+  onPlayUnlocked,
+}: {
+  onClose: () => void
+  playProducts?: PlayProductIds | null
+  onPlayUnlocked?: () => void
+}) {
+  const [pending, setPending] = useState<Plan | string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [till, setTill] = useState<Till>('checking')
+  const [playItems, setPlayItems] = useState<PlayItemDetails[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    const purchases = browserPlayBilling(api.billing.reportPlayPurchase)
+    void purchases.available().then(async (store) => {
+      if (cancelled) return
+      if (!store) {
+        setTill('stripe')
+        return
+      }
+      const skus = configuredSkus(playProducts)
+      if (skus.length === 0) {
+        setTill('play-unlisted')
+        return
+      }
+      const items = await purchases.detailsFor(skus)
+      if (cancelled) return
+      // Play has to recognise the id. A configured env var that is not a Console
+      // product must not become a buy button — that would be a fake offer.
+      if (items.length === 0) {
+        setTill('play-unlisted')
+        return
+      }
+      setPlayItems(items)
+      setTill('play')
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [playProducts])
+
+  async function chooseStripe(plan: Plan) {
     setPending(plan)
     setError(null)
     try {
@@ -47,6 +94,28 @@ export function Paywall({ onClose }: { onClose: () => void }) {
     }
   }
 
+  async function choosePlay(item: PlayItemDetails) {
+    setPending(item.itemId)
+    setError(null)
+    try {
+      const purchases = browserPlayBilling(api.billing.reportPlayPurchase)
+      const result = await purchases.buy(item.itemId)
+      if (!result.ok) {
+        setError('Google Play did not complete that purchase.')
+        setPending(null)
+        return
+      }
+      onPlayUnlocked?.()
+    } catch (caught) {
+      setError(
+        caught instanceof ApiError
+          ? caught.message
+          : 'Could not complete the Play purchase.',
+      )
+      setPending(null)
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-20 flex items-center justify-center bg-stone-900/40 p-4 backdrop-blur-sm"
@@ -57,47 +126,97 @@ export function Paywall({ onClose }: { onClose: () => void }) {
         onClick={(event) => event.stopPropagation()}
       >
         <h2 className="text-lg font-semibold">Drill until badge day</h2>
-        <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-          Uploading a document and starting a session need an active plan. Anything you have
-          already uploaded stays yours to read and to delete.
-        </p>
+        {till === 'play-unlisted' ? (
+          <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+            This Play build does not sell a plan yet. The offer has not been named, so
+            there is nothing to buy here and no price to show. The website still uses
+            Stripe test checkout until then.
+          </p>
+        ) : (
+          <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+            Uploading a document and starting a session need an active plan. Anything you have
+            already uploaded stays yours to read and to delete.
+          </p>
+        )}
 
-        <div className="mt-5 space-y-3">
-          {PLANS.map(({ plan, name, blurb }) => (
-            <button
-              key={plan}
-              onClick={() => void choose(plan)}
-              disabled={pending !== null}
-              className="w-full rounded-lg border border-stone-300 p-4 text-left transition hover:border-stone-900 disabled:opacity-60 dark:border-stone-700 dark:hover:border-stone-100"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-medium">{name}</span>
-                <span className="text-xs text-stone-500 dark:text-stone-400">
-                  {pending === plan ? 'Redirecting…' : 'Choose →'}
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{blurb}</p>
-            </button>
-          ))}
-        </div>
+        {till === 'checking' && (
+          <p className="mt-5 text-sm text-stone-500">Checking how you can pay…</p>
+        )}
 
-        {/* Said here rather than only in the terms: the refund policy and what renews are
-            the two things a candidate is entitled to know before they are handed to Stripe,
-            not after. The price itself still comes from Stripe on the next screen. */}
-        <p className="mt-4 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
-          Monthly renews until you cancel; the 90-day intensive is a single payment and does
-          not renew. Payments are non-refundable — cancelling keeps your access to the end of
-          the period you have paid for. Choosing a plan takes you to Stripe, and means you
-          agree to the{' '}
-          <a href="/terms" className="underline">
-            Terms of Service
-          </a>{' '}
-          and{' '}
-          <a href="/privacy" className="underline">
-            Privacy Policy
-          </a>
-          .
-        </p>
+        {till === 'stripe' && (
+          <div className="mt-5 space-y-3">
+            {PLANS.map(({ plan, name, blurb }) => (
+              <button
+                key={plan}
+                onClick={() => void chooseStripe(plan)}
+                disabled={pending !== null}
+                className="w-full rounded-lg border border-stone-300 p-4 text-left transition hover:border-stone-900 disabled:opacity-60 dark:border-stone-700 dark:hover:border-stone-100"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{name}</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400">
+                    {pending === plan ? 'Redirecting…' : 'Choose →'}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{blurb}</p>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {till === 'play' && (
+          <div className="mt-5 space-y-3">
+            {playItems.map((item) => (
+              <button
+                key={item.itemId}
+                onClick={() => void choosePlay(item)}
+                disabled={pending !== null}
+                className="w-full rounded-lg border border-stone-300 p-4 text-left transition hover:border-stone-900 disabled:opacity-60 dark:border-stone-700 dark:hover:border-stone-100"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{item.title}</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400">
+                    {pending === item.itemId
+                      ? 'Purchasing…'
+                      : item.price?.label || item.price?.value || 'Choose →'}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {till === 'stripe' && (
+          <p className="mt-4 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+            Monthly renews until you cancel; the 90-day intensive is a single payment and does
+            not renew. Payments are non-refundable — cancelling keeps your access to the end of
+            the period you have paid for. Choosing a plan takes you to Stripe, and means you
+            agree to the{' '}
+            <a href="/terms" className="underline">
+              Terms of Service
+            </a>{' '}
+            and{' '}
+            <a href="/privacy" className="underline">
+              Privacy Policy
+            </a>
+            .
+          </p>
+        )}
+
+        {till === 'play' && (
+          <p className="mt-4 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+            Purchases on this device go through Google Play. The price Play shows is the
+            price you pay. Choosing a plan means you agree to the{' '}
+            <a href="/terms" className="underline">
+              Terms of Service
+            </a>{' '}
+            and{' '}
+            <a href="/privacy" className="underline">
+              Privacy Policy
+            </a>
+            .
+          </p>
+        )}
 
         {error && (
           <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-900 dark:bg-red-950 dark:text-red-200">

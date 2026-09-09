@@ -19,6 +19,7 @@ from app.billing.play_gateway import (
     _decode_pubsub_envelope,
     _latest_expiry,
     _parse_rfc3339,
+    acknowledge_already_done,
 )
 from app.billing.store_gateway import StoreVerificationError
 
@@ -98,6 +99,12 @@ def test_the_envelope_unwraps_to_the_notification() -> None:
     ).encode()
 
     assert _decode_pubsub_envelope(envelope) == rtdn
+
+
+def test_already_acknowledged_is_not_a_failure() -> None:
+    """A replayed report must not look like the purchase failed."""
+    assert acknowledge_already_done(RuntimeError("The purchase has already been acknowledged."))
+    assert not acknowledge_already_done(RuntimeError("quota exceeded"))
 
 
 def test_anything_that_is_not_an_envelope_is_a_verification_failure() -> None:
