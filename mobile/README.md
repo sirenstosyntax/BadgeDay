@@ -86,7 +86,9 @@ browser tab keeps Stripe test checkout. Do not invent a product id to make the
 button appear.
 
 Acknowledgement is server-side: the page POSTs the purchase token to
-`/billing/store/play/purchase`, which verifies against Google and acknowledges.
+`/billing/store/play/purchase`, which verifies against Google, records the
+purchase, then acknowledges. Acknowledging before a successful write would
+leave Play unable to auto-refund if the persist then fails.
 Digital Goods v2.1 has no `acknowledge()` for a subscription; `consume()` would
 revoke it. Same lesson as DrillGround.
 
