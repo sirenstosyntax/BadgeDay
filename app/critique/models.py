@@ -76,10 +76,9 @@ Outcome = Literal["scored", "not_assessable", "not_answered"]
 class Metric(BaseModel):
     """A deterministic measurement of delivery, computed in our own code.
 
-    Not yet produced by anything — audio capture is build-order step 5. The seam exists
-    now because the verification gate has to treat measurement-anchored points as a
-    distinct class from the start, and retrofitting a second class of citable evidence
-    into a gate is harder than leaving room for it.
+    Produced by `app.audio.metrics.compute` from word timestamps and passed into
+    `critique_answer` on the live Recruit path. The verification gate treats
+    measurement-anchored points as a distinct class from rubric-anchored ones.
     """
 
     name: str = Field(min_length=1, description="Stable identifier, e.g. 'filler_rate_per_100'.")

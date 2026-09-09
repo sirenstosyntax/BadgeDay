@@ -1,13 +1,12 @@
 """Deepgram implementation of the Transcriber seam.
 
-Transcript only. This slice does not compute filler, pace, or pause metrics —
-`metrics.compute` is not imported here, and the API uses `Transcript.text` alone.
-The listen call already exists as a configured paid API (`DEEPGRAM_API_KEY`);
-this file does not add a package.
+Returns a `Transcript` with word-level timestamps. Delivery metrics are computed
+from those words on the live `/recruit/attempts` path, not here — this file stays
+a transcriber. The listen call already exists as a configured paid API
+(`DEEPGRAM_API_KEY`); this file does not add a package.
 
 The request matches `scripts/asr_check.py`: nova-2, filler_words on, smart_format
-off. smart_format tidies speech, which is the failure mode even when we are not
-scoring fillers yet.
+off. smart_format tidies speech, which is the failure mode for filler metrics.
 """
 
 from pathlib import Path
