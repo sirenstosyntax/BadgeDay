@@ -43,7 +43,7 @@ mobile/android/*.keystore.json
 mobile/ios/ios/
 mobile/ios/App/
 
-# Local TWA compile output (unsigned AAB/APK). Not a store submit.
+# Local TWA compile output (AAB/APK, signed or not). Not a store submit.
 artifacts/twa/
 
 # Editor / OS
