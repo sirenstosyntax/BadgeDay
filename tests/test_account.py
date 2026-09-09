@@ -13,7 +13,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.account import router as account_router
-from app.api.deps import CurrentUser, current_user, get_gateway, service_db, user_db
+from app.api.deps import CurrentUser, current_user, get_gateway, get_settings, service_db, user_db
+from app.config import Settings
 from app.storage.billing import Entitlement
 from app.storage.store import ManagedElsewhere
 
@@ -49,6 +50,7 @@ def test_me_reports_the_entitlement_verdict(monkeypatch: pytest.MonkeyPatch) -> 
     body = client.get("/me").json()
     assert body["entitled"] is True
     assert body["subscription_status"] == "active"
+    assert body["play_products"] == {"monthly": None, "intensive_90day": None}
 
 
 def test_me_carries_the_candidates_identity(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -103,6 +105,23 @@ def test_a_store_subscription_is_reported_so_the_app_can_send_them_to_the_right_
     body = client.get("/me").json()
     assert body["managed_by"] == "appstore"
     assert body["entitled"] is True
+
+
+def test_me_exposes_configured_play_product_ids_and_never_invents_them(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The TWA buy path reads these. Empty means no Play buy button — not a fake SKU."""
+    client = _client(
+        monkeypatch,
+        Entitlement(entitled=False, subscription_status="none", access_expires_at=None),
+    )
+    client.app.dependency_overrides[get_settings] = lambda: Settings(
+        play_product_id_monthly="named.by.grant.monthly",
+        play_product_id_intensive_90day="",
+    )
+    body = client.get("/me").json()
+    assert body["play_products"]["monthly"] == "named.by.grant.monthly"
+    assert body["play_products"]["intensive_90day"] is None
 
 
 # --- Deleting the account ----------------------------------------------------

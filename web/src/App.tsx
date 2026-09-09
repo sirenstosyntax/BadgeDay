@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ApiError, api } from './lib/api'
 import { useAccount } from './lib/account'
 import { signOut, useSession } from './lib/auth'
+import { browserPlayBilling } from './lib/playBilling'
 import { Account } from './ui/Account'
 import { Choose } from './ui/Choose'
 import { Documents } from './ui/Documents'
@@ -53,6 +54,22 @@ export default function App() {
     return () => clearInterval(timer)
   }, [session, refreshAccount])
 
+  // Inside the TWA, Play already knows what this Google account bought. Report
+  // those tokens so the server can acknowledge them (Play refunds an
+  // unacknowledged purchase after three days) and so a reinstall comes back
+  // entitled. A browser tab has no Digital Goods service; this is a no-op.
+  useEffect(() => {
+    if (!session) return
+    let cancelled = false
+    const purchases = browserPlayBilling(api.billing.reportPlayPurchase)
+    void purchases.restore().then((ids) => {
+      if (!cancelled && ids.length > 0) void refreshAccount()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [session, refreshAccount])
+
   // Blank rather than a spinner: restoring a stored session takes a few milliseconds, and
   // a spinner that flashes for one frame reads as jank. What must not happen here is
   // rendering SignIn, which would tell a returning candidate they are logged out.
@@ -93,6 +110,10 @@ export default function App() {
 
   async function manageBilling() {
     setNotice(null)
+    if (account?.managed_by === 'play') {
+      window.location.href = 'https://play.google.com/store/account/subscriptions'
+      return
+    }
     try {
       const { url } = await api.billing.portal()
       window.location.href = url
@@ -213,7 +234,16 @@ export default function App() {
         <LegalLinks />
       </footer>
 
-      {showPaywall && <Paywall onClose={() => setShowPaywall(false)} />}
+      {showPaywall && (
+        <Paywall
+          onClose={() => setShowPaywall(false)}
+          playProducts={account?.play_products}
+          onPlayUnlocked={() => {
+            void refreshAccount()
+            setShowPaywall(false)
+          }}
+        />
+      )}
     </div>
   )
 }

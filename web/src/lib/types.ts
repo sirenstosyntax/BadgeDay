@@ -36,12 +36,23 @@ export type DocumentRecord = {
  * with the server about it. `subscription_status` and `access_expires_at` are for telling
  * the candidate *what* they have, not for deciding whether they may act.
  */
+export type PlayProducts = {
+  monthly: string | null
+  intensive_90day: string | null
+}
+
 export type Account = {
   id: string
   email: string | null
   entitled: boolean
   subscription_status: 'none' | 'active' | 'past_due' | 'canceled'
   access_expires_at: string | null
+  // Which till took the money, when it was not Stripe. The account screen uses
+  // this to send a Play subscriber to Play, not to an empty Stripe portal.
+  managed_by?: 'play' | 'appstore' | null
+  // Play product ids as configured on the server. Empty until Grant names the
+  // offer — the client must not invent a substitute.
+  play_products?: PlayProducts
 }
 
 /** The two things a candidate can buy. Named, not priced — the price lives in Stripe. */
