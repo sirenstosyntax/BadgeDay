@@ -23,8 +23,9 @@ from supabase import Client
 from app.config import Settings, get_settings
 from app.storage.client import service_client
 from app.storage.documents import set_status
+from app.storage.recruit import delete_audio, get_attempt, mark_failed
 from app.worker.jobs import Job, claim, fail, requeue_stale, succeed
-from app.worker.pipeline import HANDLERS, DocumentGone
+from app.worker.pipeline import HANDLERS, AttemptGone, DocumentGone, EmptyRecruitAudio
 
 logger = logging.getLogger(__name__)
 
@@ -38,13 +39,32 @@ def run_one(db: Client, settings: Settings, worker: str) -> bool:
     if job is None:
         return False
 
-    logger.info("claimed %s job %s for document %s", job.kind, job.id, job.document_id)
+    logger.info(
+        "claimed %s job %s for document %s attempt %s",
+        job.kind,
+        job.id,
+        job.document_id,
+        job.attempt_id,
+    )
     try:
         HANDLERS[job.kind](db, settings, job)
     except DocumentGone:
         # The candidate deleted the document while this sat in the queue. Nothing to do
         # and nothing wrong: the cascade has already removed the row this job points at.
         logger.info("document %s no longer exists; job discarded", job.document_id)
+        succeed(db, job)
+        return True
+    except AttemptGone:
+        logger.info("attempt %s no longer exists; job discarded", job.attempt_id)
+        succeed(db, job)
+        return True
+    except EmptyRecruitAudio as exc:
+        # Nothing to retry: an empty recording stays empty. Mark the attempt so
+        # the polling client stops waiting, then succeed the job.
+        attempt = get_attempt(db, exc.attempt_id)
+        path = attempt.audio_storage_path if attempt else None
+        mark_failed(db, exc.attempt_id, exc.detail)
+        delete_audio(db, path)
         succeed(db, job)
         return True
     except Exception as exc:
@@ -61,12 +81,23 @@ def run_one(db: Client, settings: Settings, worker: str) -> bool:
 def _give_up(db: Client, job: Job, detail: str) -> None:
     """Retries are spent. Tell the candidate, in terms that are theirs to act on."""
     logger.error("%s job %s exhausted %d attempts", job.kind, job.id, job.max_attempts)
-    set_status(
-        db,
-        job.document_id,
-        "failed",
-        error=f"We could not process this document ({detail}). Try uploading it again.",
-    )
+    if job.kind == "recruit_critique" and job.attempt_id:
+        attempt = get_attempt(db, job.attempt_id)
+        path = attempt.audio_storage_path if attempt else None
+        mark_failed(
+            db,
+            job.attempt_id,
+            "The critique could not be finished. Try a new question.",
+        )
+        delete_audio(db, path)
+        return
+    if job.document_id:
+        set_status(
+            db,
+            job.document_id,
+            "failed",
+            error=f"We could not process this document ({detail}). Try uploading it again.",
+        )
 
 
 def run_forever(db: Client, settings: Settings, worker: str) -> None:

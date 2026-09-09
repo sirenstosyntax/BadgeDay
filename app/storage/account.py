@@ -17,6 +17,7 @@ the better failure.
 from supabase import Client
 
 from app.storage.documents import BUCKET
+from app.storage.recruit import AUDIO_BUCKET, list_audio_paths
 
 
 def purge_account(db: Client, service: Client, user_id: str) -> None:
@@ -32,5 +33,9 @@ def purge_account(db: Client, service: Client, user_id: str) -> None:
     ]
     if paths:
         db.storage.from_(BUCKET).remove(paths)
+
+    recruit_paths = list_audio_paths(db)
+    if recruit_paths:
+        db.storage.from_(AUDIO_BUCKET).remove(recruit_paths)
 
     service.auth.admin.delete_user(user_id)
