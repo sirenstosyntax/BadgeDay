@@ -75,6 +75,16 @@ class _UnconfiguredGateway(_ConfirmingGateway):
         raise StoreNotConfigured("not configured")
 
 
+class _AcknowledgingGateway(_ConfirmingGateway):
+    """Confirms, and records whether Play was told we kept the purchase."""
+
+    def __init__(self) -> None:
+        self.acks: list = []
+
+    def acknowledge_play_purchase(self, facts):
+        self.acks.append(facts)
+
+
 def _harness(monkeypatch: pytest.MonkeyPatch, gateway: object, **settings: object):
     """Returns a client and the list of changes that reached the database."""
     written: list = []
@@ -145,6 +155,38 @@ def test_an_unconfigured_store_refuses_rather_than_assumes(
 
     assert response.status_code == 503
     assert written == []
+
+
+def test_a_successful_persist_acknowledges_play_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    gateway = _AcknowledgingGateway()
+    client, written = _harness(monkeypatch, gateway)
+    response = client.post(
+        "/billing/store/play/purchase",
+        json={"purchase_token": "token-abc", "product_id": "badgeday.promote.monthly"},
+    )
+
+    assert response.status_code == 200
+    assert len(written) == 1
+    assert len(gateway.acks) == 1
+    assert gateway.acks[0].purchase_identifier == "token-abc"
+
+
+def test_a_failed_persist_does_not_acknowledge_play(monkeypatch: pytest.MonkeyPatch) -> None:
+    gateway = _AcknowledgingGateway()
+    client, written = _harness(monkeypatch, gateway)
+    monkeypatch.setattr(
+        "app.api.store.apply_store_change",
+        lambda _db, _change: (_ for _ in ()).throw(RuntimeError("db write failed")),
+    )
+
+    with pytest.raises(RuntimeError, match="db write failed"):
+        client.post(
+            "/billing/store/play/purchase",
+            json={"purchase_token": "token-abc", "product_id": "badgeday.promote.monthly"},
+        )
+
+    assert written == []
+    assert gateway.acks == []
 
 
 def test_a_confirmed_appstore_purchase_is_recorded(monkeypatch: pytest.MonkeyPatch) -> None:

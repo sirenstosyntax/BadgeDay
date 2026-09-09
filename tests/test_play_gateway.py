@@ -1,9 +1,10 @@
 """The parts of the Play gateway that do not need Google.
 
-Verifying a push token and calling the Developer API cannot be tested here. Everything
-between them can: unwrapping the Pub/Sub envelope, reading Google's timestamps, and picking
-the expiry out of a subscription. All three are places where a quiet wrong answer becomes a
-wrong entitlement rather than an error anybody sees.
+Verifying a push token against Google's keys cannot be tested here. Everything
+between a fake publisher and the entitlement facts can: unwrapping the Pub/Sub
+envelope, reading Google's timestamps, picking the expiry out of a subscription,
+and the lookup-then-persist-then-acknowledge order. Those are places where a
+quiet wrong answer becomes a wrong entitlement rather than an error anybody sees.
 
 The timestamp one is the sharpest. Google emits nanosecond precision and
 `datetime.fromisoformat` accepts six digits, so the obvious implementation returns None on
@@ -16,12 +17,21 @@ from datetime import UTC, datetime
 import pytest
 
 from app.billing.play_gateway import (
+    PlayGateway,
     _decode_pubsub_envelope,
     _latest_expiry,
     _parse_rfc3339,
     acknowledge_already_done,
+    persist_then_acknowledge,
 )
 from app.billing.store_gateway import StoreVerificationError
+from app.config import Settings
+
+# Test-only product ids. Not PLAY_PRODUCT_ID_* values and not a price.
+_SUBSCRIPTION_ID = "test.monthly"
+_PASS_ID = "test.pass"
+_TOKEN = "purchase-token-abc"
+_USER = "user-from-app"
 
 # --- Google's timestamps -----------------------------------------------------
 
@@ -105,6 +115,200 @@ def test_already_acknowledged_is_not_a_failure() -> None:
     """A replayed report must not look like the purchase failed."""
     assert acknowledge_already_done(RuntimeError("The purchase has already been acknowledged."))
     assert not acknowledge_already_done(RuntimeError("quota exceeded"))
+
+
+# --- Lookup, persist, acknowledge --------------------------------------------
+
+
+class _PendingCall:
+    def __init__(self, result=None, error: BaseException | None = None) -> None:
+        self._result = result
+        self._error = error
+
+    def execute(self):
+        if self._error is not None:
+            raise self._error
+        return self._result
+
+
+class _FakePublisher:
+    """The shape `PlayGateway` walks on `_androidpublisher()`. No network."""
+
+    def __init__(self) -> None:
+        self.lookups: list[tuple] = []
+        self.acks: list[tuple] = []
+        self.ack_error: BaseException | None = None
+        self.subscription = {
+            "subscriptionState": "SUBSCRIPTION_STATE_ACTIVE",
+            "lineItems": [{"expiryTime": "2026-10-31T12:00:00Z"}],
+            "externalAccountIdentifiers": {"obfuscatedExternalAccountId": "obfuscated-user"},
+        }
+        self.product = {
+            "purchaseState": 0,
+            "obfuscatedExternalAccountId": "obfuscated-user",
+        }
+
+    def purchases(self) -> "_FakePurchases":
+        return _FakePurchases(self)
+
+
+class _FakePurchases:
+    def __init__(self, publisher: _FakePublisher) -> None:
+        self._publisher = publisher
+
+    def subscriptionsv2(self) -> "_FakeSubscriptionsV2":
+        return _FakeSubscriptionsV2(self._publisher)
+
+    def subscriptions(self) -> "_FakeSubscriptions":
+        return _FakeSubscriptions(self._publisher)
+
+    def products(self) -> "_FakeProducts":
+        return _FakeProducts(self._publisher)
+
+
+class _FakeSubscriptionsV2:
+    def __init__(self, publisher: _FakePublisher) -> None:
+        self._publisher = publisher
+
+    def get(self, **kwargs):
+        self._publisher.lookups.append(("subscriptionsv2.get", kwargs))
+        return _PendingCall(self._publisher.subscription)
+
+
+class _FakeSubscriptions:
+    def __init__(self, publisher: _FakePublisher) -> None:
+        self._publisher = publisher
+
+    def acknowledge(self, **kwargs):
+        self._publisher.acks.append(("subscriptions.acknowledge", kwargs))
+        return _PendingCall(error=self._publisher.ack_error)
+
+
+class _FakeProducts:
+    def __init__(self, publisher: _FakePublisher) -> None:
+        self._publisher = publisher
+
+    def get(self, **kwargs):
+        self._publisher.lookups.append(("products.get", kwargs))
+        return _PendingCall(self._publisher.product)
+
+    def acknowledge(self, **kwargs):
+        self._publisher.acks.append(("products.acknowledge", kwargs))
+        return _PendingCall(error=self._publisher.ack_error)
+
+
+def _play_gateway(publisher: _FakePublisher | None = None) -> tuple[PlayGateway, _FakePublisher]:
+    publisher = publisher or _FakePublisher()
+    gateway = PlayGateway(
+        Settings(
+            play_package_name="com.badgeday.app",
+            play_service_account_json="{}",
+            play_pubsub_audience="https://example.test/play",
+            play_pubsub_service_account="rtdn@example.test",
+            play_product_id_monthly=_SUBSCRIPTION_ID,
+        )
+    )
+    gateway._androidpublisher = lambda: publisher  # type: ignore[method-assign]
+    return gateway, publisher
+
+
+def test_successful_subscription_verify_acknowledges_after_persist() -> None:
+    """The verify path looks up, then persist_then_acknowledge hits Play once.
+
+    `_acknowledge` used to run inside `_subscription_facts` before the row was
+    written. If that write then failed, Play would not auto-refund.
+    """
+    gateway, publisher = _play_gateway()
+    persisted: list[object] = []
+
+    facts = gateway.verify_play_purchase(
+        purchase_token=_TOKEN, product_id=_SUBSCRIPTION_ID, user_id=_USER
+    )
+
+    assert facts.kind == "subscription"
+    assert facts.state == "purchased"
+    assert facts.user_id == _USER
+    assert publisher.lookups == [
+        (
+            "subscriptionsv2.get",
+            {"packageName": "com.badgeday.app", "token": _TOKEN},
+        )
+    ]
+    assert publisher.acks == []
+
+    persist_then_acknowledge(gateway, facts, lambda: persisted.append(facts))
+
+    assert persisted == [facts]
+    assert len(publisher.acks) == 1
+    assert publisher.acks[0] == (
+        "subscriptions.acknowledge",
+        {
+            "packageName": "com.badgeday.app",
+            "subscriptionId": _SUBSCRIPTION_ID,
+            "token": _TOKEN,
+            "body": {},
+        },
+    )
+
+
+def test_successful_pass_verify_acknowledges_after_persist() -> None:
+    gateway, publisher = _play_gateway()
+    persisted: list[object] = []
+
+    facts = gateway.verify_play_purchase(
+        purchase_token=_TOKEN, product_id=_PASS_ID, user_id=_USER
+    )
+
+    assert facts.kind == "pass"
+    assert facts.state == "purchased"
+    assert publisher.acks == []
+
+    persist_then_acknowledge(gateway, facts, lambda: persisted.append(facts))
+
+    assert persisted == [facts]
+    assert publisher.acks == [
+        (
+            "products.acknowledge",
+            {
+                "packageName": "com.badgeday.app",
+                "productId": _PASS_ID,
+                "token": _TOKEN,
+                "body": {},
+            },
+        )
+    ]
+
+
+def test_failed_persist_does_not_acknowledge() -> None:
+    gateway, publisher = _play_gateway()
+
+    facts = gateway.verify_play_purchase(
+        purchase_token=_TOKEN, product_id=_SUBSCRIPTION_ID, user_id=_USER
+    )
+
+    def boom() -> None:
+        raise RuntimeError("store_purchases write failed")
+
+    with pytest.raises(RuntimeError, match="store_purchases"):
+        persist_then_acknowledge(gateway, facts, boom)
+
+    assert publisher.acks == []
+
+
+def test_already_acknowledged_from_play_is_not_raised() -> None:
+    """A replayed report must still persist; Play's 400 is success."""
+    publisher = _FakePublisher()
+    publisher.ack_error = RuntimeError("The purchase has already been acknowledged.")
+    gateway, publisher = _play_gateway(publisher)
+    persisted: list[object] = []
+
+    facts = gateway.verify_play_purchase(
+        purchase_token=_TOKEN, product_id=_SUBSCRIPTION_ID, user_id=_USER
+    )
+    persist_then_acknowledge(gateway, facts, lambda: persisted.append(facts))
+
+    assert persisted == [facts]
+    assert len(publisher.acks) == 1
 
 
 def test_anything_that_is_not_an_envelope_is_a_verification_failure() -> None:

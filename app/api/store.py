@@ -24,7 +24,8 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUserDep, ServiceDbDep, SettingsDep, StoreGatewayDep
-from app.billing.store import store_changes
+from app.billing.play_gateway import persist_then_acknowledge
+from app.billing.store import PurchaseFacts, store_changes
 from app.billing.store_gateway import StoreNotConfigured, StoreVerificationError
 from app.storage.store import apply_store_change
 
@@ -74,9 +75,7 @@ def play_purchase(
             "Google could not confirm that purchase.",
         ) from exc
 
-    for change in store_changes(facts):
-        apply_store_change(service, change)
-
+    _persist_play_purchase(service, gateway, facts)
     return Unlocked(entitled=facts.state == "purchased", product_id=facts.product_id)
 
 
@@ -138,8 +137,7 @@ async def play_notifications(
     if facts is None:
         return {"received": True}
 
-    for change in store_changes(facts):
-        apply_store_change(service, change)
+    _persist_play_purchase(service, gateway, facts)
     return {"received": True}
 
 
@@ -168,3 +166,17 @@ async def appstore_notifications(
     for change in store_changes(facts):
         apply_store_change(service, change)
     return {"received": True}
+
+
+def _persist_play_purchase(service, gateway, facts: PurchaseFacts) -> None:
+    """Record the verified purchase, then acknowledge. Ack-before-write is a leak."""
+    persist_then_acknowledge(
+        gateway,
+        facts,
+        lambda: _apply_store_facts(service, facts),
+    )
+
+
+def _apply_store_facts(service, facts: PurchaseFacts) -> None:
+    for change in store_changes(facts):
+        apply_store_change(service, change)

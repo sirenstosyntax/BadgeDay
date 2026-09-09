@@ -19,9 +19,10 @@ the difference (type 12 versus type 13) and the lookup does not. Since a revocat
 end access immediately while an expiry lets the paid-through date stand, the notification's
 verdict is kept and the lookup is used only for the facts it alone has.
 
-Nothing here is exercised by the test suite. It cannot be: every path needs a service
-account, a Pub/Sub subscription and a real purchase. The mapping it feeds, which is where
-the decisions actually live, is tested exhaustively in test_store_plan.py.
+Push-token verification and a live Developer API call still need a service account.
+The lookup-then-persist-then-acknowledge order is unit-tested against a fake
+publisher in test_play_gateway.py. The mapping those facts feed is tested in
+test_store_plan.py.
 """
 
 import base64
@@ -29,6 +30,7 @@ import binascii
 import json
 import logging
 import re
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from app.billing.store import PurchaseFacts, StoreState
@@ -140,7 +142,7 @@ class PlayGateway:
                 f"{purchase.get('subscriptionState')}"
             )
 
-        facts = PurchaseFacts(
+        return PurchaseFacts(
             platform="play",
             product_id=product_id,
             purchase_identifier=purchase_token,
@@ -149,11 +151,6 @@ class PlayGateway:
             expires_at=_latest_expiry(purchase),
             user_id=user_id or _account_id(purchase),
         )
-        # Play refunds an unacknowledged purchase after three days. Digital
-        # Goods v2.1 has no acknowledge() for a subscription, so this is the
-        # production path — same reason DrillGround posts to its ack endpoint.
-        self._acknowledge(product_id, purchase_token, subscription=True)
-        return facts
 
     def _product_facts(
         self,
@@ -175,7 +172,7 @@ class PlayGateway:
             else:
                 raise StoreVerificationError("purchase is still pending")
 
-        facts = PurchaseFacts(
+        return PurchaseFacts(
             platform="play",
             product_id=product_id,
             purchase_identifier=purchase_token,
@@ -186,8 +183,6 @@ class PlayGateway:
             expires_at=None,
             user_id=user_id or purchase.get("obfuscatedExternalAccountId") or None,
         )
-        self._acknowledge(product_id, purchase_token, subscription=False)
-        return facts
 
     def verify_appstore_purchase(self, *, transaction_id: str, user_id: str) -> PurchaseFacts:
         raise StoreVerificationError("This gateway is Google Play only.")
@@ -247,6 +242,21 @@ class PlayGateway:
         if claims.get("email") != self._service_account:
             raise StoreVerificationError("push token was signed by an unexpected account")
 
+    def acknowledge_play_purchase(self, facts: PurchaseFacts) -> None:
+        """Tell Play we recorded the purchase. Call only after a successful persist.
+
+        Play refunds an unacknowledged purchase after three days. Digital Goods
+        v2.1 has no acknowledge() for a subscription, so this is the production
+        path — same reason DrillGround posts to its ack endpoint. Acknowledging
+        before the row exists is worse: Play will not auto-refund a token it
+        already considers ours if the write then fails.
+        """
+        self._acknowledge(
+            facts.product_id,
+            facts.purchase_identifier,
+            subscription=facts.kind == "subscription",
+        )
+
     def _acknowledge(self, product_id: str, purchase_token: str, *, subscription: bool) -> None:
         """Tell Play we have the purchase. Failure here must not un-grant.
 
@@ -285,6 +295,22 @@ class PlayGateway:
                 logger.info("Play purchase already acknowledged: %s", product_id)
                 return
             logger.error("Play acknowledge failed for %s: %s", product_id, exc)
+
+
+def persist_then_acknowledge(
+    gateway: object, facts: PurchaseFacts, persist: Callable[[], None]
+) -> None:
+    """Write the purchase first, then tell Play.
+
+    An acknowledgement that lands before a failed write cannot be undone —
+    Play will not auto-refund a token it already considers recorded. A gateway
+    without `acknowledge_play_purchase` is a test double; it persists and
+    stops.
+    """
+    persist()
+    acknowledge = getattr(gateway, "acknowledge_play_purchase", None)
+    if acknowledge is not None:
+        acknowledge(facts)
 
 
 def acknowledge_already_done(exc: BaseException) -> bool:

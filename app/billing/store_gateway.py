@@ -160,6 +160,9 @@ class StoreGateways:
             purchase_token=purchase_token, product_id=product_id, user_id=user_id
         )
 
+    def acknowledge_play_purchase(self, facts: PurchaseFacts) -> None:
+        return self._for_play().acknowledge_play_purchase(facts)
+
     def verify_appstore_purchase(self, *, transaction_id: str, user_id: str) -> PurchaseFacts:
         return self._for_appstore().verify_appstore_purchase(
             transaction_id=transaction_id, user_id=user_id

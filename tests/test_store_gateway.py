@@ -64,6 +64,20 @@ def test_one_store_being_absent_does_not_disable_the_other() -> None:
         gateway.verify_appstore_purchase(transaction_id="t", user_id="u")
 
 
+def test_acknowledge_play_purchase_is_routed_to_play() -> None:
+    class _Play:
+        def __init__(self) -> None:
+            self.seen: object = None
+
+        def acknowledge_play_purchase(self, facts: object) -> None:
+            self.seen = facts
+
+    play = _Play()
+    gateway = StoreGateways(play=play, appstore=None)
+    gateway.acknowledge_play_purchase("recorded")
+    assert play.seen == "recorded"
+
+
 def test_a_store_that_failed_to_start_says_why() -> None:
     """A bad credential must surface as its own reason, not as a generic 'not configured'.
 
