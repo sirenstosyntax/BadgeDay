@@ -23,7 +23,7 @@ export function submitErrorMessage(
 }
 
 /**
- * One C2 spoken question. Record, submit, read the candidate critique.
+ * One C2 spoken question. Record once, submit, read the candidate critique.
  * The server never sends a score on this path; this screen does not invent one.
  */
 export function Recruit({ onDone }: { onDone: () => void }) {
@@ -64,7 +64,8 @@ export function Recruit({ onDone }: { onDone: () => void }) {
   }
 
   async function startRecording() {
-    if (!question) return
+    // First take only. A finished recording stays in `recorded`; this is not a retry.
+    if (!question || phase !== 'ready') return
     setError(null)
     blob.current = null
     chunks.current = []
@@ -147,21 +148,14 @@ export function Recruit({ onDone }: { onDone: () => void }) {
         </button>
       )}
 
+      {/* One take. No re-record — CLAUDE.md binding constraint. */}
       {phase === 'recorded' && (
-        <div className="flex gap-2">
-          <button
-            onClick={() => void submit()}
-            className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900"
-          >
-            Submit
-          </button>
-          <button
-            onClick={() => void startRecording()}
-            className="rounded-lg border border-stone-300 px-4 py-2 text-sm dark:border-stone-700"
-          >
-            Record again
-          </button>
-        </div>
+        <button
+          onClick={() => void submit()}
+          className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900"
+        >
+          Submit
+        </button>
       )}
 
       {phase === 'submitting' && (
