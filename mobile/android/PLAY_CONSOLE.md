@@ -75,16 +75,15 @@ Links or Play Billing on a real device in ways this build cannot see.
 
 ## 5. Digital Asset Links
 
-After the first signed upload, Play shows the app-signing SHA-256.
+`mobile/android/assetlinks.template.json` already has the Play app-signing
+SHA-256 for `com.badgeday.app`. Do not fill or replace a placeholder.
 
-1. Copy `mobile/android/assetlinks.template.json`.
-2. Replace `REPLACE_WITH_THE_PLAY_APP_SIGNING_SHA256_FINGERPRINT` with Play's
-   colon-separated SHA-256.
-3. Serve the result at
-   `https://app.badgeday.com/.well-known/assetlinks.json`
-   (this repo: `web/public/.well-known/assetlinks.json`, then deploy the app).
-   Do **not** put a placeholder file there — a wrong fingerprint fails
-   verification the same as none, and looks configured.
+The remaining step is copy and deploy:
+
+1. Copy `mobile/android/assetlinks.template.json` to
+   `web/public/.well-known/assetlinks.json`.
+2. Deploy the app so that file is served at
+   `https://app.badgeday.com/.well-known/assetlinks.json`.
 
 The TWA host is `app.badgeday.com`. The marketing site on `badgeday.com` is the
 wrong origin for this file.

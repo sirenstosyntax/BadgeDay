@@ -4,10 +4,9 @@ Digital Asset Links for the Play TWA (`com.badgeday.app`) must be served from
 **this host** — `https://app.badgeday.com/.well-known/assetlinks.json` — not
 from the marketing site.
 
-`assetlinks.json` is deliberately absent. Copy
-`mobile/android/assetlinks.template.json` and fill in the Play **app signing**
-SHA-256 (Play Console → Setup → App integrity) after the first signed upload.
-A placeholder fingerprint fails verification and looks configured; none at all
-is the honest state until that hash exists.
+`mobile/android/assetlinks.template.json` already has the Play app-signing
+SHA-256. `assetlinks.json` is still absent here. The remaining step is to copy
+that filled template to `web/public/.well-known/assetlinks.json` and deploy so
+it is served at `https://app.badgeday.com/.well-known/assetlinks.json`.
 
 See `mobile/android/PLAY_CONSOLE.md`.
