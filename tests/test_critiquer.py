@@ -157,9 +157,9 @@ def test_a_clean_critique_stops_after_one_attempt(rubric, settings) -> None:
 
 
 def test_the_deciding_clause_is_resolved_onto_the_critique(rubric, settings) -> None:
-    outcome = _run(FakeClient([_draft(deciding_clause_id="c3.anchor.4B")]), rubric, settings)
+    outcome = _run(FakeClient([_draft(deciding_clause_id="c3.anchor.4")]), rubric, settings)
     assert outcome.critique.deciding_clause is not None
-    assert outcome.critique.deciding_clause.clause_id == "c3.anchor.4B"
+    assert outcome.critique.deciding_clause.clause_id == "c3.anchor.4"
     assert outcome.critique.determination
 
 

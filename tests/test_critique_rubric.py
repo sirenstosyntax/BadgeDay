@@ -170,7 +170,8 @@ def test_the_c3_scorer_region_carries_the_sme_rulings():
     assert "One exchange does not supply two behaviours" in text  # 2026-08-10 — breadth
     assert "It does not by itself earn him the band" in text  # 2026-08-10 — and not the band
     assert "does not move the band by itself" in text  # 2026-09-10 — note 5 critique-only
-    assert "change the situation" in text  # 2026-09-10 — 4 vs 3 named other
+    assert "who changes the situation" in text  # 2026-09-10 — 4 vs 3 named other
+    assert "Mere response when spoken to is not enough" in text
     assert "there are no route tags" in text  # 2026-09-10 — clean 1–5
     assert "Being changed by a named colleague clears this clause on its own" in text
 

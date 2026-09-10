@@ -79,7 +79,8 @@ wearing a personality costume.
 As for here, the appeal is the structure and the clarity of the role. You know what's
 expected, there's a chain of command, and the training is properly resourced.
 """,
-        "anchor.4B — handles people cleanly, appetite for the crew life unproven.",
+        "anchor.4 — handles people cleanly, appetite for the crew life unproven "
+        "(C3 route tags dropped 2026-09-10; score is a bare 4).",
     ),
     ReviewAnswer(
         "C",
@@ -93,7 +94,8 @@ eye on it and covered the first half hour when he wasn't there, and after a few 
 sort of settled down on its own.
 """,
         "anchor.4 boundary — the teammate responds when spoken to but changes nothing. "
-        "Pairs with F. Does answering count as 'an action'?",
+        "Pairs with F. Grant 2026-09-10: reply-only does not clear; the other person "
+        "must change the situation.",
     ),
     ReviewAnswer(
         "D",
@@ -157,8 +159,9 @@ Took me ten minutes. It was easier than having the conversation, honestly.
 I loved that crew though. That's the part of this job I want — you're with the same people
 for twenty-four hours, you eat together. I've missed it since I moved.
 """,
-        "anchor.4A — genuine appetite for the crew, real relationships, but friction "
-        "handled by going around the person and narrated without discomfort.",
+        "anchor.4 — genuine appetite for the crew, real relationships, but friction "
+        "handled by going around the person and narrated without discomfort "
+        "(C3 route tags dropped 2026-09-10; this was the wants-the-crew axis).",
     ),
     ReviewAnswer(
         "H",
@@ -225,10 +228,10 @@ I did two years there. It was useful experience and it's the reason I've got a d
 of what the job actually involves day to day. I've moved into logistics since, which pays
 better, but I always intended to come back to this.
 """,
-        "anchor.4B, second attempt. B does not reach 4B — the pickers in it never act, so "
+        "anchor.4, second attempt. B does not reach 4 — the pickers in it never act, so "
         "anchor.2 fires alongside and wins. Here the other person genuinely acts while the "
-        "appetite for the crew stays instrumental. If neither B nor K reaches 4B, the route "
-        "is probably unreachable, which bears directly on whether the routes should exist.",
+        "appetite for the crew stays instrumental. C3 route tags dropped 2026-09-10; the "
+        "handles-people / appetite-unproven diagnosis stays critique prose on a bare 4.",
     ),
     # Added 2026-08-17. E has been filed since July as the note 5 probe and has never once
     # probed it: across forty runs at n=20, twice, no determination has decided on "I've
