@@ -10,8 +10,9 @@
 > low-band, peer escalate, C3/C5 overlap). Originally drafted by Red into the review
 > chain; Grant authorized this file as Grant-approved / publishable on 2026-09-10.
 >
-> This approval does not wire the live scorer, does not go live on pricing, and does not
-> approve Criterion 3 (C1 and C5 are Grant-approved / publishable 2026-09-10).
+> This approval does not wire the live scorer and does not go live on pricing. Criterion 3
+> is Grant-approved / publishable 2026-09-10; all five criteria (C1–C5) are now
+> publishable for scoring (C2 was already SME-approved).
 
 | | |
 |---|---|
@@ -265,8 +266,9 @@ without saying which part each score is reading.
 **Grant-approved / publishable 2026-09-10.** Captain pass kept all adjacent boundaries as
 drafted — 5↔4, 4↔3, 3↔2, 2↔1 — and settled that corroboration may move the designated
 band by at most one. Originally drafted by Red into the review chain. This approval does
-not wire the live scorer, does not go live on pricing, and does not approve C3 (C1 and
-C5 are Grant-approved / publishable 2026-09-10).
+not wire the live scorer and does not go live on pricing. C3 is Grant-approved /
+publishable 2026-09-10; all five criteria (C1–C5) are now publishable for scoring (C2 was
+already SME-approved).
 
 **What is grounded (Grant-settled / Grant-approved).**
 

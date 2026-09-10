@@ -2,27 +2,24 @@
 
 **Criterion 3 of 5 — Teamwork & Interpersonal**
 
-> ## ⚠️ DRAFT — NOT SME-APPROVED. NOT PUBLISHABLE.
+> ## GRANT-APPROVED 2026-09-10 — PUBLISHABLE FOR SCORING
 >
-> Anchors below were **drafted by Claude**, not authored by a fire captain. That is the
-> reverse of how Criterion 2 was made, and it is allowed only as generation *into* the
-> review chain — `recruit_design_decisions.md` §2: *a model may draft rubric candidates for
-> SME review; it never authors a rubric that reaches a candidate unreviewed.*
+> Anchors kept as drafted after Grant’s captain pass on adjacent bands (5↔4, 4↔3, 3↔2,
+> 2↔1). Structure settled this pass: **clean 1–5, no 4A/4B route tags.** Note 5 closed
+> (unfalsifiable claim is critique only). “Takes an action” at 4 vs 3 requires the other
+> person to change the situation. Being-changed reaches 5 on its own. Rewritten earlier
+> from Grant’s blind scores; Grant authorized this file as Grant-approved / publishable
+> on 2026-09-10 after the text pass.
 >
-> **What is grounded and what is invented** is marked per section below. In short: the
-> dimension, its two axes, and the question this criterion answers for a panel are all
-> sourced. **The discrimination between adjacent scores is not** — that is exactly what
-> `recruit_oral_board_sources.md` says no public source provides and only Grant's
-> experience can supply. Read the anchors as a first draft to correct, not to approve.
->
-> Nothing here scores a real candidate until that review has happened.
+> This approval does not wire the live scorer and does not go live on pricing. All five
+> criteria (C1–C5) are now Grant-approved / publishable (C2 was already SME-approved).
 
 | | |
 |---|---|
-| Scale | 1–5, **plus a not-assessable outcome** — see scoring note 4 |
-| Structure | Generic frame, drafted anchors |
-| Anchor authorship | **Claude — draft, unreviewed** |
-| Anchor status | Draft. Level 2 written first, per the open risk carried by Criterion 2. |
+| Scale | 1–5, **plus not-assessable** — see scoring note 4 |
+| Structure | Generic frame, drafted anchors; **clean 1–5, no route tags** |
+| Anchor authorship | Grant approved 2026-09-10 (rewritten earlier from Grant blind scores; text pass + adjacent bands kept as drafted; structure settles listed) |
+| Anchor status | **Grant-approved / publishable 2026-09-10.** Adjacent bands kept as drafted after captain pass. Clean 1–5; no 4A/4B route tags. |
 | Scored on | **The whole board**, with a designated teamwork question as the primary evidence |
 
 ---
@@ -172,23 +169,20 @@ what he did and how he tells it. A candidate who describes a real problem honest
 better than one who reports that he has never had a disagreement with anyone — the second
 answer is usually not true, and is sometimes a bigger flag than the problem would have been.
 
-> **Open — this note has no landing place, and the harness found it.** It says a flag
-> exists; no anchor says where the flag lands. Running the draft, nineteen of twenty scored
-> a borderline answer at 3 and one scored it 2, and the dissent was this note applied to a
-> closing *"I've always gotten along with everyone I've worked with."* That reading is
-> available because nothing rules it out. Decide whether the never-had-a-disagreement claim
-> is a level 2 tell in its own right, or a thing to note in critique that does not move the
-> score, and put the answer in the anchor rather than here.
->
-> Narrowed 2026-08-06, not closed. Where the claim is **not** in the answer and the risk is
-> that he opens with one next time, that is note 10 and it does not touch the score. This
-> note still governs the case the harness found, where he actually said it.
+**Settled 2026-09-10 (Grant).** The claim *"I've always gotten along with everyone"* is
+**critique only; it does not move the band by itself.** Anchors 2 and 3 already catch
+cast-missing and mush. Name the claim in critique when it is present. Do not use it alone
+to pull a 3 to a 2 or a 4 to a 3.
+
+Where the claim is **absent** and the risk is that he opens with one next time, that is
+note 10 and it does not touch the score.
 
 **6. Two axes: wanting to, and being able to.**
 Wanting to work with people and being able to work with people are different, and a
-candidate can have either without the other. Level 4 is high on one and short on the other,
-so the score carries a route tag (4A / 4B) and critique must address the axis that is
-short. Feedback keyed to the number will tell him to do more of what he is already doing.
+candidate can have either without the other. Level 4 is often high on one and short on the
+other. **The score is a bare 1–5; there are no route tags.** Critique may still name which
+axis is short — wants the crew versus handles people — in prose, so feedback does not tell
+him to do more of what he is already doing.
 
 **7. Critique voice constraint.**
 Generated critique may state how an answer is **likely to read to a panel**, tied to a
@@ -234,8 +228,9 @@ with people, before the story that shows it"* is the pattern. Supplying what he 
 instead is the one thing this product does not do — see note 7 and the critique constraints.
 
 Introduced from SME review 2026-08-06, which reads the opening-claim risk as a delivery
-matter rather than a deduction. **This does not settle where note 5's flag lands when the
-claim is actually made** — that question is still open, and note 5 still carries it.
+matter rather than a deduction. **Note 5 is closed (Grant 2026-09-10):** when the claim is
+actually present, it is critique only and does not move the band by itself. This note still
+governs when the claim is *absent*.
 
 ---
 
@@ -307,11 +302,12 @@ untied, and do not promote a restating one for being well said.**
 sentence rules out double-counting the halves of a single event. It does not rule out routes 2
 and 3, which are how most answers that genuinely deserve a 5 will clear this clause.
 
-> **Added 2026-08-10 after the n=20 run on answer E** — 5×8, 4B×11, 4×1 — where the
+> **Added 2026-08-10 after the n=20 run on answer E** — 5×8, 4×12 — where the
 > determinations disagreed about precisely one thing: whether *"that's how it works"* counts as
-> a second behaviour. The runs scoring 5 counted it; one scoring 4 rejected it as *"a general
+> a second behaviour. The runs scoring 5 counted it; those scoring 4 rejected it as *"a general
 > rule about the crew rather than a tied occasion"*, which is route 2 being read out of the
 > clause by the sentence above it. Both readings were available in the text as written.
+> (Historical run used retired 4A/4B tags; the band split was 5 versus 4.)
 >
 > **Narrowed by SME ruling 2026-08-10, after the re-run**: *"a disposition that just restates
 > the incident isn't a second behaviour."* The numbering moved E from 40% to 95% at the top
@@ -332,6 +328,10 @@ conduct evidenced past the episode that produced it, which is exactly what this 
 for. Where the change persists and the relationship survived, that is a 5 and it needs nothing
 else beside it.
 
+**Confirmed Grant 2026-09-10:** being-changed reaches 5 on its own when lasting change from a
+hard conversation with a named colleague still carries. No second behaviour is required
+beside it.
+
 Read against the paragraph below on not demanding named individuals: that route to 5 predates
 this clause and is **not** narrowed by it.
 
@@ -343,7 +343,7 @@ clause governs.**
 > clause originally read *"more than one of the behaviours listed above"* and said it governed
 > everything below — which silently demoted the being-changed route from a route to a 5 to
 > nothing at all, because it is named four paragraphs down and not in the list. The answer
-> written to test that exact route came back **4B against an SME reading of 5** on the first
+> written to test that exact route came back **a 4 against an SME reading of 5** on the first
 > set re-run. A clause that claims precedence has to be read against every route it now
 > outranks, and this one was not.
 
@@ -395,20 +395,21 @@ a real outcome feels like a finished case. What it is short of is not quality bu
 piece of conduct, and nothing to say whether it is how he behaves or how he behaved once.
 
 Two candidates reach a 4 by opposite routes. The score is the same; the diagnosis is not.
-**Record which.**
+**Record which axis is short** in critique — wants the crew versus handles people — without
+a route tag. The score is a bare 4.
 
-**4A — Wants the crew, and says the difficult thing imperfectly.**
+**Wants the crew, and says the difficult thing imperfectly.**
 Genuine appetite for working alongside people, and evidence of real relationships rather
 than asserted ones — he talks about specific people unprompted, and warmly. He *does* raise
 what needs raising, but clumsily: badly timed, too blunt, or in front of others when it
 should have been quiet, and it costs him something each time.
 
 **Rough edges means he says it badly, not that he avoids saying it.** A candidate who
-went around the person instead is not a 4A however warm the rest of the answer is — see
+went around the person instead is not a 4 however warm the rest of the answer is — see
 note 1 and anchor 1. This distinction is the whole difference between a man a crew can
 train and a man a crew cannot rely on.
 
-**4B — Handles people; appetite unproven.**
+**Handles people; appetite unproven.**
 Resolves friction cleanly and can describe defusing a situation without making an enemy of
 anyone. Professional, easy to deal with, no rough edges to report. But there is no evidence
 he actually wants the crew life as opposed to being competent within it — the relationships
@@ -416,15 +417,13 @@ in his stories are transactional, and nobody in them appears to matter to him be
 task. Capable, and not yet visibly interested.
 
 Boundary against 3: a 4 requires **at least one specific incident with a named other person
-who takes an action.** A general account of how he gets along with people, however
-convincing, is a 3 no matter how good it sounds. Stopping at "I work well with everyone" is
-a 3.
+who changes the situation** — fixes something, takes a task, escalates, teaches, or covers.
+A general account of how he gets along with people, however convincing, is a 3 no matter how
+good it sounds. Stopping at "I work well with everyone" is a 3. A reply-only such as
+*"I'm fine"* / *"things are fine"* does **not** clear the bar.
 
-> **Open — "takes an action" is undefined, and the harness walked through the gap.** One
-> run placed a borderline answer at 4A on the grounds that a teammate replying *"things are
-> fine"* when asked was a named other person taking an action. Nothing here rules that out.
-> Decide what clears the bar — plausibly, the other person must do something that changes
-> the situation, not merely respond when spoken to — and say so.
+**Settled 2026-09-10 (Grant).** “Takes an action” means the other person must **change the
+situation**. Mere response when spoken to is not enough.
 
 Boundary against 5: **extent, not quality.** A 4 shows one piece of the conduct anchor 5
 describes; a 5 shows more than one, in more than one place in his account — see the breadth
@@ -437,7 +436,7 @@ and let it go. Whether he reaches 5 is a separate question, and it is answered b
 his account contains.
 
 > **Note the correction.** Until 2026-08-10 this boundary read *"a candidate who got past a
-> deflection... is a 5 and not a 4B."* That sentence drove answer F to 5 in twenty-five
+> deflection... is a 5 and not a 4."* That sentence drove answer F to 5 in twenty-five
 > consecutive runs against an SME reading of a strong 4. It was the right test applied at the
 > wrong boundary.
 
@@ -525,8 +524,8 @@ A 5 on this criterion with a 2 on Criterion 2 is a coherent result, not a contra
 **The self-focused candidate is scored here, at 2, and this closes the gap Criterion 2
 recorded.** Criterion 2 deliberately declines to penalise him — he may legitimately be a
 4 or 5 there — on the grounds that the failure is one of fit and should be scored where it
-occurs. Level 2 above is where it occurs. Until this criterion is reviewed and published,
-that gap is closed in draft only.
+occurs. Level 2 above is where it occurs. This criterion is Grant-approved / publishable
+2026-09-10; the gap is closed.
 
 <!-- scorer:end -->
 
@@ -534,36 +533,41 @@ that gap is closed in draft only.
 
 ## Provenance and limitations
 
-**These anchors are drafted, not authored.** Everything in the Provenance section of
-Criterion 2 applies here with one difference that matters more than the rest: Criterion 2's
-anchors represent a fire captain's scoring judgment, and these do not represent anyone's.
-They are an inference from the sourced material about what the adjacent scores ought to
-distinguish. That inference is the part most likely to be wrong, and it is the part a
-review should attack first.
+**Grant settled C3 structure 2026-09-10 (complete):**
+1. Clean 1–5; drop 4A/4B route tags. Critique may still name which axis is short (wants the crew vs handles people) in prose.
+2. Note 5 closed: “I’ve always gotten along with everyone” is critique only; does not move the band by itself. Anchors 2/3 already catch cast-missing and mush. Note 10 still governs when the claim is *absent* (delivery risk, no score move).
+3. “Takes an action” at the 4 vs 3 boundary: the other person must **change the situation** (fix something, take a task, escalate, teach, cover). Reply-only such as “I’m fine” / “things are fine” does not clear the bar.
+4. Being-changed reaches 5 on its own when lasting change from a hard conversation with a named colleague still carries — no second behaviour required beside it.
+5. Adjacent bands kept as drafted: 5↔4, 4↔3, 3↔2, 2↔1.
 
-**What is grounded.** That teamwork and interpersonal skill belong in the frame, and are
-among the most universally present dimensions across independently authored department
-sources — Salt Lake City asks it twice, once as diverse-group collaboration and once as a
-teammate not pulling their weight. That the dimension has two axes — wanting to work with
-people, and being able to without arousing antagonism — which is Unified Fire Authority's
-own split, department-authored and in the convergent core. That the board is behaviourally
-framed and rewards specific past incidents over self-description (UFA calls the board
-behaviourally-based; SLC teaches STAR explicitly, and six of its eight published questions
-are past-behaviour prompts). That crew respect is one of the three questions a panel is
-resolving, from Lepore.
+**Grant-approved / publishable 2026-09-10.** Captain pass kept all adjacent boundaries as
+drafted. Originally rewritten from Grant’s blind scores (2026-07-29); Grant authorized this
+file as Grant-approved / publishable on 2026-09-10 after the text pass. This approval does
+not wire the live scorer and does not go live on pricing. All five criteria (C1–C5) are now
+Grant-approved / publishable (C2 was already SME-approved).
 
-**What is inherited and unsettled.** Whether this criterion should carry route tags **at
-all**. The two axes are sourced, but splitting level 4 on them copies Criterion 2's 4A/4B
-structure, which `recruit_design_decisions.md` §10 records as having come out of a single
-pass and wanting a second panelist. If that split does not survive review, this one
-probably should not either — and a reviewer who dislikes routes should say so once, for
-both criteria, rather than twice.
+**What is grounded (Grant-settled / Grant-approved).**
 
-**What is invented.** The 1–5 discrimination. Which behaviours belong at which level. The
-decision to score the criterion across the whole board. The claim that the self-focused
-candidate lands at 2 rather than 3 — chosen so that a candidate scoring 4–5 on Criterion 2
-is actually caught rather than averaged into the middle, which is a reasoning-from-purpose
-argument, not experience.
+- Teamwork and interpersonal skill belong in the frame, and are among the most universally
+  present dimensions across independently authored department sources — Salt Lake City asks
+  it twice, once as diverse-group collaboration and once as a teammate not pulling their
+  weight.
+- The dimension has two axes — wanting to work with people, and being able to without
+  arousing antagonism — Unified Fire Authority’s own split, department-authored and in the
+  convergent core. The axes remain critique guidance; they are not scored route tags.
+- The board is behaviourally framed and rewards specific past incidents over
+  self-description (UFA calls the board behaviourally-based; SLC teaches STAR explicitly).
+- Crew respect is one of the three questions a panel is resolving, from Lepore.
+- Clean 1–5, no route tags — settled by Grant 2026-09-10.
+- Note 5: unfalsifiable claim is critique only — settled by Grant 2026-09-10.
+- 4 vs 3: named other who changes the situation — settled by Grant 2026-09-10.
+- Being-changed → 5 alone — confirmed by Grant 2026-09-10.
+- Adjacent-band boundaries 5↔4, 4↔3, 3↔2, 2↔1 kept as drafted — Grant-approved 2026-09-10.
+- Critique voice, three outcomes (scored / not answered / insufficient evidence).
+- Self-focused candidate lands at 2 — written from Grant’s blind scores; kept on this pass.
+
+**What is no longer unsettled on this criterion.** Route tags: dropped. C2’s 4A/4B split
+remains C2’s own item in `recruit_design_decisions.md` §10.
 
 **Division of labour between sources.** Published material was used for coverage — that
 this dimension exists, what it is called, its two axes, the behavioural frame. It was not
@@ -575,5 +579,9 @@ only part that produces actionable critique.
 Network, or any commercial hiring-test battery. The dimension frame traces to the
 convergent core across department-authored sources, per `recruit_oral_board_sources.md`.
 
+**Hard constraint.** Nothing in this criterion references, depicts, or implies any real fire
+department’s name, logo, insignia, apparatus, or facilities. No employer naming.
+
 **Path to generalisability.** Unchanged from Criterion 2: more panelists, not more web
-content. This criterion needs it more urgently, having had none.
+content. Additional panelists scoring against these anchors independently beat more web
+content.

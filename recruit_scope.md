@@ -183,12 +183,13 @@ Promote's pipeline was CLI-testable before it had a frontend.
 1. ~~**One rubric, authored and SME-approved.**~~ **Done 2026-07-27** — Criterion 2,
    Motivation & Preparation, in `recruit_rubric_c2_motivation.md`. Hand-authored anchors,
    1–5, with a 4A/4B route split, and a 3/4B boundary tightened after the noise-floor run.
-   - **Criterion 3 (Teamwork) drafted 2026-07-28** in `recruit_rubric_c3_teamwork.md` —
-     **by Claude, and unreviewed.** It exists to close the gap Criterion 2 recorded: its
-     level 2 anchor catches the qualified self-focused candidate, and fires on him 20 times
-     out of 20. That gap is therefore closed *in draft only*. Drafting into the review chain
-     is permitted; publishing without SME review is not, so this changes nothing about step
-     3's gate. Criteria 1, 4 and 5 Grant-approved / publishable 2026-09-10 (adjacent bands kept as drafted); not “unwritten.” C3 still owes a text pass.
+   - **Criterion 3 (Teamwork) Grant-approved / publishable 2026-09-10** in
+     `recruit_rubric_c3_teamwork.md` after Grant’s captain text pass (adjacent bands kept
+     as drafted; clean 1–5, no route tags). It exists to close the gap Criterion 2
+     recorded: its level 2 anchor catches the qualified self-focused candidate. That gap
+     is closed. Criteria 1–5 are all Grant-approved / publishable for scoring docs (C2
+     already SME-approved). Bank growth, five-question board *build*, and live scorer
+     wire remain held until Grant opens them — do not invent a start order.
 2. ~~**The critique pipeline, CLI-first.**~~ **Built 2026-07-28** — `app/critique/`,
    exercisable now with `badgeday-critique --rubric c3 --all-fixtures`. Rubric clauses are
    parsed out of the markdown rather than kept beside it, so a point cites `c3.anchor.2`
@@ -319,11 +320,11 @@ either way.
 
    What that costs, recorded so it is not a surprise: pillar 3 is the cheapest of the three
    and the least risky, so the schedule impact is smaller than it looks — but **the binding
-   constraint is not pillar 3, it is rubric coverage.** C1, C4, and C5 are Grant-approved /
-   publishable 2026-09-10 (adjacent bands kept as drafted). C3 is drafted-unreviewed and
-   still owes a text pass. Bank growth and five-question board *build* remain held behind
-   the remaining unpublished rubric (C3). **The C3 text pass still outranks growing the
-   question bank.**
+   constraint is not pillar 3, it is rubric coverage.** C1–C5 are Grant-approved /
+   publishable for scoring docs (C2 already SME-approved; C3 Grant-approved 2026-09-10
+   after the captain text pass). Bank growth, five-question board *build*, and live scorer
+   wire remain held until Grant opens them — implementation hold, not a rubric hold. Do
+   not invent a start order.
 
    Pillar 2 additionally becomes the free tier — see `badgeday_pricing.md`. That raises its
    quality bar (it is now the first thing a stranger sees) without changing its scope.
@@ -356,5 +357,6 @@ either way.
 
 5. ~~**Does a practice session issue one question or a full board of five?**~~
    **Settled 2026-09-10: full board of five** (session shape). Whole-board scoring for C1.
-   Five-question board *build* remains held behind the remaining unpublished rubric (C3) —
-   implementation not started. See `recruit_design_decisions.md` §10 Settles 2026-09-10.
+   Five-question board *build* remains held until Grant opens it — implementation not
+   started. Session shape is settled. See `recruit_design_decisions.md` §10 Settles
+   2026-09-10.

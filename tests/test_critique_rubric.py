@@ -105,8 +105,13 @@ def test_real_rubric_parses_and_yields_the_expected_clause_shape(criterion_id):
         assert f"{criterion_id}.anchor.{level}" in ids, f"missing anchor {level}"
     assert any(clause.kind == "note" for clause in rubric.clauses)
 
-    # Both criteria currently split level 4 into routes.
-    assert {f"{criterion_id}.anchor.4A", f"{criterion_id}.anchor.4B"} <= ids
+    # C2 still splits level 4 into route tags. C3 dropped them (Grant 2026-09-10):
+    # clean 1–5; two-axes diagnosis is critique prose only.
+    if criterion_id == "c2":
+        assert {f"{criterion_id}.anchor.4A", f"{criterion_id}.anchor.4B"} <= ids
+    else:
+        assert f"{criterion_id}.anchor.4A" not in ids
+        assert f"{criterion_id}.anchor.4B" not in ids
 
     # No clause carries an empty label, which would render as a blank catalogue line.
     assert all(clause.label.strip() for clause in rubric.clauses)
@@ -164,6 +169,11 @@ def test_the_c3_scorer_region_carries_the_sme_rulings():
     assert "not a cap on it" in text  # 2026-08-06 — the other man acting is not a demerit
     assert "One exchange does not supply two behaviours" in text  # 2026-08-10 — breadth
     assert "It does not by itself earn him the band" in text  # 2026-08-10 — and not the band
+    assert "does not move the band by itself" in text  # 2026-09-10 — note 5 critique-only
+    assert "who changes the situation" in text  # 2026-09-10 — 4 vs 3 named other
+    assert "Mere response when spoken to is not enough" in text
+    assert "there are no route tags" in text  # 2026-09-10 — clean 1–5
+    assert "Being changed by a named colleague clears this clause on its own" in text
 
 
 def test_the_c3_top_band_requires_more_than_one_behaviour():

@@ -48,15 +48,17 @@ likely defect in this file.
 
 ## Read this before pass 1 — the coverage problem
 
-**Only 11 of 36 families can be critiqued today.** The rest load criteria that are
-unwritten. Marked per family; summarised here.
+**All five oral-board criteria are now publishable for scoring** (C2 SME-approved; C1,
+C3, C4, C5 Grant-approved / publishable 2026-09-10). Items in this draft remain
+unreviewed. Bank growth is still held pending Grant start — implementation hold, not
+rubric hold. Marked per family; summarised here.
 
 | Criterion | Status | Families it would score | Items |
 |---|---|--:|--:|
 | **c2** Motivation & Preparation | **SME-approved** | MOT-1…5, JOB-1…4, CMT-1…2 | **88** |
-| **c3** Teamwork & Interpersonal | Drafted by Claude, **unreviewed** | TEA-1…4, CON-1…3 | **56** |
-| **c1** Answer Construction | **Unwritten** (name unsettled) | OPN-1…2 | 16 |
-| **c4 / c5** | **Unwritten** | INT-1…5, STR-1…3, JUD-1…4, SLF-1…4 | **128** |
+| **c3** Teamwork & Interpersonal | **Grant-approved / publishable 2026-09-10** | TEA-1…4, CON-1…3 | **56** |
+| **c1** Answer Construction | **Grant-approved / publishable 2026-09-10** | OPN-1…2 | 16 |
+| **c4 / c5** | **Grant-approved / publishable 2026-09-10** | INT-1…5, STR-1…3, JUD-1…4, SLF-1…4 | **128** |
 
 The 88 c2-scoreable items are usable the moment this file is reviewed. The 128 items under
 c4/c5 are the ones to treat as inventory — worth reviewing at family level *because doing so
@@ -196,8 +198,8 @@ interview; and whether it survived contact with cost or doubt.
 
 # TEA — Teamwork & working relationships
 
-*Criterion **c3**, drafted by Claude and **unreviewed**. These items and the rubric that
-scores them are both unreviewed, so nothing in this group is closer to shippable than c3 is.*
+*Criterion **c3**, Grant-approved / publishable 2026-09-10. These *items* remain
+unreviewed; the rubric hold is closed. Bank growth still held pending Grant start.*
 
 ## TEA-1 — Worked as part of a team toward a shared goal
 
@@ -273,7 +275,8 @@ account of other people's faults with nothing about his own contribution.
 
 # CON — Conflict & interpersonal
 
-*Criterion **c3**, drafted and unreviewed.*
+*Criterion **c3**, Grant-approved / publishable 2026-09-10. Items remain unreviewed; bank
+growth still held pending Grant start.*
 
 ## CON-1 — A specific conflict with a peer or a supervisor
 
