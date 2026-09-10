@@ -16,6 +16,7 @@ from app.api.account import router as account_router
 from app.api.deps import CurrentUser, current_user, get_gateway, get_settings, service_db, user_db
 from app.config import Settings
 from app.storage.billing import Entitlement
+from app.storage.entitlements import ModuleEntitlement
 from app.storage.store import ManagedElsewhere
 
 USER_ID = "44444444-4444-4444-4444-444444444444"
@@ -25,10 +26,27 @@ class _Db:
     """Placeholder; the storage call is monkeypatched over it."""
 
 
+def _recruit(
+    *,
+    entitled: bool = False,
+    subscription_status: str = "none",
+    access_expires_at=None,
+) -> ModuleEntitlement:
+    return ModuleEntitlement(
+        module="recruit",
+        entitled=entitled,
+        subscription_status=subscription_status,
+        access_expires_at=access_expires_at,
+    )
+
+
 def _client(
     monkeypatch: pytest.MonkeyPatch,
     state: Entitlement,
     store: ManagedElsewhere | None = None,
+    *,
+    recruit: ModuleEntitlement | None = None,
+    recruit_store: ManagedElsewhere | None = None,
 ) -> TestClient:
     app = FastAPI()
     app.include_router(account_router)
@@ -38,6 +56,10 @@ def _client(
     app.dependency_overrides[user_db] = _Db
     monkeypatch.setattr("app.api.account.entitlement", lambda *_: state)
     monkeypatch.setattr("app.api.account.managed_elsewhere", lambda *_: store)
+    monkeypatch.setattr(
+        "app.api.account.module_entitlement", lambda *_: recruit or _recruit()
+    )
+    monkeypatch.setattr("app.api.account.managed_elsewhere_for", lambda *_a, **_k: recruit_store)
     return TestClient(app)
 
 
@@ -105,6 +127,68 @@ def test_a_store_subscription_is_reported_so_the_app_can_send_them_to_the_right_
     body = client.get("/me").json()
     assert body["managed_by"] == "appstore"
     assert body["entitled"] is True
+
+
+def test_me_reports_recruit_separately_from_a_promote_subscription(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A Lieutenant plan is not a Recruit plan. The milestone reads recruit, not these."""
+    client = _client(
+        monkeypatch,
+        Entitlement(entitled=True, subscription_status="active", access_expires_at=None),
+        recruit=_recruit(entitled=False, subscription_status="none"),
+    )
+    body = client.get("/me").json()
+    assert body["entitled"] is True
+    assert body["subscription_status"] == "active"
+    assert body["recruit"]["entitled"] is False
+    assert body["recruit"]["subscription_status"] == "none"
+    assert body["recruit"]["managed_by"] is None
+
+
+def test_me_reports_a_stripe_recruit_subscription(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client(
+        monkeypatch,
+        Entitlement(entitled=False, subscription_status="none", access_expires_at=None),
+        recruit=_recruit(entitled=True, subscription_status="active"),
+    )
+    body = client.get("/me").json()
+    assert body["recruit"]["entitled"] is True
+    assert body["recruit"]["subscription_status"] == "active"
+    assert body["recruit"]["managed_by"] is None
+
+
+def test_me_reports_store_managed_recruit_only_from_recruit_products(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client(
+        monkeypatch,
+        Entitlement(entitled=True, subscription_status="none", access_expires_at=None),
+        ManagedElsewhere(
+            platform="play", product_id="badgeday.promote.monthly", status="active"
+        ),
+        recruit=_recruit(entitled=True, subscription_status="active"),
+        recruit_store=ManagedElsewhere(
+            platform="appstore", product_id="named.by.grant.recruit", status="active"
+        ),
+    )
+    body = client.get("/me").json()
+    assert body["managed_by"] == "play"
+    assert body["recruit"]["managed_by"] == "appstore"
+
+
+def test_held_recruit_skus_do_not_invent_a_store_till() -> None:
+    """Blank Recruit product IDs must not match a Promote Play row."""
+    from app.billing.module import store_product_ids_for
+    from app.config import Settings
+    from app.storage.store import managed_elsewhere_for
+
+    assert store_product_ids_for(Settings(), "recruit") == frozenset()
+    assert (
+        managed_elsewhere_for(object(), USER_ID, product_ids=frozenset()) is None
+    )
 
 
 def test_me_exposes_configured_play_product_ids_and_never_invents_them(

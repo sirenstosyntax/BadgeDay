@@ -112,6 +112,33 @@ def managed_elsewhere(db: Client, user_id: str) -> ManagedElsewhere | None:
     return ManagedElsewhere(**rows[0])
 
 
+def managed_elsewhere_for(
+    db: Client, user_id: str, *, product_ids: frozenset[str]
+) -> ManagedElsewhere | None:
+    """Live store purchase whose product is in `product_ids`. Empty set is none.
+
+    Recruit and Promote can both sit on store_purchases. The latest row may be
+    the other module; scan rather than taking limit 1. An empty id set means
+    the SKUs are still held — do not invent a product to match.
+    """
+    if not product_ids:
+        return None
+    rows = (
+        db.table("store_purchases")
+        .select("platform,product_id,status")
+        .eq("user_id", user_id)
+        .neq("status", "canceled")
+        .order("updated_at", desc=True)
+        .execute()
+        .data
+        or []
+    )
+    for row in rows:
+        if row.get("product_id") in product_ids:
+            return ManagedElsewhere(**row)
+    return None
+
+
 def _redact(identifier: str) -> str:
     """Purchase tokens are bearer-ish — enough to query a store about somebody's purchase.
 

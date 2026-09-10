@@ -28,8 +28,9 @@ export const BANK_EXHAUSTED_EVENT = 'recruit_bank_exhausted_viewed'
 export type MilestoneBilling = 'stripe' | 'store' | 'none'
 
 export function milestoneBilling(account: Account | null): MilestoneBilling {
-  if (!account) return 'none'
-  if (account.managed_by === 'play' || account.managed_by === 'appstore') return 'store'
-  if (account.subscription_status !== 'none') return 'stripe'
+  const recruit = account?.recruit
+  if (!recruit) return 'none'
+  if (recruit.managed_by === 'play' || recruit.managed_by === 'appstore') return 'store'
+  if (recruit.subscription_status !== 'none') return 'stripe'
   return 'none'
 }

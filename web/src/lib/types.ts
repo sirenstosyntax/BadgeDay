@@ -41,6 +41,14 @@ export type PlayProducts = {
   intensive_90day: string | null
 }
 
+export type RecruitModule = {
+  entitled: boolean
+  subscription_status: 'none' | 'active' | 'past_due' | 'canceled'
+  access_expires_at: string | null
+  // Store till for a Recruit purchase only. A Promote Play row must not land here.
+  managed_by?: 'play' | 'appstore' | null
+}
+
 export type Account = {
   id: string
   email: string | null
@@ -53,6 +61,9 @@ export type Account = {
   // Play product ids as configured on the server. Empty until Grant names the
   // offer — the client must not invent a substitute.
   play_products?: PlayProducts
+  // Recruit module entitlement. Oral-board milestone billing reads this nest,
+  // never the Promote fields above.
+  recruit?: RecruitModule
 }
 
 /** The two things a candidate can buy. Named, not priced — the price lives in Stripe. */

@@ -197,12 +197,87 @@ def test_milestone_copy_is_signed_and_rejects_about_and_retirement() -> None:
     assert "bank_size: bankSize" in screen
 
 
+def _milestone_billing(account: dict | None) -> str:
+    """Mirror of web/src/lib/recruitMilestone.ts milestoneBilling.
+
+    Block 4 keys off Account.recruit, never Promote subscription_status / managed_by.
+    """
+    recruit = None if account is None else account.get("recruit")
+    if not recruit:
+        return "none"
+    if recruit.get("managed_by") in ("play", "appstore"):
+        return "store"
+    if recruit.get("subscription_status") != "none":
+        return "stripe"
+    return "none"
+
+
+def test_promote_subscriber_without_recruit_does_not_get_stripe_pause() -> None:
+    """Baymax should-fix: a Lieutenant plan must not open Recruit pause / Manage billing."""
+    promote_only = {
+        "entitled": True,
+        "subscription_status": "active",
+        "managed_by": None,
+        "recruit": {
+            "entitled": False,
+            "subscription_status": "none",
+            "managed_by": None,
+        },
+    }
+    assert _milestone_billing(promote_only) == "none"
+    assert _milestone_billing({"subscription_status": "active"}) == "none"
+
+    copy = (WEB / "lib" / "recruitMilestone.ts").read_text()
+    assert "account.subscription_status" not in copy
+    assert "account.managed_by" not in copy
+    assert "account?.recruit" in copy
+    assert "recruit.subscription_status" in copy
+    assert "recruit.managed_by" in copy
+
+
 def test_milestone_billing_omits_pause_for_free_and_skips_stripe_for_store() -> None:
     copy = (WEB / "lib" / "recruitMilestone.ts").read_text()
     screen = (WEB / "ui" / "RecruitMilestone.tsx").read_text()
-    assert "subscription_status !== 'none'" in copy
-    assert "managed_by === 'play'" in copy
-    assert "managed_by === 'appstore'" in copy
+    assert _milestone_billing(None) == "none"
+    assert (
+        _milestone_billing(
+            {
+                "recruit": {
+                    "entitled": False,
+                    "subscription_status": "none",
+                    "managed_by": None,
+                }
+            }
+        )
+        == "none"
+    )
+    assert (
+        _milestone_billing(
+            {
+                "recruit": {
+                    "entitled": True,
+                    "subscription_status": "active",
+                    "managed_by": None,
+                }
+            }
+        )
+        == "stripe"
+    )
+    assert (
+        _milestone_billing(
+            {
+                "recruit": {
+                    "entitled": True,
+                    "subscription_status": "active",
+                    "managed_by": "play",
+                }
+            }
+        )
+        == "store"
+    )
+    assert "recruit.subscription_status !== 'none'" in copy
+    assert "recruit.managed_by === 'play'" in copy
+    assert "recruit.managed_by === 'appstore'" in copy
     assert "billing !== 'none'" in screen
     assert "api.billing.portal" in screen
     assert "caught.status === 409" in screen
