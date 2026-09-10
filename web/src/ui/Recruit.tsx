@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, ApiError, type RecruitResult } from '../lib/api'
+import { api, ApiError, type RecruitQuestionExhausted, type RecruitResult } from '../lib/api'
+import type { Account } from '../lib/types'
+import { RecruitMilestone } from './RecruitMilestone'
 
 const POLL_MS = 2000
 const POLL_TIMEOUT_MS = 15 * 60 * 1000
@@ -30,7 +32,15 @@ async function pollRecruitAttempt(
   throw new ApiError(499, 'Left before the critique finished.')
 }
 
-type Phase = 'loading' | 'ready' | 'blocked' | 'recording' | 'recorded' | 'submitting' | 'done'
+type Phase =
+  | 'loading'
+  | 'ready'
+  | 'milestone'
+  | 'blocked'
+  | 'recording'
+  | 'recorded'
+  | 'submitting'
+  | 'done'
 
 function pickMime(): string {
   const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
@@ -54,10 +64,20 @@ export function submitErrorMessage(
 /**
  * One C2 spoken question. Record once, submit, read the candidate critique.
  * The server never sends a score on this path; this screen does not invent one.
+ * Exhausted bank is a milestone, not an error — no Record without a live question.
  */
-export function Recruit({ onDone }: { onDone: () => void }) {
+export function Recruit({
+  onDone,
+  account,
+  onOpenAccount,
+}: {
+  onDone: () => void
+  account: Account | null
+  onOpenAccount: () => void
+}) {
   const [phase, setPhase] = useState<Phase>('loading')
   const [question, setQuestion] = useState('')
+  const [exhausted, setExhausted] = useState<RecruitQuestionExhausted | null>(null)
   const [lines, setLines] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [persistFailed, setPersistFailed] = useState(false)
@@ -74,6 +94,11 @@ export function Recruit({ onDone }: { onDone: () => void }) {
       .question()
       .then((issued) => {
         if (left.current) return
+        if (issued.state === 'exhausted') {
+          setExhausted(issued)
+          setPhase('milestone')
+          return
+        }
         setQuestion(issued.question_text)
         setPhase('ready')
       })
@@ -161,8 +186,19 @@ export function Recruit({ onDone }: { onDone: () => void }) {
         </button>
       </div>
 
-      <h2 className="text-lg font-medium">{question || 'Loading…'}</h2>
-      {question && (
+      {phase === 'milestone' && exhausted && (
+        <RecruitMilestone
+          answeredCount={exhausted.answered_count}
+          bankSize={exhausted.bank_size}
+          account={account}
+          onOpenAccount={onOpenAccount}
+        />
+      )}
+
+      {phase !== 'milestone' && (
+        <h2 className="text-lg font-medium">{question || 'Loading…'}</h2>
+      )}
+      {phase !== 'milestone' && question && (
         <p className="text-sm text-stone-600 dark:text-stone-400">
           Answer out loud. You’ll get notes on what went well and what to improve.
         </p>

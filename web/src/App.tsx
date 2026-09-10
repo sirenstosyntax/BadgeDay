@@ -114,6 +114,10 @@ export default function App() {
       window.location.href = 'https://play.google.com/store/account/subscriptions'
       return
     }
+    if (account?.managed_by === 'appstore') {
+      setView({ name: 'account' })
+      return
+    }
     try {
       const { url } = await api.billing.portal()
       window.location.href = url
@@ -215,7 +219,11 @@ export default function App() {
             onDone={() => setView({ name: 'choose' })}
           />
         ) : view.name === 'recruit' ? (
-          <Recruit onDone={() => setView({ name: 'choose' })} />
+          <Recruit
+            onDone={() => setView({ name: 'choose' })}
+            account={account}
+            onOpenAccount={() => setView({ name: 'account' })}
+          />
         ) : view.name === 'documents' ? (
           <Documents
             entitled={entitled}

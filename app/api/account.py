@@ -12,13 +12,17 @@ the worst outcome here, so a failure to reach Stripe aborts the whole delete rat
 pressing on.
 """
 
+from datetime import datetime
+
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUserDep, DbDep, GatewayDep, ServiceDbDep, SettingsDep
+from app.billing.module import store_product_ids_for
 from app.storage.account import purge_account
 from app.storage.billing import Entitlement, customer_id_for, entitlement
-from app.storage.store import managed_elsewhere
+from app.storage.entitlements import module_entitlement
+from app.storage.store import managed_elsewhere, managed_elsewhere_for
 
 router = APIRouter(tags=["account"])
 
@@ -28,6 +32,20 @@ class PlayProducts(BaseModel):
 
     monthly: str | None = None
     intensive_90day: str | None = None
+
+
+class RecruitModule(BaseModel):
+    """Recruit-only entitlement. `entitled` is has_recruit_access — the practice gate.
+
+    The Oral-board exhausted money block reads this nest, never Promote
+    entitled / subscription_status, so a Lieutenant plan plus a used free
+    Recruit session cannot open Recruit pause / Manage billing.
+    """
+
+    entitled: bool
+    subscription_status: str
+    access_expires_at: datetime | None = None
+    managed_by: str | None = None
 
 
 class Account(Entitlement):
@@ -40,12 +58,17 @@ class Account(Entitlement):
     # portal button is how a cancellation becomes a chargeback.
     managed_by: str | None = None
     play_products: PlayProducts
+    recruit: RecruitModule
 
 
 @router.get("/me")
 def me(user: CurrentUserDep, db: DbDep, settings: SettingsDep) -> Account:
     state = entitlement(db, user.id)
     store = managed_elsewhere(db, user.id)
+    recruit_state = module_entitlement(db, user.id, "recruit")
+    recruit_store = managed_elsewhere_for(
+        db, user.id, product_ids=store_product_ids_for(settings, "recruit")
+    )
     return Account(
         id=user.id,
         email=user.email,
@@ -53,6 +76,12 @@ def me(user: CurrentUserDep, db: DbDep, settings: SettingsDep) -> Account:
         play_products=PlayProducts(
             monthly=settings.play_product_id_monthly or None,
             intensive_90day=settings.play_product_id_intensive_90day or None,
+        ),
+        recruit=RecruitModule(
+            entitled=recruit_state.entitled,
+            subscription_status=recruit_state.subscription_status,
+            access_expires_at=recruit_state.access_expires_at,
+            managed_by=recruit_store.platform if recruit_store else None,
         ),
         **state.model_dump(),
     )

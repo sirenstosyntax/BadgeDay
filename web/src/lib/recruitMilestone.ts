@@ -1,0 +1,56 @@
+import type { Account } from './types'
+
+export const MILESTONE_FACT = (answeredCount: number) =>
+  `You've answered every question we have — ${answeredCount} of them, none twice.`
+
+export const MILESTONE_MEANING =
+  "The tool has said what it can. Surprise is used up; rehearsed repeats train the wrong skill, so we won't offer them."
+
+export const MILESTONE_STANDING_TITLE = 'Across your recent answers'
+
+export const MILESTONE_STANDING_STUB =
+  'Looking back across your recent answers — what held and what still drops under pressure will show here once we have enough history to summarize. This is not a locked door.'
+
+export const MILESTONE_HANDOFF =
+  "Next reps belong in front of people — a mentor mock board, a station visit, or a ride-along. We name the routes; we don't book the provider."
+
+export const MILESTONE_MONEY_LEAD =
+  'Nothing new until we add questions or older ones come back into rotation.'
+
+export const MILESTONE_MONEY_STRIPE =
+  "Pause from your account page; we'll email when there's more."
+
+export const MILESTONE_PORTAL_FAILED =
+  'The billing portal could not be opened. Nothing was paused. You can manage your plan from Account.'
+
+export const BANK_EXHAUSTED_EVENT = 'recruit_bank_exhausted_viewed'
+
+export type MilestoneBilling = 'stripe' | 'store' | 'none'
+
+export const PLAY_SUBSCRIPTIONS_URL = 'https://play.google.com/store/account/subscriptions'
+
+export type RecruitStoreAction =
+  | { kind: 'play'; href: string }
+  | { kind: 'account' }
+  | { kind: 'none' }
+
+export function milestoneBilling(account: Account | null): MilestoneBilling {
+  // AC17–19: Recruit practice access (has_recruit_access / entitlements row),
+  // then how that Recruit entitlement is billed. Promote Account.entitled
+  // and Account.subscription_status are a different product and are not read.
+  const recruit = account?.recruit
+  if (!recruit?.entitled) return 'none'
+  if (recruit.managed_by === 'play' || recruit.managed_by === 'appstore') return 'store'
+  if (recruit.subscription_status !== 'none') return 'stripe'
+  return 'none'
+}
+
+/** Where the AC18 CTA goes. Uses recruit.managed_by only — never Promote, never Stripe. */
+export function recruitStoreAction(account: Account | null): RecruitStoreAction {
+  if (milestoneBilling(account) !== 'store') return { kind: 'none' }
+  if (account?.recruit?.managed_by === 'play') {
+    return { kind: 'play', href: PLAY_SUBSCRIPTIONS_URL }
+  }
+  if (account?.recruit?.managed_by === 'appstore') return { kind: 'account' }
+  return { kind: 'none' }
+}

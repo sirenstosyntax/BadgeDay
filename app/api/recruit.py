@@ -1,8 +1,10 @@
 """C2 spoken question: issue the prompt, enqueue the critique, poll the result.
 
-One criterion. The question text is `QUESTIONS["c2"]` from the CLI — not a bank,
-not C3. The poll payload is `candidate_lines` only. Score, route, determination,
-and clause ids stay on the server via 0010 / 0011; they are not in this payload.
+GET /question is a discriminant: `available` carries the C2 prompt, `exhausted`
+is a 200 milestone when nothing novel remains (empty bank or every published
+item already issued). Exhaustion is not a 404. The poll payload is
+`candidate_lines` only. Score, route, determination, and clause ids stay on
+the server via 0010 / 0011; they are not in this payload.
 
 The live worker uses Deepgram only. If the key is unset this returns 503 rather
 than enqueueing work that cannot run. `get_transcriber` stays for tests.
@@ -19,15 +21,22 @@ from datetime import UTC, datetime
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, UploadFile, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api.deps import CurrentUserDep, DbDep, SettingsDep
 from app.audio.metrics import compute
 from app.audio.models import Transcript
-from app.critique.cli import QUESTIONS
 from app.critique.models import Metric
+from app.recruit.bank import (
+    C2_SCENARIO_ID,  # noqa: F401 — re-exported for tests and the worker
+    AvailableIssue,
+    ExhaustedIssue,
+    issue,
+)
 from app.recruit.gate import RecruitAccessDenied, check_recruit_access
 from app.storage.recruit import (
+    attempted_scenario_ids,
+    completed_scenario_ids,
     count_attempts,
     create_queued_attempt,
     get_attempt,
@@ -36,15 +45,40 @@ from app.storage.recruit import (
 
 router = APIRouter(prefix="/recruit", tags=["recruit"])
 
-C2_SCENARIO_ID = "c2"
 MAX_AUDIO_BYTES = 10 * 1024 * 1024
 
 AttemptViewStatus = Literal["queued", "running", "completed", "critique_failed"]
 
 
-class RecruitQuestion(BaseModel):
+class RecruitQuestionAvailable(BaseModel):
+    state: Literal["available"] = "available"
     scenario_id: str
     question_text: str
+
+
+class RecruitQuestionExhausted(BaseModel):
+    """Milestone payload. HTTP 200 — the bank is empty or fully seen, not missing."""
+
+    state: Literal["exhausted"] = "exhausted"
+    answered_count: int = Field(ge=0)
+    bank_size: int = Field(ge=0)
+    next_eligible_at: datetime | None = None
+
+
+RecruitQuestion = RecruitQuestionAvailable | RecruitQuestionExhausted
+
+
+def _question_payload(decision: AvailableIssue | ExhaustedIssue) -> RecruitQuestion:
+    if isinstance(decision, ExhaustedIssue):
+        return RecruitQuestionExhausted(
+            answered_count=decision.answered_count,
+            bank_size=decision.bank_size,
+            next_eligible_at=decision.next_eligible_at,
+        )
+    return RecruitQuestionAvailable(
+        scenario_id=decision.scenario_id,
+        question_text=decision.question_text,
+    )
 
 
 class RecruitResult(BaseModel):
@@ -79,10 +113,13 @@ def metrics_for_critique(transcript: Transcript) -> dict[str, Metric]:
 
 
 @router.get("/question")
-def issued_question(_user: CurrentUserDep) -> RecruitQuestion:
-    return RecruitQuestion(
-        scenario_id=C2_SCENARIO_ID,
-        question_text=QUESTIONS[C2_SCENARIO_ID],
+def issued_question(_user: CurrentUserDep, db: DbDep) -> RecruitQuestion:
+    """Next novel bank item, or the exhausted milestone. Auth required; 401 if not."""
+    return _question_payload(
+        issue(
+            attempted_scenario_ids(db),
+            completed_scenario_ids=completed_scenario_ids(db),
+        )
     )
 
 
@@ -131,12 +168,19 @@ def submit_attempt(
     except RecruitAccessDenied as exc:
         raise HTTPException(exc.status_code, exc.detail) from exc
 
+    decision = issue(attempted_scenario_ids(db))
+    if isinstance(decision, ExhaustedIssue):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "There is no new question to answer right now.",
+        )
+
     started_at = datetime.now(UTC)
     record = create_queued_attempt(
         db,
         user.id,
-        scenario_id=C2_SCENARIO_ID,
-        question_text=QUESTIONS[C2_SCENARIO_ID],
+        scenario_id=decision.scenario_id,
+        question_text=decision.question_text,
         started_at=started_at,
         filename=audio.filename or "answer.webm",
         data=data,
