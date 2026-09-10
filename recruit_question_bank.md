@@ -27,7 +27,7 @@ Mapping the families onto the rubrics gives this:
 | Composure under stress | 3 | C5 Judgment & Composure | Structure draft (PR 46) — **not publishable** |
 | Judgment & problem solving | 4 | C5 Judgment & Composure | Structure draft (PR 46) — **not publishable** |
 | Self-awareness | 4 | C5 Judgment & Composure | Structure draft (PR 46) — **not publishable** |
-| Understanding of the job | 4 | C2 (partly) / C1 Answer Construction | Partial |
+| Understanding of the job | 4 | C2 only (Motivation / job realism) | **Approved** |
 | Commitment & availability | 2 | C2 | **Approved** |
 | Closing | 2 | C1 Answer Construction | Structure draft (PR 46) — **not publishable** |
 
