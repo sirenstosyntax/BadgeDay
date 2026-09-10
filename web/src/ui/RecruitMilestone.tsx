@@ -12,6 +12,7 @@ import {
   MILESTONE_STANDING_STUB,
   MILESTONE_STANDING_TITLE,
   milestoneBilling,
+  recruitStoreAction,
 } from '../lib/recruitMilestone'
 import type { Account } from '../lib/types'
 
@@ -24,13 +25,11 @@ export function RecruitMilestone({
   answeredCount,
   bankSize,
   account,
-  onManageBilling,
   onOpenAccount,
 }: {
   answeredCount: number
   bankSize: number
   account: Account | null
-  onManageBilling: () => void
   onOpenAccount: () => void
 }) {
   const billing = milestoneBilling(account)
@@ -42,6 +41,15 @@ export function RecruitMilestone({
       bank_size: bankSize,
     })
   }, [answeredCount, bankSize])
+
+  function openRecruitStore() {
+    const action = recruitStoreAction(account)
+    if (action.kind === 'play') {
+      window.location.href = action.href
+      return
+    }
+    if (action.kind === 'account') onOpenAccount()
+  }
 
   async function openStripePortal() {
     setPortalFailed(false)
@@ -95,7 +103,7 @@ export function RecruitMilestone({
           ) : (
             <button
               type="button"
-              onClick={onManageBilling}
+              onClick={openRecruitStore}
               className="rounded-lg border border-stone-300 px-4 py-2 text-sm dark:border-stone-700"
             >
               Manage billing

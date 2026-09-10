@@ -213,6 +213,25 @@ def _milestone_billing(account: dict | None) -> str:
     return "none"
 
 
+def _recruit_store_action(account: dict | None) -> str:
+    if _milestone_billing(account) != "store":
+        return "none"
+    recruit = None if account is None else account.get("recruit") or {}
+    if recruit.get("managed_by") == "play":
+        return "play"
+    if recruit.get("managed_by") == "appstore":
+        return "account"
+    return "none"
+
+
+def _recruit_jsx(app_source: str) -> str:
+    _before, sep, rest = app_source.partition("<Recruit")
+    assert sep
+    block, end, _tail = rest.partition("/>")
+    assert end
+    return block
+
+
 def test_promote_subscriber_without_recruit_does_not_get_stripe_pause() -> None:
     """AC19: Promote paying + Recruit free-exhausted must not open pause / portal."""
     promote_paying_recruit_free = {
@@ -331,7 +350,50 @@ def test_milestone_billing_omits_pause_for_free_and_skips_stripe_for_store() -> 
     assert "caught.status === 409" in screen
     assert "Nothing was paused" in copy
     assert "onOpenAccount" in screen
-    assert "onManageBilling" in screen
+    assert "onManageBilling" not in screen
+    assert "openRecruitStore" in screen
+    assert "recruitStoreAction" in screen
+
+
+def test_recruit_store_cta_does_not_open_stripe_when_promote_is_stripe() -> None:
+    """AC18: Recruit Play + Promote Stripe must not hit App.manageBilling / portal."""
+    mixed = {
+        "entitled": True,
+        "subscription_status": "active",
+        "managed_by": None,
+        "recruit": {
+            "entitled": True,
+            "subscription_status": "active",
+            "managed_by": "play",
+        },
+    }
+    assert _milestone_billing(mixed) == "store"
+    assert _recruit_store_action(mixed) == "play"
+
+    appstore_mixed = {
+        **mixed,
+        "recruit": {**mixed["recruit"], "managed_by": "appstore"},
+    }
+    assert _milestone_billing(appstore_mixed) == "store"
+    assert _recruit_store_action(appstore_mixed) == "account"
+
+    copy = (WEB / "lib" / "recruitMilestone.ts").read_text()
+    screen = (WEB / "ui" / "RecruitMilestone.tsx").read_text()
+    app = (WEB / "App.tsx").read_text()
+    recruit = (WEB / "ui" / "Recruit.tsx").read_text()
+    assert "recruitStoreAction" in copy
+    assert "account?.recruit?.managed_by" in copy
+    assert "api.billing.portal" not in copy
+    assert "onClick={openRecruitStore}" in screen
+    assert "onManageBilling" not in screen
+    assert "onManageBilling" not in recruit
+    assert "onManageBilling={() => void manageBilling()}" not in _recruit_jsx(app)
+    assert "onClick={() => void openStripePortal()}" in screen
+    assert "onClick={openRecruitStore}" in screen
+    assert "manageBilling" not in screen
+    assert "api.billing.portal" not in screen.split("function openRecruitStore")[1].split(
+        "async function openStripePortal"
+    )[0]
 
 
 def test_analytics_fires_only_from_the_milestone_screen() -> None:

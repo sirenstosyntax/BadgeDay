@@ -69,12 +69,10 @@ export function submitErrorMessage(
 export function Recruit({
   onDone,
   account,
-  onManageBilling,
   onOpenAccount,
 }: {
   onDone: () => void
   account: Account | null
-  onManageBilling: () => void
   onOpenAccount: () => void
 }) {
   const [phase, setPhase] = useState<Phase>('loading')
@@ -193,7 +191,6 @@ export function Recruit({
           answeredCount={exhausted.answered_count}
           bankSize={exhausted.bank_size}
           account={account}
-          onManageBilling={onManageBilling}
           onOpenAccount={onOpenAccount}
         />
       )}

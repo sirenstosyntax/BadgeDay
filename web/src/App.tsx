@@ -222,7 +222,6 @@ export default function App() {
           <Recruit
             onDone={() => setView({ name: 'choose' })}
             account={account}
-            onManageBilling={() => void manageBilling()}
             onOpenAccount={() => setView({ name: 'account' })}
           />
         ) : view.name === 'documents' ? (

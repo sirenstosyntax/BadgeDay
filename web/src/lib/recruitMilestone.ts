@@ -27,6 +27,13 @@ export const BANK_EXHAUSTED_EVENT = 'recruit_bank_exhausted_viewed'
 
 export type MilestoneBilling = 'stripe' | 'store' | 'none'
 
+export const PLAY_SUBSCRIPTIONS_URL = 'https://play.google.com/store/account/subscriptions'
+
+export type RecruitStoreAction =
+  | { kind: 'play'; href: string }
+  | { kind: 'account' }
+  | { kind: 'none' }
+
 export function milestoneBilling(account: Account | null): MilestoneBilling {
   // AC17–19: Recruit practice access (has_recruit_access / entitlements row),
   // then how that Recruit entitlement is billed. Promote Account.entitled
@@ -36,4 +43,14 @@ export function milestoneBilling(account: Account | null): MilestoneBilling {
   if (recruit.managed_by === 'play' || recruit.managed_by === 'appstore') return 'store'
   if (recruit.subscription_status !== 'none') return 'stripe'
   return 'none'
+}
+
+/** Where the AC18 CTA goes. Uses recruit.managed_by only — never Promote, never Stripe. */
+export function recruitStoreAction(account: Account | null): RecruitStoreAction {
+  if (milestoneBilling(account) !== 'store') return { kind: 'none' }
+  if (account?.recruit?.managed_by === 'play') {
+    return { kind: 'play', href: PLAY_SUBSCRIPTIONS_URL }
+  }
+  if (account?.recruit?.managed_by === 'appstore') return { kind: 'account' }
+  return { kind: 'none' }
 }
