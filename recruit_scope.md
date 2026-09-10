@@ -188,7 +188,7 @@ Promote's pipeline was CLI-testable before it had a frontend.
      level 2 anchor catches the qualified self-focused candidate, and fires on him 20 times
      out of 20. That gap is therefore closed *in draft only*. Drafting into the review chain
      is permitted; publishing without SME review is not, so this changes nothing about step
-     3's gate. Criteria 1, 4 and 5 drafted 2026-09-10 (structure-approved via PR 46) — **not publishable** until Grant rewrites adjacent bands; not “unwritten.”
+     3's gate. Criterion 1 Grant-approved / publishable 2026-09-10 (adjacent bands kept as drafted). Criteria 4 and 5 remain structure-approved / not publishable until Grant rewrites adjacent bands; not “unwritten.”
 2. ~~**The critique pipeline, CLI-first.**~~ **Built 2026-07-28** — `app/critique/`,
    exercisable now with `badgeday-critique --rubric c3 --all-fixtures`. Rubric clauses are
    parsed out of the markdown rather than kept beside it, so a point cites `c3.anchor.2`
@@ -319,12 +319,12 @@ either way.
 
    What that costs, recorded so it is not a surprise: pillar 3 is the cheapest of the three
    and the least risky, so the schedule impact is smaller than it looks — but **the binding
-   constraint is not pillar 3, it is rubric coverage.** C1/C4/C5 structure drafts landed
-   2026-09-10 via PR 46 (**structure-approved / not publishable** until adjacent-band
-   rewrite); C3 is drafted-unreviewed and still owes a text pass. Bank growth and
-   five-question board *build* remain held behind publishable rubrics. **Finishing
-   C1/C4/C5 to publishable (and the C3 text pass) still outranks growing the question
-   bank.**
+   constraint is not pillar 3, it is rubric coverage.** C1 is Grant-approved / publishable
+   2026-09-10 (adjacent bands kept as drafted). C4/C5 remain structure-approved / not
+   publishable until adjacent-band rewrite; C3 is drafted-unreviewed and still owes a text
+   pass. Bank growth and five-question board *build* remain held behind publishable
+   rubrics. **Finishing C4/C5 to publishable (and the C3 text pass) still outranks growing
+   the question bank.**
 
    Pillar 2 additionally becomes the free tier — see `badgeday_pricing.md`. That raises its
    quality bar (it is now the first thing a stranger sees) without changing its scope.
@@ -333,12 +333,12 @@ either way.
    traps growing after launch — the first two are the product, the third is what makes it
    feel complete.
 3. ~~**What does Criterion 1 get called?**~~ **Settled 2026-09-10: Answer Construction**
-   (not Communication). Structure approved the same day — clean 1–5 construction (no
-   4A/4B); Delivery three-band Clear/Costly/Blocking; owns-a-miss on the 5; practice
-   sessions = full board of five; whole-board scoring. Draft on main via PR 46 —
-   **STRUCTURE APPROVED / NOT PUBLISHABLE** until Grant rewrites adjacent bands. C4 named
-   **Integrity & Ethics**; C5 named **Judgment & Composure** (same date / same publishability
-   caveat). See `recruit_design_decisions.md` §10 Settles 2026-09-10.
+   (not Communication). Structure: clean 1–5 construction (no 4A/4B); Delivery three-band
+   Clear/Costly/Blocking; owns-a-miss on the 5; practice sessions = full board of five;
+   whole-board scoring. **Grant-approved / publishable 2026-09-10** (adjacent bands kept
+   as drafted). C4 named **Integrity & Ethics**; C5 named **Judgment & Composure**
+   (structure-approved / not publishable until adjacent-band rewrite). See
+   `recruit_design_decisions.md` §10 Settles 2026-09-10.
 4. ~~**Question bank size and rotation policy.**~~ **Proposed 2026-07-29 in
    `recruit_question_bank.md`** — 36 evidenced question families, target ~290 prompts at
    launch (36 families × 8 variants) growing to ~500, with 12-month retirement for

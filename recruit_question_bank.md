@@ -12,9 +12,10 @@ scoring **dimensions**; this file covers the **questions**. First pass 2026-07-2
 
 The convergent evidence below yields ~36 question families. Criterion 2 (Motivation) is
 SME-approved. Criterion 3 (Teamwork) is drafted by Claude, **unreviewed** / still owes a
-text pass. Criteria 1, 4 and 5 have **structure-approved drafts** on main via PR 46
-(Answer Construction / Integrity & Ethics / Judgment & Composure) — **NOT PUBLISHABLE**
-until Grant rewrites adjacent bands.
+text pass. Criterion 1 (Answer Construction) is **Grant-approved / publishable 2026-09-10**
+(adjacent bands kept as drafted). Criteria 4 and 5 have **structure-approved drafts** on
+main via PR 46 (Integrity & Ethics / Judgment & Composure) — **NOT PUBLISHABLE** until
+Grant rewrites adjacent bands.
 
 Mapping the families onto the rubrics gives this:
 
@@ -29,7 +30,7 @@ Mapping the families onto the rubrics gives this:
 | Self-awareness | 4 | C5 Judgment & Composure | Structure draft (PR 46) — **not publishable** |
 | Understanding of the job | 4 | C2 (partly) / C1 Answer Construction | Partial |
 | Commitment & availability | 2 | C2 | **Approved** |
-| Closing | 2 | C1 Answer Construction | Structure draft (PR 46) — **not publishable** |
+| Closing | 2 | C1 Answer Construction | **Grant-approved / publishable** 2026-09-10 (adjacent bands kept as drafted) |
 
 Roughly **11 of 36 families can be critiqued today**, and 7 of those depend on an
 unreviewed draft. A 300-prompt bank against two criteria is a worse product than a
@@ -37,8 +38,8 @@ unreviewed draft. A 300-prompt bank against two criteria is a worse product than
 same two flavours of feedback forever, which is exactly the "confident feedback he cannot
 check" failure `recruit_scope.md` is built to avoid.
 
-**Consequence for build order:** finishing C1/C4/C5 to publishable (adjacent-band rewrite)
-and the C3 text pass still outrank growing the bank. Structure drafts exist; bank growth
+**Consequence for build order:** C1 is publishable; finishing C4/C5 to publishable
+(adjacent-band rewrite) and the C3 text pass still outrank growing the bank. Bank growth
 and five-question board *build* remain held behind publishable rubrics. The bank is cheap;
 the rubrics are the asset. See "Sizing" below for why the bank turns out to be a much
 smaller job than it looks.
@@ -256,12 +257,12 @@ At 290 prompts a full-board user gets **~58 sessions** — over a year at weekly
 about four months at target cadence. At 500 it is ~100 sessions. That is sufficient for
 launch and the growth path is cheap.
 
-**Do not chase a very large bank before the rubrics are publishable.** Structure drafts for
-C1/C4/C5 exist (PR 46) but are not publishable until adjacent bands are rewritten; C3 still
-owes a text pass. Prompts the product cannot critique against a reviewed criterion are
-inventory, not product. The order that maximises value per unit of your review time is:
-finish C1/C4/C5 (and the C3 pass) → variants across the families those criteria unlock →
-more families.
+**Do not chase a very large bank before the rubrics are publishable.** C1 is Grant-approved
+/ publishable 2026-09-10. C4/C5 structure drafts exist (PR 46) but are not publishable
+until adjacent bands are rewritten; C3 still owes a text pass. Prompts the product cannot
+critique against a reviewed criterion are inventory, not product. The order that maximises
+value per unit of your review time is: finish C4/C5 (and the C3 pass) → variants across
+the families those criteria unlock → more families.
 
 ### Exhaustion
 

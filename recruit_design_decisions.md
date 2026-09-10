@@ -870,7 +870,7 @@ What survives, and what it costs:
 |---|---|---|
 | Decisions only Grant can make | 6, plus the route-tag question below | Grant |
 | Reading (not deciding) — the C3 rewrite he has not read | 1 | Grant |
-| Authoring — C1/C4/C5 adjacent-band rewrites (structure drafts landed PR 46; not publishable) | 3 | Grant |
+| Authoring — C4/C5 adjacent-band rewrites (structure drafts landed PR 46; not publishable). C1 no longer needs adjacent rewrite (Grant-approved / publishable 2026-09-10). | 2 | Grant |
 | Measurement runs and fixture work | 5 | Claude, no SME needed |
 | Code and gate work | 4 | Claude, no SME needed |
 | Product decisions not yet on the critical path | 2 | Grant, later |
@@ -894,8 +894,8 @@ the module up.
 
 | Item | Notes |
 |---|---|
-| Criterion 1 anchors | Scope settled (see below). Structure-approved draft landed via PR 46 (`recruit_rubric_c1_answer_construction.md`) — **NOT PUBLISHABLE** until Grant rewrites adjacent bands. |
-| Criterion 1 naming | **Settled 2026-09-10: Answer Construction** (not Communication). Structure approved the same day: clean 1–5 construction (no 4A/4B); Delivery three-band Clear/Costly/Blocking; owns-a-miss on the 5; practice sessions = full board of five; whole-board scoring. Draft landed on main via PR 46 (`recruit_rubric_c1_answer_construction.md`) — **STRUCTURE APPROVED / NOT PUBLISHABLE** until Grant rewrites adjacent bands. |
+| Criterion 1 anchors | **Grant-approved / publishable 2026-09-10** (`recruit_rubric_c1_answer_construction.md`). Adjacent bands kept as drafted after captain pass. Does not wire the live scorer or pricing. |
+| Criterion 1 naming | **Settled 2026-09-10: Answer Construction** (not Communication). Structure: clean 1–5 construction (no 4A/4B); Delivery three-band Clear/Costly/Blocking; owns-a-miss on the 5; practice sessions = full board of five; whole-board scoring. **Grant-approved / publishable 2026-09-10** (adjacent bands kept as drafted). Does not wire the live scorer or pricing. |
 | Criterion 3 | **Rewritten 2026-07-29 from Grant's blind scores** — `recruit_rubric_c3_teamwork.md`. No longer represents nobody's judgment: the anchors were rewritten from an SME's scores on answers he had not seen scored, and note 1 (will he say the difficult thing) came from him. Still wants a pass over the rewritten text itself, which he has not read. **Amended again 2026-08-06** with the F rulings and a new scoring note 10, and **again 2026-08-10** four times for the breadth correction. **Stable at 90/90 on the scorer path as of 2026-08-10** — with the three cautions below attached; that figure does not transfer to the product and is not approval. |
 | ~~C3 — the noise floor is stale~~ | **Re-run 2026-08-10 after all four anchor edits: 90 runs, zero variance on all six fixtures** — `reviews/c3-noise-floor-2026-08-10.md`. Two edits confirmed by name in the determinations, including the restored being-changed route. **Three cautions travel with the figure and it should not be quoted bare.** It is not approval (twenty-five consecutive 5s on F were zero variance and the wrong band). No fixture tests the breadth requirement — the being-changed fixture tests the *exemption* from it — so nothing here speaks to the two-behaviours case where E lives. And it is a scorer-path number: the same transcript wobbles 4B/5/5 through the product. See §7. |
 | ~~The whole review set needs re-running~~ | **Run 2026-08-10** — `reviews/c3-set-rerun-2026-08-10.md`. **Nine of eleven agree, zero divergences among the answers that scored.** F fell to 4 and E held at 5, both as predicted, and the other seven did not drift — which was the specific risk of raising the bar. Two answers produced no critique (see below), so I is unmeasured rather than falsified and is the one prediction still outstanding. |
@@ -960,6 +960,6 @@ Naming and structure for Criteria 1, 4 and 5 — recorded so the open table abov
 - **C1 named Answer Construction** (not Communication). Structure: clean 1–5 construction (no 4A/4B); Delivery three-band Clear / Costly / Blocking; owns-a-miss on the 5; **practice sessions = full board of five**; whole-board scoring.
 - **C4 named Integrity & Ethics.** Structure: designated+corroboration; clean 1–5; never-refuse-any-order = low-band tell; escalate past peer talk for harm / theft / impairment / illegal; C3/C5 overlap as drafted.
 - **C5 named Judgment & Composure.** Structure: designated+corroboration; clean 1–5; composure = conduct/content only (no voice-quality); self-awareness mostly C5; ranking traps score reasoning, not a secret correct order.
-- Draft files on main via PR 46: `recruit_rubric_c1_answer_construction.md`, `recruit_rubric_c4_integrity_ethics.md`, `recruit_rubric_c5_judgment_composure.md`. **STRUCTURE APPROVED / NOT PUBLISHABLE** until Grant rewrites adjacent bands. Do not invent measurement numbers; do not claim these anchors are SME-authored or publishable.
+- Draft files on main via PR 46: `recruit_rubric_c1_answer_construction.md`, `recruit_rubric_c4_integrity_ethics.md`, `recruit_rubric_c5_judgment_composure.md`. **C1 Grant-approved / publishable 2026-09-10** (adjacent bands kept as drafted). C4/C5 remain **STRUCTURE APPROVED / NOT PUBLISHABLE**. C1 approval does not wire the live scorer or pricing, and does not approve C4/C5. Do not invent measurement numbers.
 - C2 remains SME-approved. C3 still owes a text pass on rewritten anchors.
 - Question bank growth and five-question board *build* remain held behind publishable rubrics (session shape settle exists; implementation not started).
