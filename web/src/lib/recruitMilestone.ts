@@ -28,8 +28,11 @@ export const BANK_EXHAUSTED_EVENT = 'recruit_bank_exhausted_viewed'
 export type MilestoneBilling = 'stripe' | 'store' | 'none'
 
 export function milestoneBilling(account: Account | null): MilestoneBilling {
+  // AC17–19: Recruit practice access (has_recruit_access / entitlements row),
+  // then how that Recruit entitlement is billed. Promote Account.entitled
+  // and Account.subscription_status are a different product and are not read.
   const recruit = account?.recruit
-  if (!recruit) return 'none'
+  if (!recruit?.entitled) return 'none'
   if (recruit.managed_by === 'play' || recruit.managed_by === 'appstore') return 'store'
   if (recruit.subscription_status !== 'none') return 'stripe'
   return 'none'

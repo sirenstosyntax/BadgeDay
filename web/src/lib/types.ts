@@ -61,8 +61,9 @@ export type Account = {
   // Play product ids as configured on the server. Empty until Grant names the
   // offer — the client must not invent a substitute.
   play_products?: PlayProducts
-  // Recruit module entitlement. Oral-board milestone billing reads this nest,
-  // never the Promote fields above.
+  // Recruit module entitlement. `entitled` is has_recruit_access — the same
+  // signal that opens further practice. Oral-board milestone billing reads
+  // this nest, never the Promote fields above.
   recruit?: RecruitModule
 }
 

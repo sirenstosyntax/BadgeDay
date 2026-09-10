@@ -35,10 +35,11 @@ class PlayProducts(BaseModel):
 
 
 class RecruitModule(BaseModel):
-    """Recruit-only entitlement. Promote's entitled / subscription_status are a different product.
+    """Recruit-only entitlement. `entitled` is has_recruit_access — the practice gate.
 
-    The Oral-board exhausted milestone reads this nest, never the Promote fields,
-    so a Lieutenant subscription cannot open Recruit pause / Manage billing.
+    The Oral-board exhausted money block reads this nest, never Promote
+    entitled / subscription_status, so a Lieutenant plan plus a used free
+    Recruit session cannot open Recruit pause / Manage billing.
     """
 
     entitled: bool
