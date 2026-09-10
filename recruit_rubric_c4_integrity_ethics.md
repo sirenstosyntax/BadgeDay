@@ -2,26 +2,24 @@
 
 **Criterion 4 of 5 — Integrity & Ethics**
 
-> ## ⚠️ DRAFT — STRUCTURE APPROVED 2026-09-10; ADJACENT BANDS AWAIT GRANT REWRITE. NOT PUBLISHABLE.
+> ## GRANT-APPROVED 2026-09-10 — PUBLISHABLE FOR SCORING
 >
-> Anchors below were **drafted by Red** from Grant’s naming (Integrity & Ethics) and from
-> Integrity & ethics family themes in `recruit_question_bank.md` §D — not authored by Grant
-> as a sitting panelist. That is the reverse of how Criterion 2 was made. Allowed only as
-> generation *into* the review chain; nothing here reaches a candidate unreviewed.
+> Anchors kept as drafted after Grant’s captain pass on adjacent bands (5↔4, 4↔3, 3↔2,
+> 2↔1). Corroboration may move the designated band by at most one. Structure already
+> settled earlier (designated+corroboration, clean 1–5, never-refuse any order as
+> low-band, peer escalate, C3/C5 overlap). Originally drafted by Red into the review
+> chain; Grant authorized this file as Grant-approved / publishable on 2026-09-10.
 >
-> **Structure is Grant-settled** (see Provenance). **Adjacent-score discrimination is not** —
-> that is what only a captain who has sat panels can author. Read the anchors as a first
-> draft to correct, not to approve.
->
-> Nothing here scores a real candidate until that captain pass has happened.
+> This approval does not wire the live scorer, does not go live on pricing, and does not
+> approve Criteria 3 or 5.
 
 | | |
 |---|---|
 | Scale | 1–5, **plus not answered / insufficient evidence** — see scoring note 6 |
 | Structure | Generic frame, drafted anchors; **clean 1–5, no route tags** |
-| Anchor authorship | **Red — draft, unreviewed by Grant** |
-| Anchor status | Draft — structure settled 2026-09-10; Grant still owes captain pass on adjacent-band discrimination. |
-| Scored on | **Designated integrity question as primary; corroborating evidence admissible from anywhere on the board** (settled 2026-09-10) |
+| Anchor authorship | Grant approved 2026-09-10 (adjacent bands kept as drafted; originally drafted by Red into the review chain) |
+| Anchor status | **Grant-approved / publishable 2026-09-10.** Adjacent bands kept as drafted after captain pass. Corroboration may move the designated band by at most one. |
+| Scored on | **Designated integrity question as primary; corroborating evidence admissible from anywhere on the board** (settled 2026-09-10). Corroboration may move the designated band by **at most one** (Grant-approved 2026-09-10). |
 
 ---
 
@@ -46,7 +44,8 @@ panels actually do: they ask the hard question on purpose.
 **Settled 2026-09-10:** treat this like Criterion 2 — **designated integrity question is
 primary evidence; corroborating tells from the rest of the board are admissible.** The
 designated answer can carry the band alone when it is clear. Corroboration raises or lowers
-when the rest of the board shows the same pattern or the opposite one.
+when the rest of the board shows the same pattern or the opposite one. **Corroboration may
+move the designated band by at most one** (Grant-approved 2026-09-10, captain pass).
 
 ---
 
@@ -160,6 +159,12 @@ Having something to explain is not an automatic low band. Minimizing, blaming, o
 to name what he owns is. A clean file with no occasion to discuss is not a 5 by itself —
 the designated probe still has to show how he handles an integrity demand.
 
+**11. Corroboration may move the designated band by at most one.**
+
+The designated integrity question is primary. Corroborating tells from the rest of the board
+may raise or lower that band by **at most one**. They cannot jump two bands. The designated
+answer can carry the band alone when it is clear.
+
 ---
 
 ## Anchors
@@ -255,16 +260,14 @@ without saying which part each score is reading.
 3. “Never refuse any order” stays a low-band tell (scoring note 3 stands).
 4. Peer escalation: when harm, theft, impairment, or illegal conduct is possible, entry-level must escalate past private peer talk to an officer/supervisor path (scoring note 2).
 5. Overlap with C3/C5: keep C3/C5 rules as drafted — ethics/ownership core stays C4; hard calls under stress and most self-awareness stay on C5.
+6. Corroboration may move the designated band by at most one.
 
-**Grant approved C4 structure 2026-09-10 (adjacent bands later)** — same posture as C1:
-structure is locked; adjacent-band discrimination still awaits the captain pass. Banner stays until that pass.
+**Grant-approved / publishable 2026-09-10.** Captain pass kept all adjacent boundaries as
+drafted — 5↔4, 4↔3, 3↔2, 2↔1 — and settled that corroboration may move the designated
+band by at most one. Originally drafted by Red into the review chain. This approval does
+not wire the live scorer, does not go live on pricing, and does not approve C3 or C5.
 
-**These anchors are drafted, not authored by a sitting panelist.** Criterion 2’s anchors
-represent Grant’s scoring judgment. These represent Red’s draft from Grant’s naming and from
-screened family themes. Adjacent-score discrimination is the part most likely to need
-rewrite, and it is the part Grant should attack first.
-
-**What is grounded.**
+**What is grounded (Grant-settled / Grant-approved).**
 
 - Name: Integrity & Ethics — settled by Grant 2026-09-10.
 - Family themes (not question text) from `recruit_question_bank.md` §D: mistake + what
@@ -282,11 +285,8 @@ rewrite, and it is the part Grant should attack first.
 - Peer escalation past private talk to officer/supervisor when harm, theft,
   impairment, or illegal conduct is possible — settled by Grant 2026-09-10.
 - Overlap: keep C3/C5 rules as drafted — settled by Grant 2026-09-10.
-
-**What is invented in this draft.**
-
-- The 1–5 discrimination and which behaviors sit at which level.
-- How strongly corroboration may move a band set by the designated answer.
+- Adjacent-band boundaries 5↔4, 4↔3, 3↔2, 2↔1 kept as drafted — Grant-approved 2026-09-10.
+- Corroboration may move the designated band by at most one — Grant-approved 2026-09-10.
 
 **Hard constraint.** Nothing in this criterion references, depicts, or implies any real fire
 department’s name, logo, insignia, apparatus, or facilities. No employer naming. No vendor
@@ -300,6 +300,8 @@ against these anchors independently beat more web content.
 ## Sources consulted
 
 Naming from Grant via Zazu 2026-09-10. Family themes from `recruit_question_bank.md` §D
-(screened sources only; no vendor lists reproduced). Structure and critique-voice pattern
-from `recruit_rubric_c1_answer_construction.md`, `recruit_rubric_c2_motivation.md`, and
+(screened sources only; no vendor lists reproduced). Grant-approved / publishable
+2026-09-10 after captain pass kept adjacent boundaries as drafted and settled
+corroboration ±1. Structure and critique-voice pattern from
+`recruit_rubric_c1_answer_construction.md`, `recruit_rubric_c2_motivation.md`, and
 `recruit_rubric_c3_teamwork.md`. No commercial hiring-test battery used for anchor text.
