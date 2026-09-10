@@ -549,14 +549,15 @@ Grant-approved / publishable (C2 was already SME-approved).
 **What is grounded (Grant-settled / Grant-approved).**
 
 - Teamwork and interpersonal skill belong in the frame, and are among the most universally
-  present dimensions across independently authored department sources — Salt Lake City asks
-  it twice, once as diverse-group collaboration and once as a teammate not pulling their
-  weight.
+  present dimensions across independently authored department sources. Department-authored
+  sources commonly ask it more than once (e.g. diverse-group collaboration and a teammate
+  not pulling their weight).
 - The dimension has two axes — wanting to work with people, and being able to without
-  arousing antagonism — Unified Fire Authority’s own split, department-authored and in the
-  convergent core. The axes remain critique guidance; they are not scored route tags.
+  arousing antagonism — a convergent split across department-authored sources. The axes
+  remain critique guidance; they are not scored route tags.
 - The board is behaviourally framed and rewards specific past incidents over
-  self-description (UFA calls the board behaviourally-based; SLC teaches STAR explicitly).
+  self-description. Department-authored sources describe behaviourally-based boards and
+  STAR-style past-incident prompts.
 - Crew respect is one of the three questions a panel is resolving, from Lepore.
 - Clean 1–5, no route tags — settled by Grant 2026-09-10.
 - Note 5: unfalsifiable claim is critique only — settled by Grant 2026-09-10.
