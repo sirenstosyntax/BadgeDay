@@ -159,9 +159,11 @@ Took me ten minutes. It was easier than having the conversation, honestly.
 I loved that crew though. That's the part of this job I want — you're with the same people
 for twenty-four hours, you eat together. I've missed it since I moved.
 """,
-        "anchor.4 — genuine appetite for the crew, real relationships, but friction "
-        "handled by going around the person and narrated without discomfort "
-        "(C3 route tags dropped 2026-09-10; this was the wants-the-crew axis).",
+        "note.1 / anchor.1 — genuine appetite for the crew, real relationships, but "
+        "he declined a conversation that needed having (rig going out short), went "
+        "around the person, and narrated the avoidance without discomfort. Note 1: "
+        "that is a 1 and it stays a 1 however warm the rest is. Going around is "
+        "not a 4.",
     ),
     ReviewAnswer(
         "H",

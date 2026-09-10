@@ -57,6 +57,26 @@ def test_the_two_notes_that_went_stale_point_where_their_prose_says():
     assert "no team history" in rubric.clause("c3.note.4").label.lower()
 
 
+def test_g_expected_label_matches_note_1_going_around_ruling():
+    """G is the Grant 1: warmth plus going around a rig-short conversation.
+
+    The fixture used to claim anchor.4 / 4A. That contradicts note 1 and the
+    4-band going-around sentence: a candidate who went around the person is
+    not a 4 however warm the rest is. Pin the pairing so the expected-label
+    prose cannot drift back onto 4.
+    """
+    root = Path(__file__).resolve().parents[1]
+    rubric = rubric_module.load("c3", root=root)
+    by_ref = {answer.ref: answer for answer in ANSWERS}
+
+    assert "note.1" in by_ref["G"].probes
+    assert "anchor.1" in by_ref["G"].probes
+    assert "anchor.4" not in by_ref["G"].probes
+    assert "not a 4" in by_ref["G"].probes
+    assert "say the thing" in rubric.clause("c3.note.1").label.lower()
+    assert "would not say" in rubric.clause("c3.anchor.1").label.lower()
+
+
 def test_refs_are_unique_and_the_question_is_the_one_the_answers_answer():
     refs = [answer.ref for answer in ANSWERS]
     assert len(set(refs)) == len(refs)
