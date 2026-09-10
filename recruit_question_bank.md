@@ -1,8 +1,9 @@
 # Recruit — Question Bank: Evidence, Sizing, and Rotation
 
-*Answers `recruit_scope.md` open question 4 (bank size and rotation policy) and supplies the
-evidence base for authoring. Companion to `recruit_oral_board_sources.md`, which covers
-scoring **dimensions**; this file covers the **questions**. First pass 2026-07-29.*
+*Settles `recruit_scope.md` open question 4 (bank size and rotation policy) — **Settled
+2026-09-10 by Grant** — and supplies the evidence base for authoring. Companion to
+`recruit_oral_board_sources.md`, which covers scoring **dimensions**; this file covers
+the **questions**. First pass 2026-07-29; sizing and rotation locked 2026-09-10.*
 
 ---
 
@@ -35,13 +36,14 @@ Mapping the families onto the rubrics gives this:
 
 Roughly **32 of 36 families can be critiqued against a Grant-approved or SME-approved
 rubric today**; 4 are only partial (Understanding of the job). The rubric-coverage hold
-that blocked C3 families is closed. C3 Grant-approved does not itself start bank growth.
+that blocked C3 families is closed.
 
 **Consequence for build order:** All five criteria (C1–C5) are publishable for scoring
-docs. Bank growth and five-question board *build* remain held pending Grant start —
-an **implementation hold, not a rubric hold**. The bank is cheap; the rubrics are the
-asset. See "Sizing" below for why the bank turns out to be a much smaller job than it
-looks. Do not invent a start order.
+docs. Bank growth **started 2026-09-10** as family review of the existing 288-item draft
+in `recruit_question_bank_draft.md` — not a second library. Five-question board *build*
+and live scorer wire remain held. Nothing publishes unreviewed. Does not wire pricing.
+The bank is cheap; the rubrics are the asset. See "Sizing" below for why the bank turns
+out to be a much smaller job than it looks.
 
 ---
 
@@ -245,22 +247,22 @@ are a batch skim.**
 
 So:
 
-> **Recommended target: 36 families × 8 variants ≈ 290 prompts at launch, growing to
-> ~500 within six months of launch.**
+> **Settled 2026-09-10 by Grant: 36 families × 8 variants ≈ 290 prompts at launch,
+> growing toward ~500.**
 >
 > Review cost: 36 family reviews (the real work — call it a weekend) plus a batch pass
 > over variants. The reviewable asset stays bounded, exactly as the rubric architecture
-> intends.
+> intends. Growth is family review of the existing 288-item draft, not a second library.
 
 At 290 prompts a full-board user gets **~58 sessions** — over a year at weekly cadence,
 about four months at target cadence. At 500 it is ~100 sessions. That is sufficient for
 launch and the growth path is cheap.
 
-**Do not chase a very large bank before Grant opens bank growth.** C1–C5 are
-Grant-approved / publishable for scoring docs (C2 already SME-approved). C3
-Grant-approved does not start bank growth: that remains held pending Grant start
-(implementation hold, not rubric hold). Prompts still need family review before they
-publish. Do not invent a start order.
+**Do not chase a very large bank ahead of family review.** C1–C5 are Grant-approved /
+publishable for scoring docs (C2 already SME-approved). Bank growth started 2026-09-10
+with family review of the existing 288-item draft. Prompts still need family review
+before they publish. Nothing publishes unreviewed. Does not wire the live scorer or
+pricing.
 
 ### Exhaustion
 
@@ -269,7 +271,7 @@ A heavy user will eventually run out. Three options, in order of preference:
 1. **12-month retirement.** A prompt a candidate saw a year ago is effectively novel —
    he has not rehearsed it and cannot recall the wording. Cheapest, no new review surface,
    and it makes the effective bank unbounded for any realistic subscription length.
-   **Recommended.**
+   **Preferred (settled 2026-09-10).**
 2. **Reserve pool.** Hold ~15% of the bank out of general rotation and release it to
    long-tenured subscribers, so the people most invested are not the ones who hit the
    bottom. Cheap, worth doing alongside (1).
@@ -279,6 +281,8 @@ A heavy user will eventually run out. Three options, in order of preference:
    should be its own decision rather than a quiet fallback.
 
 ### Rotation policy
+
+**Settled 2026-09-10 by Grant.**
 
 - **Never repeat a prompt** to the same candidate. Hard rule, enforced in the schema.
 - **Never repeat a family within a rolling window of 8 sessions.** Without this, "conflict"
@@ -315,9 +319,10 @@ unreviewed.
 ### Draft status
 
 **Drafted 2026-07-29 in [`recruit_question_bank_draft.md`](recruit_question_bank_draft.md)
-— 288 items, 36 families × 8, unreviewed.** It carries a two-pass review protocol (families
-are the real work, variants are a skim), a per-family review record, and three families
-flagged `THIN` where I expect fewer than eight to survive.
+— 288 items, 36 families × 8.** Bank growth started 2026-09-10 as **family review of this
+draft** (not a second library). Nothing publishes unreviewed. It carries a two-pass review
+protocol (families are the real work, variants are a skim), a per-family review record,
+and three families flagged `THIN` where I expect fewer than eight to survive.
 
 Two families are flagged there for judgment I could not supply:
 
