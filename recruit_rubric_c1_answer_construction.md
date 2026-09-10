@@ -9,8 +9,9 @@
 > Delivery, owns-a-miss on 5, full board of five). Originally drafted by Red into the
 > review chain; Grant authorized this file as Grant-approved / publishable on 2026-09-10.
 >
-> This approval does not wire the live scorer, does not go live on pricing, and does not
-> approve Criterion 3 (C4 and C5 are Grant-approved / publishable 2026-09-10).
+> This approval does not wire the live scorer and does not go live on pricing. Criterion 3
+> is Grant-approved / publishable 2026-09-10; all five criteria (C1–C5) are now
+> publishable for scoring (C2 was already SME-approved).
 
 | | |
 |---|---|
@@ -282,8 +283,9 @@ of five** questions — whole-board C1 scoring is not provisional.
 **Grant-approved / publishable 2026-09-10.** Captain pass kept all adjacent boundaries as
 drafted — 5↔4, 4↔3, 3↔2, 2↔1 — and kept scoring note 8 (one weak answer does not set the
 band). Originally drafted by Red into the review chain. This approval does not wire the
-live scorer, does not go live on pricing, and does not approve C3 (C4 and C5 are
-Grant-approved / publishable 2026-09-10).
+live scorer and does not go live on pricing. C3 is Grant-approved / publishable
+2026-09-10; all five criteria (C1–C5) are now publishable for scoring (C2 was already
+SME-approved).
 
 **What is grounded (Grant-settled / Grant-approved).**
 
@@ -307,9 +309,11 @@ Grant-approved / publishable 2026-09-10).
 
 **Still outside this file.**
 
-- Criterion 3 still owes a text pass on rewritten anchors (`recruit_rubric_c3_teamwork.md`).
-  Criteria 4 and 5 are Grant-approved / publishable 2026-09-10
-  (`recruit_rubric_c4_integrity_ethics.md`, `recruit_rubric_c5_judgment_composure.md`).
+- Criterion 3 is Grant-approved / publishable 2026-09-10
+  (`recruit_rubric_c3_teamwork.md`). Criteria 4 and 5 are Grant-approved / publishable
+  2026-09-10 (`recruit_rubric_c4_integrity_ethics.md`,
+  `recruit_rubric_c5_judgment_composure.md`). All five criteria are now publishable for
+  scoring. This approval still does not wire the live scorer or pricing.
 
 **Hard constraint.** Nothing in this criterion references, depicts, or implies any real fire
 department’s name, logo, insignia, apparatus, or facilities. No employer naming.

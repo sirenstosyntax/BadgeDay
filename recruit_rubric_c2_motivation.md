@@ -105,7 +105,7 @@ Nothing done since deciding, and no account of why. Cannot name a class, a ride-
 **Prepared but self-focused → Criterion 3 (Teamwork & Interpersonal).**
 The candidate with a strong file whose every answer returns to himself is **not** penalized here. He may legitimately score 4 or 5 on Motivation & Preparation. The failure is one of fit, and it is scored where it occurs.
 
-> **Open risk — closed in draft 2026-07-28.** `recruit_rubric_c3_teamwork.md` level 2 is the anchor this called for: *qualified, and the crew is missing from his own stories.* Until Criterion 3 is SME-reviewed, that candidate is caught by a drafted anchor rather than an authored one, so treat the gap as closed provisionally.
+> **Closed 2026-09-10.** `recruit_rubric_c3_teamwork.md` level 2 is the anchor this called for: *qualified, and the crew is missing from his own stories.* Criterion 3 is Grant-approved / publishable 2026-09-10. The gap is closed.
 
 <!-- scorer:end -->
 

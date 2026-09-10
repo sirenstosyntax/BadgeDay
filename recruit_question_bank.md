@@ -10,20 +10,21 @@ scoring **dimensions**; this file covers the **questions**. First pass 2026-07-2
 
 **Bank size is not the constraint. Rubric coverage is.**
 
-The convergent evidence below yields ~36 question families. Criterion 2 (Motivation) is
-SME-approved. Criterion 3 (Teamwork) is drafted by Claude, **unreviewed** / still owes a
-text pass. Criterion 1 (Answer Construction) is **Grant-approved / publishable 2026-09-10**
-(adjacent bands kept as drafted). Criteria 4 and 5 (Integrity & Ethics / Judgment &
-Composure) are **Grant-approved / publishable 2026-09-10** (adjacent bands kept as drafted;
-corroboration ±1).
+The convergent evidence below yields ~36 question families. All five oral-board criteria
+are now publishable for scoring: Criterion 2 (Motivation) is SME-approved. Criterion 3
+(Teamwork) is **Grant-approved / publishable 2026-09-10** (adjacent bands kept as drafted;
+clean 1–5, no route tags). Criterion 1 (Answer Construction) is **Grant-approved /
+publishable 2026-09-10** (adjacent bands kept as drafted). Criteria 4 and 5 (Integrity &
+Ethics / Judgment & Composure) are **Grant-approved / publishable 2026-09-10** (adjacent
+bands kept as drafted; corroboration ±1).
 
 Mapping the families onto the rubrics gives this:
 
 | Family group | Families | Rubric that would critique it | Status |
 |---|--:|---|---|
 | Motivation & fit | 5 | C2 Motivation | **Approved** |
-| Teamwork & working relationships | 4 | C3 Teamwork | Drafted, unreviewed |
-| Conflict & interpersonal | 3 | C3 Teamwork | Drafted, unreviewed |
+| Teamwork & working relationships | 4 | C3 Teamwork | **Grant-approved / publishable** 2026-09-10 (adjacent bands kept as drafted) |
+| Conflict & interpersonal | 3 | C3 Teamwork | **Grant-approved / publishable** 2026-09-10 (adjacent bands kept as drafted) |
 | Integrity & ethics | 5 | C4 Integrity & Ethics | **Grant-approved / publishable** 2026-09-10 (adjacent bands kept as drafted) |
 | Composure under stress | 3 | C5 Judgment & Composure | **Grant-approved / publishable** 2026-09-10 (adjacent bands kept as drafted) |
 | Judgment & problem solving | 4 | C5 Judgment & Composure | **Grant-approved / publishable** 2026-09-10 (adjacent bands kept as drafted) |
@@ -32,17 +33,15 @@ Mapping the families onto the rubrics gives this:
 | Commitment & availability | 2 | C2 | **Approved** |
 | Closing | 2 | C1 Answer Construction | **Grant-approved / publishable** 2026-09-10 (adjacent bands kept as drafted) |
 
-Roughly **25 of 36 families can be critiqued against a Grant-approved rubric today**; 7
-still depend on the unreviewed C3 draft, and 4 are only partial. A 300-prompt bank against
-four criteria is a worse product than a 60-prompt bank against five: the candidate gets a
-novel question every session and the same four flavours of feedback forever, which is
-exactly the "confident feedback he cannot check" failure `recruit_scope.md` is built to
-avoid for the remaining unpublished criterion.
+Roughly **32 of 36 families can be critiqued against a Grant-approved or SME-approved
+rubric today**; 4 are only partial (Understanding of the job). The rubric-coverage hold
+that blocked C3 families is closed. C3 Grant-approved does not itself start bank growth.
 
-**Consequence for build order:** C1, C4, and C5 are publishable; the C3 text pass still
-outranks growing the bank. Bank growth and five-question board *build* remain held behind
-the remaining unpublished rubric (C3). The bank is cheap; the rubrics are the asset. See
-"Sizing" below for why the bank turns out to be a much smaller job than it looks.
+**Consequence for build order:** All five criteria (C1–C5) are publishable for scoring
+docs. Bank growth and five-question board *build* remain held pending Grant start —
+an **implementation hold, not a rubric hold**. The bank is cheap; the rubrics are the
+asset. See "Sizing" below for why the bank turns out to be a much smaller job than it
+looks. Do not invent a start order.
 
 ---
 
@@ -257,11 +256,11 @@ At 290 prompts a full-board user gets **~58 sessions** — over a year at weekly
 about four months at target cadence. At 500 it is ~100 sessions. That is sufficient for
 launch and the growth path is cheap.
 
-**Do not chase a very large bank before the rubrics are publishable.** C1, C4, and C5
-are Grant-approved / publishable 2026-09-10. C3 still owes a text pass. Prompts the
-product cannot critique against a reviewed criterion are inventory, not product. The
-order that maximises value per unit of your review time is: finish the C3 pass →
-variants across the families those criteria unlock → more families.
+**Do not chase a very large bank before Grant opens bank growth.** C1–C5 are
+Grant-approved / publishable for scoring docs (C2 already SME-approved). C3
+Grant-approved does not start bank growth: that remains held pending Grant start
+(implementation hold, not rubric hold). Prompts still need family review before they
+publish. Do not invent a start order.
 
 ### Exhaustion
 
