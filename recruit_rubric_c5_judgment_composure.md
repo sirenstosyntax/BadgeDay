@@ -2,26 +2,26 @@
 
 **Criterion 5 of 5 — Judgment & Composure**
 
-> ## ⚠️ DRAFT — STRUCTURE APPROVED 2026-09-10; ADJACENT BANDS AWAIT GRANT REWRITE. NOT PUBLISHABLE.
+> ## GRANT-APPROVED 2026-09-10 — PUBLISHABLE FOR SCORING
 >
-> Anchors below were **drafted by Red** from Grant’s naming (Judgment & Composure) and from
-> family themes in `recruit_question_bank.md` §§E–G — not authored by Grant as a sitting
-> panelist. That is the reverse of how Criterion 2 was made. Allowed only as generation
-> *into* the review chain; nothing here reaches a candidate unreviewed.
+> Anchors kept as drafted after Grant’s captain pass on adjacent bands (5↔4, 4↔3, 3↔2,
+> 2↔1). 5↔4 kept after Grant corrected a mis-tap that briefly said rewrite. Corroboration
+> may move the designated band by at most one. Structure already settled earlier
+> (designated+corroboration, clean 1–5, composure = conduct/content only / no voice-quality,
+> self-awareness mostly C5, ranking traps score reasoning not a secret correct order).
+> Originally drafted by Red into the review chain; Grant authorized this file as
+> Grant-approved / publishable on 2026-09-10.
 >
-> **Structure is Grant-approved** (see Provenance). **Adjacent-score discrimination is not** —
-> that is what only a captain who has sat panels can author. Read the anchors as a first
-> draft to correct, not to approve.
->
-> Nothing here scores a real candidate until that captain pass has happened.
+> This approval does not wire the live scorer, does not go live on pricing, and does not
+> approve Criteria 1 or 3 (C4 is already Grant-approved on main).
 
 | | |
 |---|---|
 | Scale | 1–5, **plus not answered / insufficient evidence** — see scoring note 7 |
 | Structure | Generic frame, drafted anchors; **clean 1–5, no route tags** |
-| Anchor authorship | **Red — draft, unreviewed by Grant** |
-| Anchor status | Draft — structure approved 2026-09-10; Grant still owes captain pass on adjacent-band discrimination. |
-| Scored on | **Designated judgment/composure/self-awareness question as primary; corroborating evidence admissible from anywhere on the board** (settled 2026-09-10) |
+| Anchor authorship | Grant approved 2026-09-10 (adjacent bands kept as drafted; originally drafted by Red into the review chain) |
+| Anchor status | **Grant-approved / publishable 2026-09-10.** Adjacent bands kept as drafted after captain pass. Corroboration may move the designated band by at most one. |
+| Scored on | **Designated judgment/composure/self-awareness question as primary; corroborating evidence admissible from anywhere on the board** (settled 2026-09-10). Corroboration may move the designated band by **at most one** (Grant-approved 2026-09-10). |
 
 ---
 
@@ -44,6 +44,9 @@ purpose.
 
 **Grant settled 2026-09-10:** same shape as Criteria 2 and 4 — **designated question
 primary; corroboration admissible from the rest of the board.**
+
+**Grant settled 2026-09-10 (captain pass):** corroboration may move the band set by the
+designated answer by **at most one** (up or down). It does not jump two bands.
 
 ---
 
@@ -154,6 +157,12 @@ Panels react to whether they would trust his head when it counted. Anchors stay 
 reaction is named where it bears on the score. Subjectivity is not permission to score voice
 or invent panic.
 
+**10. Corroboration may move the designated band by at most one.**
+
+The designated judgment/composure/self-awareness question is primary. Corroborating tells
+from the rest of the board may raise or lower that band by **at most one**. They cannot jump
+two bands. The designated answer can carry the band alone when it is clear.
+
 ---
 
 ## Anchors
@@ -231,14 +240,15 @@ or decision-making under load (here).
 3. Composure boundary as drafted: no voice-quality scoring (accent, pitch, “sounds nervous”); composure from conduct and content.
 4. Self-awareness stays mostly on C5 as drafted (ethics/ownership of costly truth still on C4 when the stake is that).
 5. Ranking traps (F3/F4 families): score reasoning, not a secret correct order.
+6. Corroboration may move the designated band by at most one.
 
-**Grant approved C5 structure 2026-09-10 (adjacent bands later)** — same posture as C1/C4:
-structure is locked; adjacent-band discrimination still awaits the captain pass. Banner stays until that pass.
+**Grant-approved / publishable 2026-09-10.** Captain pass kept all adjacent boundaries as
+drafted — 5↔4, 4↔3, 3↔2, 2↔1 (5↔4 kept after Grant corrected a mis-tap that briefly said
+rewrite) — and settled that corroboration may move the designated band by at most one.
+Originally drafted by Red into the review chain. This approval does not wire the live
+scorer, does not go live on pricing, and does not approve C1 or C3.
 
-**These anchors are drafted, not authored by a sitting panelist.** Adjacent-score
-discrimination is the part most likely to need rewrite.
-
-**What is grounded.**
+**What is grounded (Grant-settled / Grant-approved).**
 
 - Name: Judgment & Composure — settled by Grant 2026-09-10.
 - Scoring scope: designated + corroboration — settled by Grant 2026-09-10.
@@ -252,12 +262,8 @@ discrimination is the part most likely to need rewrite.
 - Clean 1–5; no route tags — settled by Grant 2026-09-10.
 - Hard constraint: no real department names, logos, insignia, apparatus, facilities; no
   employer naming.
-
-**What is invented in this draft.**
-
-- The 1–5 discrimination and which behaviors sit at which level.
-- How strongly corroboration may move a band set by the designated answer.
-- Where exactly stall-phrases vs thinking-silence divide on composure.
+- Adjacent-band boundaries 5↔4, 4↔3, 3↔2, 2↔1 kept as drafted — Grant-approved 2026-09-10.
+- Corroboration may move the designated band by at most one — Grant-approved 2026-09-10.
 
 **Hard constraint.** No real FD identity. No vendor/competitor question lists.
 
@@ -268,7 +274,8 @@ discrimination is the part most likely to need rewrite.
 ## Sources consulted
 
 Naming from Grant via Zazu 2026-09-10. Family themes from `recruit_question_bank.md` §§E–G.
-C4 overlap settle from Grant 2026-09-10. Structure/critique pattern from C1–C4 drafts and
-`recruit_rubric_c2_motivation.md` / `recruit_rubric_c3_teamwork.md`. Composure-vs-voice
-constraint from `recruit_design_decisions.md`. No commercial hiring-test battery used for
-anchor text.
+C4 overlap settle from Grant 2026-09-10. Grant-approved / publishable 2026-09-10 after
+captain pass kept adjacent boundaries as drafted and settled corroboration ±1.
+Structure/critique pattern from C1–C4 drafts and `recruit_rubric_c2_motivation.md` /
+`recruit_rubric_c3_teamwork.md`. Composure-vs-voice constraint from
+`recruit_design_decisions.md`. No commercial hiring-test battery used for anchor text.
