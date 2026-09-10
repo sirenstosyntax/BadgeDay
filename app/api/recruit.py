@@ -1,10 +1,10 @@
 """C2 spoken question: issue the prompt, enqueue the critique, poll the result.
 
-GET /question is a discriminant: `available` carries the C2 prompt, `exhausted`
-is a 200 milestone when nothing novel remains (empty bank or every published
-item already issued). Exhaustion is not a 404. The poll payload is
-`candidate_lines` only. Score, route, determination, and clause ids stay on
-the server via 0010 / 0011; they are not in this payload.
+GET /question is a discriminant: `available` carries the next novel C2 bank
+item, `exhausted` is a 200 milestone when nothing novel remains (empty bank
+or every published item already issued). Exhaustion is not a 404. The poll
+payload is `candidate_lines` only. Score, route, determination, and clause
+ids stay on the server via 0010 / 0011; they are not in this payload.
 
 The live worker uses Deepgram only. If the key is unset this returns 503 rather
 than enqueueing work that cannot run. `get_transcriber` stays for tests.
@@ -184,6 +184,7 @@ def submit_attempt(
         started_at=started_at,
         filename=audio.filename or "answer.webm",
         data=data,
+        criterion_id=decision.criterion_id,
     )
     return RecruitResult(attempt_id=record.id, status="queued")
 

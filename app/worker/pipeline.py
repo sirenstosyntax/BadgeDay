@@ -18,15 +18,15 @@ from pathlib import Path
 from anthropic import Anthropic
 from supabase import Client
 
-from app.api.recruit import C2_SCENARIO_ID, metrics_for_critique
+from app.api.recruit import metrics_for_critique
 from app.audio.deepgram import DeepgramTranscriber
 from app.config import Settings
 from app.critique import rubric as rubric_module
-from app.critique.cli import QUESTIONS
 from app.critique.critiquer import RecruitPersist, critique_answer
 from app.generate.generator import generate_for_chunk
 from app.ingest.analyzer import get_analyzer
 from app.ingest.chunker import chunk_document
+from app.recruit.bank import C2_SCENARIO_ID, criterion_id_for, question_for
 from app.storage.content import clear_questions, load_chunks, save_chunks, save_questions
 from app.storage.documents import BUCKET, get_document, record_page_count, set_status
 from app.storage.recruit import delete_audio, download_audio, get_attempt, mark_running
@@ -154,8 +154,9 @@ def run_recruit_critique(db: Client, settings: Settings, job: Job) -> None:
         )
 
     scenario_id = attempt.scenario_id or C2_SCENARIO_ID
-    question = attempt.question_text or QUESTIONS[C2_SCENARIO_ID]
-    rubric = rubric_module.load(scenario_id)
+    criterion_id = attempt.criterion_id or criterion_id_for(scenario_id)
+    question = attempt.question_text or question_for(scenario_id)
+    rubric = rubric_module.load(criterion_id)
     audio_path = attempt.audio_storage_path
     outcome = critique_answer(
         rubric=rubric,
