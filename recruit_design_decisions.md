@@ -868,7 +868,7 @@ What survives, and what it costs:
 
 | | Count | Who |
 |---|---|---|
-| Decisions only Grant can make | 6, plus the route-tag question below | Grant |
+| Decisions only Grant can make | 4, plus the route-tag question below (C1/C4/C5 naming and full-board session shape settled 2026-09-10; remaining four are C3 judgment calls still in the table) | Grant |
 | Reading (not deciding) — the C3 rewrite he has not read | 1 | Grant |
 | Authoring — C1/C4/C5 adjacent-band rewrites (structure drafts landed PR 46; not publishable) | 3 | Grant |
 | Measurement runs and fixture work | 5 | Claude, no SME needed |
