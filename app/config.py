@@ -99,12 +99,15 @@ class Settings(BaseSettings):
     stripe_price_id_monthly: str = ""
     stripe_price_id_intensive_90day: str = ""
     # Recruit prices — held, blank. Grant's held offer (docs only, no checkout
-    # go-live): first session free, no card; $24.99/mo; $59 / 90-day; $119/yr.
-    # Do not invent live Stripe product IDs. Stripe stays in test mode until
-    # Grant says go live. Mapping from a filled ID to the recruit module is
+    # go-live): first session free, no card; $24.99/mo; $59 / 90-day; $119 /
+    # 6-month; $179/yr. Grant locked 6-month + $179 annual on 2026-09-10;
+    # 90-day and monthly unchanged pending further word. Do not invent live
+    # Stripe product IDs. Stripe stays in test mode until Grant says go live.
+    # Mapping from a filled ID to the recruit module is
     # `billing.module.module_for_stripe_price`.
     stripe_price_id_recruit_monthly: str = ""
     stripe_price_id_recruit_intensive_90day: str = ""
+    stripe_price_id_recruit_6month: str = ""
     stripe_price_id_recruit_annual: str = ""
     # Length of the one-time intensive pass. The price is set in Stripe; how long the pass
     # it buys grants access is our decision, kept here so "90-day" is not welded into a
@@ -136,10 +139,11 @@ class Settings(BaseSettings):
     play_package_name: str = ""
     play_product_id_monthly: str = ""
     play_product_id_intensive_90day: str = ""
-    # Recruit Play SKUs — held, blank. Same three offers as the Stripe
-    # placeholders. Do not invent live IAP public SKUs.
+    # Recruit Play SKUs — held, blank. Same offers as the Stripe placeholders.
+    # Do not invent live IAP public SKUs.
     play_product_id_recruit_monthly: str = ""
     play_product_id_recruit_intensive_90day: str = ""
+    play_product_id_recruit_6month: str = ""
     play_product_id_recruit_annual: str = ""
     # The service account that may read purchase state from the Play Developer API, as the
     # JSON key file's contents. A purchase token means nothing without this call — the
@@ -154,10 +158,11 @@ class Settings(BaseSettings):
     appstore_bundle_id: str = ""
     appstore_product_id_monthly: str = ""
     appstore_product_id_intensive_90day: str = ""
-    # Recruit App Store SKUs — held, blank. Same three offers. Do not invent
-    # live IAP public SKUs.
+    # Recruit App Store SKUs — held, blank. Same offers as the Stripe
+    # placeholders. Do not invent live IAP public SKUs.
     appstore_product_id_recruit_monthly: str = ""
     appstore_product_id_recruit_intensive_90day: str = ""
+    appstore_product_id_recruit_6month: str = ""
     appstore_product_id_recruit_annual: str = ""
     # App Store Server API credentials, used to check a transaction against Apple rather
     # than trust the receipt the device presented.
@@ -212,8 +217,10 @@ class Settings(BaseSettings):
                 self.play_product_id_monthly,
                 self.appstore_product_id_monthly,
                 self.play_product_id_recruit_monthly,
+                self.play_product_id_recruit_6month,
                 self.play_product_id_recruit_annual,
                 self.appstore_product_id_recruit_monthly,
+                self.appstore_product_id_recruit_6month,
                 self.appstore_product_id_recruit_annual,
             )
             if p

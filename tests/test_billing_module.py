@@ -28,10 +28,12 @@ def test_a_recruit_price_id_is_recruit_not_promote() -> None:
         stripe_price_id_intensive_90day="price_promote_90",
         stripe_price_id_recruit_monthly="price_recruit_mo",
         stripe_price_id_recruit_intensive_90day="price_recruit_90",
+        stripe_price_id_recruit_6month="price_recruit_6mo",
         stripe_price_id_recruit_annual="price_recruit_yr",
     )
     assert module_for_stripe_price(settings, "price_recruit_mo") == "recruit"
     assert module_for_stripe_price(settings, "price_recruit_90") == "recruit"
+    assert module_for_stripe_price(settings, "price_recruit_6mo") == "recruit"
     assert module_for_stripe_price(settings, "price_recruit_yr") == "recruit"
     assert module_for_stripe_price(settings, "price_promote_mo") == "promote"
     assert module_for_stripe_price(settings, "price_promote_90") == "promote"
@@ -46,10 +48,12 @@ def test_a_recruit_store_sku_is_recruit() -> None:
     settings = Settings(
         play_product_id_monthly="badgeday.promote.monthly",
         play_product_id_recruit_monthly="badgeday.recruit.monthly",
+        play_product_id_recruit_6month="badgeday.recruit.6month",
         play_product_id_recruit_annual="badgeday.recruit.annual",
         appstore_product_id_recruit_intensive_90day="badgeday.recruit.90day",
     )
     assert module_for_store_product(settings, "badgeday.recruit.monthly") == "recruit"
+    assert module_for_store_product(settings, "badgeday.recruit.6month") == "recruit"
     assert module_for_store_product(settings, "badgeday.recruit.annual") == "recruit"
     assert module_for_store_product(settings, "badgeday.recruit.90day") == "recruit"
     assert module_for_store_product(settings, "badgeday.promote.monthly") == "promote"
