@@ -870,7 +870,7 @@ What survives, and what it costs:
 |---|---|---|
 | Decisions only Grant can make | 6, plus the route-tag question below | Grant |
 | Reading (not deciding) — the C3 rewrite he has not read | 1 | Grant |
-| Authoring — Criterion 1 anchors, Criteria 4 and 5 | 3 | Grant |
+| Adjacent-band captain rewrite — C1 / C4 / C5 DRAFT anchors | 3 | Grant |
 | Measurement runs and fixture work | 5 | Claude, no SME needed |
 | Code and gate work | 4 | Claude, no SME needed |
 | Product decisions not yet on the critical path | 2 | Grant, later |
@@ -894,8 +894,8 @@ the module up.
 
 | Item | Notes |
 |---|---|
-| Criterion 1 anchors | Scope settled (see below), anchors unwritten |
-| Criterion 1 naming | "Communication" overclaims what audio can see. "Answer Construction" plus a separate delivery sub-score is the candidate. **[OPEN]** |
+| Criterion 1 anchors | Name and structure settled 2026-09-10 (see below). DRAFT in `recruit_rubric_c1_answer_construction.md` — structure-approved, **not publishable** until Grant's adjacent-band captain rewrite. |
+| Criterion 1 naming | **[SETTLED]** 2026-09-10: **Answer Construction**. "Communication" overclaims what audio can see. Delivery is a separate three-band sub-score (Clear / Costly / Blocking) only — not mirrored to 1–5. |
 | Criterion 3 | **Rewritten 2026-07-29 from Grant's blind scores** — `recruit_rubric_c3_teamwork.md`. No longer represents nobody's judgment: the anchors were rewritten from an SME's scores on answers he had not seen scored, and note 1 (will he say the difficult thing) came from him. Still wants a pass over the rewritten text itself, which he has not read. **Amended again 2026-08-06** with the F rulings and a new scoring note 10, and **again 2026-08-10** four times for the breadth correction. **Stable at 90/90 on the scorer path as of 2026-08-10** — with the three cautions below attached; that figure does not transfer to the product and is not approval. |
 | ~~C3 — the noise floor is stale~~ | **Re-run 2026-08-10 after all four anchor edits: 90 runs, zero variance on all six fixtures** — `reviews/c3-noise-floor-2026-08-10.md`. Two edits confirmed by name in the determinations, including the restored being-changed route. **Three cautions travel with the figure and it should not be quoted bare.** It is not approval (twenty-five consecutive 5s on F were zero variance and the wrong band). No fixture tests the breadth requirement — the being-changed fixture tests the *exemption* from it — so nothing here speaks to the two-behaviours case where E lives. And it is a scorer-path number: the same transcript wobbles 4B/5/5 through the product. See §7. |
 | ~~The whole review set needs re-running~~ | **Run 2026-08-10** — `reviews/c3-set-rerun-2026-08-10.md`. **Nine of eleven agree, zero divergences among the answers that scored.** F fell to 4 and E held at 5, both as predicted, and the other seven did not drift — which was the specific risk of raising the bar. Two answers produced no critique (see below), so I is unmeasured rather than falsified and is the one prediction still outstanding. |
@@ -941,7 +941,7 @@ the module up.
 | ~~C3 — a real but too-thin offer~~ | **Settled by Grant 2026-07-29**, now scoring note 4: a single dismissed clause names a setting and nothing else, so it returns not assessable and asks him about it. He is not declining to answer and his life is not empty, so neither a low score nor *not answered* is honest. 20/20 on the fixture that used to split three ways. |
 | Not-assessable outcome on other criteria | **Drafted into Criterion 2 on 2026-08-17 as scoring note 7 — awaiting SME review, flagged in that rubric's provenance section rather than in its scorer region.** Substantively mechanical: the rule was settled on C3 and this restates it. **One judgment call inside it, and it is the thing to attack:** the note says insufficient-evidence should be *rarer* here than on Teamwork and that the default when in doubt is *not answered*, reasoning that Teamwork has a real population who genuinely worked alone while every candidate in front of a panel has some account of why he is there. That is inference from purpose, not experience. |
 | ~~Not assessable vs. did not answer~~ | **Fixed 2026-07-28.** Three outcomes: scored, not assessable (a conclusion, must quote the words that establish it), not answered (no basis either way — ask him). See §2. |
-| Criteria 4, 5 | Unwritten. |
+| Criteria 4, 5 | Names and structure settled 2026-09-10: **Integrity & Ethics** and **Judgment & Composure**. DRAFTs in `recruit_rubric_c4_integrity_ethics.md` and `recruit_rubric_c5_judgment_composure.md` — structure-approved, **not publishable** until Grant's adjacent-band captain rewrite. |
 | Metrics spec | Pause classification, band definitions, stall threshold. Definitions matter more than they look. |
 | ~~Noise floor test~~ | **Run 2026-07-27** — see §7. Stable away from boundaries; ±1 anchor at the 3/4B boundary, 25% of runs. |
 | ~~3/4B boundary anchor~~ | **Tightened 2026-07-28**, re-run clean at 60/60. The test is now *can he say what it changed* — the same test the 4B and 3 anchors already applied. |
@@ -950,5 +950,18 @@ the module up.
 | 4A/4B split | Came out of a single pass. Wants a second panelist before it is settled. The scorer applied it consistently (5/5 runs tagged 4B), which says the split is legible — not that it is right. |
 | Question bank | Size and rotation policy undetermined; the novel-question design makes bank depth a hard requirement rather than a nice-to-have. |
 
-**Criterion 1 scope, settled:**
-Scored across the whole board rather than on a designated question, so anchors cannot reference a specific answer. Audio can see answer construction (did he answer what was asked, does the answer have a shape, are claims specific, does he stop when done, will he say what he got wrong) plus pace, fluency, and length. It cannot see presence, eye contact, nerves, or likeability. The unscoreable half is real, is scored by actual panels, and the product should say plainly that it has to be worked on with a person.
+**Criterion 1 name and structure, settled 2026-09-10:**
+
+**[SETTLED]** The name is **Answer Construction**, not Communication.
+
+**[SETTLED]** Scored across the whole board from audio rather than on a designated question, so anchors cannot reference a specific answer. Construction is a clean 1–5 (no 4A/4B routes). Delivery is a separate three-band sub-score (Clear / Costly / Blocking) only — not mirrored to 1–5. Owns-a-miss stays on the 5 band. Presence and eye contact stay human (unscoreable from audio). Audio can see answer construction (did he answer what was asked, does the answer have a shape, are claims specific, does he stop when done, will he say what he got wrong) plus pace, fluency, and length. It cannot see presence, eye contact, nerves, or likeability. The unscoreable half is real, is scored by actual panels, and the product should say plainly that it has to be worked on with a person.
+
+**[SETTLED]** Practice sessions issue a **full board of five questions**, not one. Whole-board scoring is no longer provisional. Implementation of whole-board C1 scoring waits until the criterion is Grant-approved and publishable.
+
+DRAFT anchors live in `recruit_rubric_c1_answer_construction.md`. Structure approved; **not publishable** for live candidate scoring until Grant's adjacent-band captain rewrite. Do not treat the draft anchors as SME-final.
+
+**Criteria 4 and 5 names and structure, settled 2026-09-10:**
+
+**[SETTLED]** Criterion 4 is **Integrity & Ethics**. Designated integrity question is primary; corroboration from the rest of the board is admissible. Clean 1–5, no routes. "Never refuse any order" is a low-band tell. Peer-wrongdoing must escalate past private peer talk when harm, theft, impairment, or illegal conduct is possible. DRAFT in `recruit_rubric_c4_integrity_ethics.md` — structure settled; **not publishable** until the adjacent-band rewrite.
+
+**[SETTLED]** Criterion 5 is **Judgment & Composure**. Designated question primary plus corroboration; clean 1–5, no routes. Composure is conduct and content only (no voice-quality scoring). Self-awareness feeds both criteria but mostly C5. Ranking traps score reasoning, not a secret correct order. DRAFT in `recruit_rubric_c5_judgment_composure.md` — structure settled; **not publishable** until the adjacent-band rewrite.

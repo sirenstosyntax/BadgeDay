@@ -10,9 +10,11 @@ scoring **dimensions**; this file covers the **questions**. First pass 2026-07-2
 
 **Bank size is not the constraint. Rubric coverage is.**
 
-The convergent evidence below yields ~36 question families. Two rubrics exist —
-Criterion 2 (Motivation, SME-approved) and Criterion 3 (Teamwork, drafted by Claude,
-**unreviewed**). Criteria 1, 4 and 5 are unwritten.
+The convergent evidence below yields ~36 question families. Five rubric files exist.
+Criterion 2 (Motivation) is SME-approved. Criterion 3 (Teamwork) is drafted by Claude,
+**unreviewed**. Criteria 1 (Answer Construction), 4 (Integrity & Ethics) and 5
+(Judgment & Composure) are structure-approved DRAFTs as of 2026-09-10 — **not
+publishable** for live candidate scoring until Grant's adjacent-band captain rewrite.
 
 Mapping the families onto the rubrics gives this:
 
@@ -21,23 +23,24 @@ Mapping the families onto the rubrics gives this:
 | Motivation & fit | 5 | C2 Motivation | **Approved** |
 | Teamwork & working relationships | 4 | C3 Teamwork | Drafted, unreviewed |
 | Conflict & interpersonal | 3 | C3 Teamwork | Drafted, unreviewed |
-| Integrity & ethics | 5 | C4/C5 | **Unwritten** |
-| Composure under stress | 3 | C4/C5 | **Unwritten** |
-| Judgment & problem solving | 4 | C4/C5 | **Unwritten** |
-| Self-awareness | 4 | C4/C5 | **Unwritten** |
-| Understanding of the job | 4 | C2 (partly) / unwritten | Partial |
+| Integrity & ethics | 5 | C4 Integrity & Ethics | Structure-approved DRAFT, not publishable |
+| Composure under stress | 3 | C5 Judgment & Composure | Structure-approved DRAFT, not publishable |
+| Judgment & problem solving | 4 | C5 Judgment & Composure | Structure-approved DRAFT, not publishable |
+| Self-awareness | 4 | C4/C5 (mostly C5) | Structure-approved DRAFT, not publishable |
+| Understanding of the job | 4 | C2 (partly) | Partial |
 | Commitment & availability | 2 | C2 | **Approved** |
-| Closing | 2 | C1 Answer Construction | **Unwritten** |
+| Closing | 2 | C1 Answer Construction | Structure-approved DRAFT, not publishable |
 
-Roughly **11 of 36 families can be critiqued today**, and 7 of those depend on an
-unreviewed draft. A 300-prompt bank against two criteria is a worse product than a
-60-prompt bank against five: the candidate gets a novel question every session and the
-same two flavours of feedback forever, which is exactly the "confident feedback he cannot
-check" failure `recruit_scope.md` is built to avoid.
+Only Criterion 2 is SME-approved for live scoring. C3 is drafted-unreviewed. C1/C4/C5
+exist as structure-approved DRAFTs and cannot score a real candidate until the
+adjacent-band rewrite. A 300-prompt bank against two live criteria is a worse product
+than a 60-prompt bank against five publishable ones: the candidate gets a novel
+question every session and the same two flavours of feedback forever, which is exactly
+the "confident feedback he cannot check" failure `recruit_scope.md` is built to avoid.
 
-**Consequence for build order:** authoring and reviewing Criteria 1, 4 and 5 outranks
-growing the bank. The bank is cheap; the rubrics are the asset. See "Sizing" below for why
-the bank turns out to be a much smaller job than it looks.
+**Consequence for build order:** taking Criteria 1, 4 and 5 from DRAFT to publishable
+outranks growing the bank. The bank is cheap; the rubrics are the asset. See "Sizing"
+below for why the bank turns out to be a much smaller job than it looks.
 
 ---
 
@@ -252,10 +255,10 @@ At 290 prompts a full-board user gets **~58 sessions** — over a year at weekly
 about four months at target cadence. At 500 it is ~100 sessions. That is sufficient for
 launch and the growth path is cheap.
 
-**Do not chase a very large bank before the rubrics exist.** Prompts the product cannot
+**Do not chase a very large bank before C1/C4/C5 are publishable.** Prompts the product cannot
 critique against a reviewed criterion are inventory, not product. The order that maximises
-value per unit of your review time is: Criteria 1/4/5 → variants across the families those
-criteria unlock → more families.
+value per unit of your review time is: take Criteria 1/4/5 to publishable → variants across
+the families those criteria unlock → more families.
 
 ### Exhaustion
 

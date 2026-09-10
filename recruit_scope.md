@@ -188,7 +188,12 @@ Promote's pipeline was CLI-testable before it had a frontend.
      level 2 anchor catches the qualified self-focused candidate, and fires on him 20 times
      out of 20. That gap is therefore closed *in draft only*. Drafting into the review chain
      is permitted; publishing without SME review is not, so this changes nothing about step
-     3's gate. Criteria 1, 4 and 5 remain unwritten.
+     3's gate. Criteria 1 (Answer Construction), 4 (Integrity & Ethics) and 5
+     (Judgment & Composure) now have structure-approved DRAFT files
+     (`recruit_rubric_c1_answer_construction.md`,
+     `recruit_rubric_c4_integrity_ethics.md`,
+     `recruit_rubric_c5_judgment_composure.md`) — names and structure settled
+     2026-09-10; **not publishable** until Grant's adjacent-band captain rewrite.
 2. ~~**The critique pipeline, CLI-first.**~~ **Built 2026-07-28** — `app/critique/`,
    exercisable now with `badgeday-critique --rubric c3 --all-fixtures`. Rubric clauses are
    parsed out of the markdown rather than kept beside it, so a point cites `c3.anchor.2`
@@ -319,10 +324,14 @@ either way.
 
    What that costs, recorded so it is not a surprise: pillar 3 is the cheapest of the three
    and the least risky, so the schedule impact is smaller than it looks — but **the binding
-   constraint is not pillar 3, it is rubric coverage.** Criteria 1, 4 and 5 are unwritten
-   and C3 is drafted-unreviewed, which means roughly 11 of the 36 evidenced question
-   families can be critiqued today (`recruit_question_bank.md`). Three pillars against two
-   criteria would be broad and thin. **Authoring and reviewing C1/C4/C5 now outranks
+   constraint is not pillar 3, it is rubric coverage.** Criteria 1 (Answer
+   Construction), 4 (Integrity & Ethics) and 5 (Judgment & Composure) have
+   structure-approved DRAFT rubrics as of 2026-09-10, and C3 is drafted-unreviewed.
+   Those three drafts are **not publishable** for live scoring until Grant's
+   adjacent-band captain rewrite, so roughly 11 of the 36 evidenced question
+   families can be critiqued against an SME-approved or in-pipeline rubric today
+   (`recruit_question_bank.md`). Three pillars against two live criteria would be
+   broad and thin. **Taking C1/C4/C5 from DRAFT to publishable now outranks
    growing the question bank**, and it is the real path to launching with value.
 
    Pillar 2 additionally becomes the free tier — see `badgeday_pricing.md`. That raises its
@@ -331,11 +340,18 @@ either way.
    *(original recommendation)* Oral board plus a thin gap analysis, with principles and
    traps growing after launch — the first two are the product, the third is what makes it
    feel complete.
-3. **What does Criterion 1 get called?** "Communication" overclaims what audio can see.
-   "Answer Construction" plus a separate delivery sub-score is the candidate. Its scope is
-   settled — scored across the whole board rather than on one designated question, so its
-   anchors cannot reference a specific answer — but the name is not. See
-   `recruit_design_decisions.md` §10.
+3. ~~**What does Criterion 1 get called?**~~ **Settled 2026-09-10: Answer Construction.**
+   "Communication" overclaims what audio can see. Delivery is a separate three-band
+   sub-score (Clear / Costly / Blocking) only — not mirrored to 1–5. Structure is in
+   `recruit_design_decisions.md` §10 and the DRAFT file
+   `recruit_rubric_c1_answer_construction.md`. Anchors remain DRAFT / not publishable
+   until Grant's adjacent-band captain rewrite.
+
+   *(original)* **What does Criterion 1 get called?** "Communication" overclaims what
+   audio can see. "Answer Construction" plus a separate delivery sub-score is the
+   candidate. Its scope is settled — scored across the whole board rather than on one
+   designated question, so its anchors cannot reference a specific answer — but the
+   name is not. See `recruit_design_decisions.md` §10.
 4. ~~**Question bank size and rotation policy.**~~ **Proposed 2026-07-29 in
    `recruit_question_bank.md`** — 36 evidenced question families, target ~290 prompts at
    launch (36 families × 8 variants) growing to ~500, with 12-month retirement for
@@ -351,9 +367,15 @@ either way.
    *(original)* A hard requirement now rather than a detail, because a novel question every
    session means the bank has to outlast a subscription. Needed at step 4.
 
-5. **Does a practice session issue one question or a full board of five?** New, and it
-   surfaced from the competitive comparison rather than from the design. Station Visit runs
-   a full panel; our design issues one question. See `badgeday_pricing.md` — this is the
-   one place where a candidate comparing the two products would find us visibly thinner,
-   and Criterion 1's settled scope (scored across a whole board, not one answer) needs a
-   full board to score against anyway.
+5. ~~**Does a practice session issue one question or a full board of five?**~~
+   **Settled 2026-09-10: a full board of five questions.** Criterion 1's
+   whole-board scoring is no longer provisional. Implementation of that scoring
+   waits until C1 is Grant-approved and publishable. See
+   `recruit_design_decisions.md` §10.
+
+   *(original)* New, and it surfaced from the competitive comparison rather than
+   from the design. Station Visit runs a full panel; our design issues one
+   question. See `badgeday_pricing.md` — this is the one place where a candidate
+   comparing the two products would find us visibly thinner, and Criterion 1's
+   settled scope (scored across a whole board, not one answer) needs a full board
+   to score against anyway.
