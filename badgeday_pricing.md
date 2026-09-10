@@ -135,21 +135,22 @@ Per-answer marginal cost, retry-adjusted:
 
 **The bank is the bound. The daily cap is abuse throttling.** At the ~290 prompts
 recommended in `recruit_question_bank.md`, and with no repeats ever, a candidate
-cannot consume more than ~290 answers ≈ **$46** before the 12-month retirement rule
-recycles anything. "Unlimited" stays safe to advertise.
+cannot consume more than ~290 answers × ~$0.19 ≈ **$55** before the 12-month
+retirement rule recycles anything. "Unlimited" stays safe to advertise.
 
-Margin floor — worst case is a **six-month subscriber who exhausts the bank**:
+Margin floor — one basis end-to-end, retry-adjusted **~$0.19/answer** (five-question
+board). Worst case is a **six-month subscriber who exhausts the bank**:
 
-- Weekly boards for 26 weeks ≈ **$21** COGS → **~82%** margin on $119
-- Bank-exhausted worst case ≈ **$46** → **~61%**
-- Annual at $179: weekly ≈ **$42** → **~77%**; bank-exhausted ≈ **$46** → **~74%**
+- Weekly boards for 26 weeks: 26 × 5 × ~$0.19 ≈ **$25** COGS → **~79%** margin on $119
+- Bank-exhausted worst case: 290 × ~$0.19 ≈ **$55** → **~54%**
+- Annual at $179: weekly 52 × 5 × ~$0.19 ≈ **$49** → **~72%**; bank-exhausted ≈ **$55** → **~69%**
 
-Everything else is better than the **~61%** floor. Price on position and value, not
+Everything else is better than the **~54%** floor. Price on position and value, not
 on cost. There is no cost argument for cutting price.
 
 The bank does not protect monthly on its own. A heavy monthly user who runs the daily
-cap (10/day) burns through ~290 questions in about a month (≈$46 COGS) — a loss on
-month one relative to monthly revenue. Lifetime COGS is still bounded at ~$46; month
+cap (10/day) burns through ~290 questions in about a month (≈$55 COGS) — a loss on
+month one relative to monthly revenue. Lifetime COGS is still bounded at ~$55; month
 two onward is nearly pure margin until 12-month retirement recycles. Cost exposure is
 fine. This surfaces a **product** problem: a heavy user can hit "no unseen questions"
 inside the term they paid for, and the app needs a design decision on what to say
