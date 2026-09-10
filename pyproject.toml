@@ -55,6 +55,10 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
+[tool.ruff.lint.per-file-ignores]
+# Generated prompt strings are one variant per line; wrapping them would hide diffs.
+"app/recruit/bank_data.py" = ["E501"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["app", "tests"]
 # `supabase/` at the repo root holds the SQL migrations, not a Python package. Ruff
