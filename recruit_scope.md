@@ -237,7 +237,9 @@ Promote's pipeline was CLI-testable before it had a frontend.
 4. **Content set.** Enough scenarios and rubrics across question types to make a practice
    session worth having, each through review. The novel-question-every-session rule makes
    **bank depth a hard requirement**, not a nice-to-have: size and rotation policy are
-   undetermined and need settling here.
+   **Settled 2026-09-10 by Grant** — see open question 4 and `recruit_question_bank.md`.
+   Family review of the existing 288-item draft is in progress. Nothing publishes
+   unreviewed.
 5. **Audio capture and transcription.** Browser recording, batch ASR with word-level
    timestamps, the deterministic metrics computed in our code, opt-in retention. Verify
    disfluency preservation on our own audio first — most ASR strips "um" and "uh" by
@@ -340,12 +342,14 @@ either way.
    2026-09-10** (adjacent bands kept as drafted). C5 named **Judgment & Composure** —
    **Grant-approved / publishable 2026-09-10** (adjacent bands kept as drafted). See
    `recruit_design_decisions.md` §10 Settles 2026-09-10.
-4. ~~**Question bank size and rotation policy.**~~ **Proposed 2026-07-29 in
-   `recruit_question_bank.md`** — 36 evidenced question families, target ~290 prompts at
-   launch (36 families × 8 variants) growing to ~500, with 12-month retirement for
-   exhaustion, no prompt ever repeated, no family within a rolling 8 sessions, and 70/30
-   weighted/random selection. Needs your sign-off, and the family list needs SME review
-   before any of it publishes.
+4. ~~**Question bank size and rotation policy.**~~ **Settled 2026-09-10 by Grant** in
+   `recruit_question_bank.md` — 36 evidenced question families, ≈290 prompts at launch
+   (36 families × 8 variants) growing toward ~500; 12-month retirement preferred; never
+   repeat a prompt; no family within a rolling 8 sessions; 70/30 weighted/random
+   selection; full-board draw shape as already described (one from each of A, B/C,
+   D/E/F, G/H, J). Family review of the existing 288-item draft is in progress (not a
+   second library). Nothing publishes unreviewed. Does not wire the live scorer or
+   pricing. See `recruit_design_decisions.md` §10 Settles 2026-09-10.
 
    The reason a large bank turns out to be affordable: **a Recruit question is an unkeyed
    prompt** — no answer, no distractors, no citation — so per-item review is seconds rather
