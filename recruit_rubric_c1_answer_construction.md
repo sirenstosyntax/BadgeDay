@@ -10,7 +10,7 @@
 > review chain; Grant authorized this file as Grant-approved / publishable on 2026-09-10.
 >
 > This approval does not wire the live scorer, does not go live on pricing, and does not
-> approve Criteria 3, 4, or 5.
+> approve Criterion 3 (C4 and C5 are Grant-approved / publishable 2026-09-10).
 
 | | |
 |---|---|
@@ -282,7 +282,8 @@ of five** questions — whole-board C1 scoring is not provisional.
 **Grant-approved / publishable 2026-09-10.** Captain pass kept all adjacent boundaries as
 drafted — 5↔4, 4↔3, 3↔2, 2↔1 — and kept scoring note 8 (one weak answer does not set the
 band). Originally drafted by Red into the review chain. This approval does not wire the
-live scorer, does not go live on pricing, and does not approve C3, C4, or C5.
+live scorer, does not go live on pricing, and does not approve C3 (C4 and C5 are
+Grant-approved / publishable 2026-09-10).
 
 **What is grounded (Grant-settled / Grant-approved).**
 
@@ -306,9 +307,9 @@ live scorer, does not go live on pricing, and does not approve C3, C4, or C5.
 
 **Still outside this file.**
 
-- Criteria 4 and 5: named and structure-approved 2026-09-10 as separate draft files
+- Criterion 3 still owes a text pass on rewritten anchors (`recruit_rubric_c3_teamwork.md`).
+  Criteria 4 and 5 are Grant-approved / publishable 2026-09-10
   (`recruit_rubric_c4_integrity_ethics.md`, `recruit_rubric_c5_judgment_composure.md`).
-  Adjacent-band rewrites still owed on those. Not publishable.
 
 **Hard constraint.** Nothing in this criterion references, depicts, or implies any real fire
 department’s name, logo, insignia, apparatus, or facilities. No employer naming.
