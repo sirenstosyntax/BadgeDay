@@ -27,6 +27,7 @@ def stripe_price_ids_for(settings: Settings, module: Module) -> frozenset[str]:
         return _filled(
             settings.stripe_price_id_recruit_monthly,
             settings.stripe_price_id_recruit_intensive_90day,
+            settings.stripe_price_id_recruit_6month,
             settings.stripe_price_id_recruit_annual,
         )
     return _filled(
@@ -40,9 +41,11 @@ def store_product_ids_for(settings: Settings, module: Module) -> frozenset[str]:
         return _filled(
             settings.play_product_id_recruit_monthly,
             settings.play_product_id_recruit_intensive_90day,
+            settings.play_product_id_recruit_6month,
             settings.play_product_id_recruit_annual,
             settings.appstore_product_id_recruit_monthly,
             settings.appstore_product_id_recruit_intensive_90day,
+            settings.appstore_product_id_recruit_6month,
             settings.appstore_product_id_recruit_annual,
         )
     return _filled(

@@ -7,7 +7,7 @@ Stripe stays in test mode until both modules ship (`CLAUDE.md`).*
 
 ---
 
-## Held — Grant, 2026-09-09 (ship gate #4)
+## Held — Grant, 2026-09-10 (ship gate #4)
 
 **Not live.** Checkout, Stripe live mode, and Play / App Store public SKUs stay off
 until Grant says go live. Env vars are blank placeholders.
@@ -17,12 +17,17 @@ until Grant says go live. Env vars are blank placeholders.
 | **Recruit** | First oral-board session | Free, no card (`RECRUIT_FREE_SESSIONS=1`) |
 | **Recruit** | Monthly | **$24.99/mo** — `STRIPE_PRICE_ID_RECRUIT_MONTHLY` / Play / App Store counterparts |
 | **Recruit** | 90-day pass | **$59** — `STRIPE_PRICE_ID_RECRUIT_INTENSIVE_90DAY` |
-| **Recruit** | Annual | **$119/yr** — `STRIPE_PRICE_ID_RECRUIT_ANNUAL` |
+| **Recruit** | 6-month | **$119** — `STRIPE_PRICE_ID_RECRUIT_6MONTH` / Play / App Store counterparts |
+| **Recruit** | Annual | **$179/yr** — `STRIPE_PRICE_ID_RECRUIT_ANNUAL` |
 
-This supersedes the 2026-07-29 recommendation below ($29 / $119 six-month / $179 annual,
-no 90-day) for what we will configure when checkout opens. The competitive write-up
-under that recommendation is still the reasoning record; the numbers Grant is holding
-are the ones above. Config names follow Promote's pair plus annual, not a 6-month SKU.
+On 2026-09-10 Grant reconciled the $119/$179 conflict to the July competitive pairing:
+**$119 is 6-month, not annual; $179 is annual.** Monthly ($24.99) and the 90-day pass ($59)
+are unchanged pending further word. The 2026-09-09 held table had named $119 as annual and
+had no 6-month SKU; that naming is superseded. Checkout still does not open.
+
+The 2026-07-29 recommendation below ($29 / $119 six-month / $179 annual, no 90-day) remains
+the reasoning record. Grant locked the six-month and annual amounts from that pairing; he
+did not adopt $29 monthly or drop the 90-day row.
 
 ---
 
@@ -119,8 +124,7 @@ modules ship, so this decision costs nothing to revisit before launch.
 Remeasured 2026-09-10 against list ASR and a live critique call. Token telemetry is still
 not persisted on attempts, so the critique figure is a remeasurement, not a running mean.
 Margin math in this section uses the July competitive pairing (**$119 six-month / $179
-annual**) for the floor analysis; the held configure-when-live table above may still
-differ — Grant will reconcile SKUs separately. **Do not read $119 as annual here.**
+annual**), which Grant locked as the held SKUs on 2026-09-10.
 
 Per-answer marginal cost, **retry-adjusted** (the published basis). The whole-board
 Criterion 1 pass is one more call per board and is not in these numbers.
@@ -166,9 +170,11 @@ people and a combined plan sells each of them half a product. Structurally this 
 price-ID → module mapping resolved server-side per the architecture table
 (`app/billing/module.py`).
 
-Held naming (Grant, 2026-09-09): `STRIPE_PRICE_ID_RECRUIT_MONTHLY`,
-`..._RECRUIT_INTENSIVE_90DAY`, `..._RECRUIT_ANNUAL` — monthly, a 90-day pass, and
-annual. The 6-month SKU from the 2026-07-29 recommendation is not what we are holding.
+Held naming (Grant, 2026-09-10): `STRIPE_PRICE_ID_RECRUIT_MONTHLY`,
+`..._RECRUIT_INTENSIVE_90DAY`, `..._RECRUIT_6MONTH`, `..._RECRUIT_ANNUAL` —
+monthly, a 90-day pass, a 6-month hiring-cycle term, and annual. Grant locked
+6-month at $119 and annual at $179 on 2026-09-10; 90-day and monthly are
+unchanged pending further word.
 
 ---
 

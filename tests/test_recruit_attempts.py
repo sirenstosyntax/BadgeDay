@@ -148,11 +148,14 @@ def test_empty_recruit_price_ids_are_placeholders() -> None:
     settings = Settings()
     assert settings.stripe_price_id_recruit_monthly == ""
     assert settings.stripe_price_id_recruit_intensive_90day == ""
+    assert settings.stripe_price_id_recruit_6month == ""
     assert settings.stripe_price_id_recruit_annual == ""
     assert settings.play_product_id_recruit_monthly == ""
     assert settings.play_product_id_recruit_intensive_90day == ""
+    assert settings.play_product_id_recruit_6month == ""
     assert settings.appstore_product_id_recruit_monthly == ""
     assert settings.appstore_product_id_recruit_intensive_90day == ""
+    assert settings.appstore_product_id_recruit_6month == ""
     assert settings.appstore_product_id_recruit_annual == ""
 
 
