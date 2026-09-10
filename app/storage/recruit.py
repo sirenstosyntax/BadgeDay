@@ -53,13 +53,7 @@ def count_attempts(db: Client, *, started_on_or_after: datetime | None = None) -
     return len(rows)
 
 
-def attempted_scenario_ids(db: Client) -> list[str]:
-    """Distinct scenario ids already issued to this candidate. RLS scopes the table.
-
-    Any attempt row consumes novelty — queued, running, completed, failed, or
-    abandoned. The next issue must not re-offer those prompts.
-    """
-    rows = db.table("recruit_attempts").select("scenario_id").execute().data or []
+def _distinct_scenario_ids(rows: list) -> list[str]:
     seen: list[str] = []
     found: set[str] = set()
     for row in rows:
@@ -68,6 +62,33 @@ def attempted_scenario_ids(db: Client) -> list[str]:
             found.add(sid)
             seen.append(sid)
     return seen
+
+
+def attempted_scenario_ids(db: Client) -> list[str]:
+    """Distinct scenario ids already issued to this candidate. RLS scopes the table.
+
+    Any attempt row consumes novelty — queued, running, completed, failed, or
+    abandoned. The next issue must not re-offer those prompts.
+    """
+    rows = db.table("recruit_attempts").select("scenario_id").execute().data or []
+    return _distinct_scenario_ids(rows)
+
+
+def completed_scenario_ids(db: Client) -> list[str]:
+    """Distinct bank questions this candidate has finished. RLS scopes the table.
+
+    AC3: only `completed` — queued, running, critique_failed, and abandoned
+    do not count as answered.
+    """
+    rows = (
+        db.table("recruit_attempts")
+        .select("scenario_id")
+        .eq("status", "completed")
+        .execute()
+        .data
+        or []
+    )
+    return _distinct_scenario_ids(rows)
 
 
 def get_attempt(db: Client, attempt_id: str) -> RecruitAttemptRecord | None:

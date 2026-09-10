@@ -36,6 +36,7 @@ from app.recruit.bank import (
 from app.recruit.gate import RecruitAccessDenied, check_recruit_access
 from app.storage.recruit import (
     attempted_scenario_ids,
+    completed_scenario_ids,
     count_attempts,
     create_queued_attempt,
     get_attempt,
@@ -114,7 +115,12 @@ def metrics_for_critique(transcript: Transcript) -> dict[str, Metric]:
 @router.get("/question")
 def issued_question(_user: CurrentUserDep, db: DbDep) -> RecruitQuestion:
     """Next novel bank item, or the exhausted milestone. Auth required; 401 if not."""
-    return _question_payload(issue(attempted_scenario_ids(db)))
+    return _question_payload(
+        issue(
+            attempted_scenario_ids(db),
+            completed_scenario_ids=completed_scenario_ids(db),
+        )
+    )
 
 
 @router.post("/attempts", status_code=status.HTTP_202_ACCEPTED)

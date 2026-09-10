@@ -50,19 +50,23 @@ def published_items() -> tuple[BankItem, ...]:
 def issue(
     seen_scenario_ids: Sequence[str],
     bank: Sequence[BankItem] | None = None,
+    *,
+    completed_scenario_ids: Sequence[str] = (),
 ) -> Issue:
     """Pick a novel bank item, or the exhausted milestone payload.
 
-    `answered_count` is how many distinct bank ids this candidate has already
-    been issued. It is not a hardcoded 290, and it is not an "about" figure.
+    Novelty uses every issued id. `answered_count` is distinct *completed*
+    bank ids only — not queued, running, failed, or abandoned. It is not a
+    hardcoded 290, and it is not an "about" figure.
     """
     items = tuple(bank) if bank is not None else published_items()
     seen = {sid for sid in seen_scenario_ids if sid}
+    completed = {sid for sid in completed_scenario_ids if sid}
     bank_ids = {item.scenario_id for item in items}
     remaining = [item for item in items if item.scenario_id not in seen]
     if not remaining:
         return ExhaustedIssue(
-            answered_count=len(seen & bank_ids) if bank_ids else 0,
+            answered_count=len(completed & bank_ids) if bank_ids else 0,
             bank_size=len(items),
             next_eligible_at=None,
         )

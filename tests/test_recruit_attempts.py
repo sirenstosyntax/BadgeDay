@@ -60,6 +60,7 @@ def _client(
     *,
     authed: bool = True,
     seen_scenario_ids: list[str] | None = None,
+    completed_scenario_ids: list[str] | None = None,
 ) -> TestClient:
     app = FastAPI()
     app.include_router(router)
@@ -70,7 +71,11 @@ def _client(
     app.dependency_overrides[get_settings] = lambda: settings
     app.dependency_overrides[user_db] = lambda: object()
     seen = list(seen_scenario_ids) if seen_scenario_ids is not None else []
+    completed = (
+        list(completed_scenario_ids) if completed_scenario_ids is not None else []
+    )
     monkeypatch.setattr("app.api.recruit.attempted_scenario_ids", lambda db: seen)
+    monkeypatch.setattr("app.api.recruit.completed_scenario_ids", lambda db: completed)
     return TestClient(app)
 
 
