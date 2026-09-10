@@ -3,17 +3,18 @@
 **288 items drafted across 36 families (Claude 2026-07-29). Family pass 1 +
 variant pass 2 complete 2026-09-10. Surviving bank: 272 items (16 struck;
 text retained below for the audit trail). Review of families and variants is
-complete. Publishing the bank into product is a separate start order —
-nothing publishes until Grant opens publish.**
+complete. Grant start order 2026-09-10: the C2-only issuable subset (81
+MOT/JOB/CMT, non-STRIKE) is the live bank. C1/C3/C4/C5 stay unpublished
+until scorer wire.**
 
 | | |
 |---|---|
-| Status | Draft. Review complete for families + variants. Publish gate is separate. Nothing publishes until Grant opens publish. |
+| Status | Review complete for families + variants. C2-only issuable subset (81) published 2026-09-10. C1/C3/C4/C5 held. |
 | Authorship | Claude, drafted into the review chain per `recruit_scope.md` step 1 precedent |
 | Evidence base | `recruit_question_bank.md` — 36 families, each from 2+ independently authored sources |
 | Sizing rationale | 36 families × 8 variants = 288 drafted; **272 survive** pass 2 |
 | Reviewer | Grant Collings — fire captain, sat panels |
-| Review status | **Pass 1 + Pass 2 complete 2026-09-10.** 272 of 288 survive. Publish gate is a separate start order. Nothing publishes until Grant opens publish. |
+| Review status | **Pass 1 + Pass 2 complete 2026-09-10.** 272 of 288 survive. C2-only 81 published 2026-09-10 (Grant start order). |
 
 Family IDs use three-letter group mnemonics (`MOT-1`, `TEA-2`) rather than the A–J letters
 in `recruit_question_bank.md`, because `C2`/`C3` as family IDs would collide visually with

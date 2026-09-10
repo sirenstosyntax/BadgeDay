@@ -110,6 +110,9 @@ def test_submit_returns_202_and_does_not_critique(monkeypatch) -> None:
     def fake_create(db, user_id, **kwargs):
         captured["user_id"] = user_id
         captured["data"] = kwargs["data"]
+        captured["scenario_id"] = kwargs["scenario_id"]
+        captured["criterion_id"] = kwargs["criterion_id"]
+        captured["question_text"] = kwargs["question_text"]
         return _record()
 
     monkeypatch.setattr("app.api.recruit.count_attempts", lambda *a, **k: 0)
@@ -128,6 +131,9 @@ def test_submit_returns_202_and_does_not_critique(monkeypatch) -> None:
     assert "score" not in body
     assert captured["user_id"] == USER_ID
     assert captured["data"] == b"fake-audio"
+    assert captured["scenario_id"] == "MOT-1.1"
+    assert captured["criterion_id"] == "c2"
+    assert captured["question_text"] == "Why do you want to be a firefighter?"
 
 
 def test_enqueue_inserts_a_recruit_critique_job() -> None:
@@ -348,6 +354,98 @@ def test_worker_passes_computed_metrics_into_critique_answer(monkeypatch) -> Non
     assert persist.attempt_id == ATTEMPT
     assert persist.user_id == USER_ID
     assert persist.audio_retained is False
+
+
+def test_worker_loads_rubric_by_criterion_id_not_scenario_id(monkeypatch) -> None:
+    captured: dict = {}
+    transcript = transcript_from_deepgram(DEEPGRAM_PAYLOAD)
+    audio_path = f"{USER_ID}/{ATTEMPT}/answer.webm"
+
+    class FakeTranscriber:
+        def __init__(self, settings: Settings) -> None:
+            self.settings = settings
+
+        def transcribe(self, path: Path):
+            return transcript
+
+    def fake_critique_answer(**kwargs):
+        captured.update(kwargs)
+        return _ok_outcome()
+
+    monkeypatch.setattr("app.worker.pipeline.DeepgramTranscriber", FakeTranscriber)
+    monkeypatch.setattr("app.worker.pipeline.critique_answer", fake_critique_answer)
+    monkeypatch.setattr(
+        "app.worker.pipeline.get_attempt",
+        lambda db, _id: _record(
+            status="queued",
+            audio_storage_path=audio_path,
+            scenario_id="MOT-1.3",
+            question_text=(
+                "What else did you seriously consider doing, and why aren't you doing it?"
+            ),
+            criterion_id="c2",
+        ),
+    )
+    monkeypatch.setattr("app.worker.pipeline.mark_running", lambda *a: None)
+    monkeypatch.setattr("app.worker.pipeline.download_audio", lambda db, path: b"fake-audio")
+    monkeypatch.setattr("app.worker.pipeline.delete_audio", lambda db, path: None)
+
+    job = Job(
+        id="job-r",
+        kind="recruit_critique",
+        attempt_id=ATTEMPT,
+        status="running",
+        attempts=1,
+        max_attempts=3,
+    )
+    run_recruit_critique(object(), _settings(), job)
+
+    assert captured["rubric"].criterion_id == "c2"
+    assert captured["question"].startswith("What else did you seriously consider")
+    assert captured["persist"].scenario_id == "MOT-1.3"
+
+
+def test_worker_legacy_c2_attempt_still_loads_c2_rubric(monkeypatch) -> None:
+    captured: dict = {}
+    transcript = transcript_from_deepgram(DEEPGRAM_PAYLOAD)
+
+    class FakeTranscriber:
+        def __init__(self, settings: Settings) -> None:
+            pass
+
+        def transcribe(self, path: Path):
+            return transcript
+
+    def fake_critique_answer(**kwargs):
+        captured.update(kwargs)
+        return _ok_outcome()
+
+    monkeypatch.setattr("app.worker.pipeline.DeepgramTranscriber", FakeTranscriber)
+    monkeypatch.setattr("app.worker.pipeline.critique_answer", fake_critique_answer)
+    monkeypatch.setattr(
+        "app.worker.pipeline.get_attempt",
+        lambda db, _id: _record(
+            status="queued",
+            audio_storage_path=f"{USER_ID}/{ATTEMPT}/a.webm",
+            scenario_id="c2",
+            criterion_id=None,
+        ),
+    )
+    monkeypatch.setattr("app.worker.pipeline.mark_running", lambda *a: None)
+    monkeypatch.setattr("app.worker.pipeline.download_audio", lambda db, path: b"xxxx")
+    monkeypatch.setattr("app.worker.pipeline.delete_audio", lambda db, path: None)
+
+    job = Job(
+        id="job-r",
+        kind="recruit_critique",
+        attempt_id=ATTEMPT,
+        status="running",
+        attempts=1,
+        max_attempts=3,
+    )
+    run_recruit_critique(object(), _settings(), job)
+    assert captured["rubric"].criterion_id == "c2"
+    assert captured["question"] == QUESTIONS[C2_SCENARIO_ID]
 
 
 def test_worker_empty_transcript_is_terminal(monkeypatch) -> None:

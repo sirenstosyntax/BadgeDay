@@ -10,7 +10,6 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from app.api.recruit import RecruitQuestionAvailable, RecruitQuestionExhausted
-from app.critique.cli import QUESTIONS
 from app.recruit.bank import (
     AvailableIssue,
     BankItem,
@@ -24,34 +23,44 @@ from tests.test_recruit_attempts import _client, _settings
 WEB = Path(__file__).resolve().parents[1] / "web" / "src"
 
 
-def test_live_bank_is_c2_only() -> None:
+def _published_ids() -> list[str]:
+    return [item.scenario_id for item in published_items()]
+
+
+def test_live_bank_is_c2_issuable_subset() -> None:
     items = published_items()
-    assert [item.scenario_id for item in items] == ["c2"]
-    assert items[0].question_text == QUESTIONS["c2"]
+    assert len(items) == 81
+    assert items[0].scenario_id == "MOT-1.1"
+    assert items[0].question_text == "Why do you want to be a firefighter?"
+    assert items[0].criterion_id == "c2"
     assert 290 not in (item.scenario_id for item in items)
+    assert "c2" not in (item.scenario_id for item in items)
 
 
 def test_issue_available_when_bank_has_an_unseen_item() -> None:
     decision = issue([])
     assert isinstance(decision, AvailableIssue)
-    assert decision.scenario_id == "c2"
-    assert decision.question_text == QUESTIONS["c2"]
+    assert decision.scenario_id == "MOT-1.1"
+    assert decision.question_text == "Why do you want to be a firefighter?"
+    assert decision.criterion_id == "c2"
 
 
 def test_issue_exhausted_when_every_published_item_was_seen() -> None:
-    decision = issue(["c2"], completed_scenario_ids=["c2"])
+    ids = _published_ids()
+    decision = issue(ids, completed_scenario_ids=ids)
     assert isinstance(decision, ExhaustedIssue)
-    assert decision.answered_count == 1
-    assert decision.bank_size == 1
+    assert decision.answered_count == 81
+    assert decision.bank_size == 81
     assert decision.next_eligible_at is None
 
 
 def test_issue_answered_count_ignores_non_completed() -> None:
     """AC3: queued / failed / abandoned ids exhaust novelty but do not count as answered."""
-    decision = issue(["c2"], completed_scenario_ids=[])
+    ids = _published_ids()
+    decision = issue(ids, completed_scenario_ids=[])
     assert isinstance(decision, ExhaustedIssue)
     assert decision.answered_count == 0
-    assert decision.bank_size == 1
+    assert decision.bank_size == 81
 
 
 def test_issue_exhausted_on_empty_bank_fixture() -> None:
@@ -84,25 +93,26 @@ def test_get_question_available(monkeypatch) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["state"] == "available"
-    assert body["scenario_id"] == "c2"
-    assert body["question_text"] == QUESTIONS["c2"]
+    assert body["scenario_id"] == "MOT-1.1"
+    assert body["question_text"] == "Why do you want to be a firefighter?"
     assert "answered_count" not in body
     RecruitQuestionAvailable.model_validate(body)
 
 
 def test_get_question_exhausted_is_200_not_404(monkeypatch) -> None:
+    ids = _published_ids()
     response = _client(
         _settings(),
         monkeypatch,
-        seen_scenario_ids=["c2"],
-        completed_scenario_ids=["c2"],
+        seen_scenario_ids=ids,
+        completed_scenario_ids=ids,
     ).get("/recruit/question")
     assert response.status_code == 200
     assert response.status_code != 404
     body = response.json()
     assert body["state"] == "exhausted"
-    assert body["answered_count"] == 1
-    assert body["bank_size"] == 1
+    assert body["answered_count"] == 81
+    assert body["bank_size"] == 81
     assert body["next_eligible_at"] is None
     assert "scenario_id" not in body
     RecruitQuestionExhausted.model_validate(body)
@@ -141,17 +151,18 @@ def test_get_question_exhausted_answered_count_ignores_non_completed(
     monkeypatch,
 ) -> None:
     """A queued or failed attempt consumes novelty; it does not inflate answered_count."""
+    ids = _published_ids()
     response = _client(
         _settings(),
         monkeypatch,
-        seen_scenario_ids=["c2"],
+        seen_scenario_ids=ids,
         completed_scenario_ids=[],
     ).get("/recruit/question")
     assert response.status_code == 200
     body = response.json()
     assert body["state"] == "exhausted"
     assert body["answered_count"] == 0
-    assert body["bank_size"] == 1
+    assert body["bank_size"] == 81
 
 
 def test_get_question_empty_bank_fixture_is_exhausted_200(monkeypatch) -> None:
@@ -182,7 +193,7 @@ def test_post_attempt_rejected_when_exhausted(monkeypatch) -> None:
     monkeypatch.setattr("app.recruit.gate.recruit_entitled", lambda *a: True)
     monkeypatch.setattr("app.api.recruit.create_queued_attempt", fake_create)
 
-    response = _client(_settings(), monkeypatch, seen_scenario_ids=["c2"]).post(
+    response = _client(_settings(), monkeypatch, seen_scenario_ids=_published_ids()).post(
         "/recruit/attempts",
         files={"audio": ("answer.webm", b"fake-audio", "audio/webm")},
     )

@@ -35,6 +35,7 @@ class RecruitAttemptRecord(BaseModel):
     error: str | None = None
     candidate_lines: list[str] = []
     audio_retained: bool = False
+    criterion_id: str | None = None
 
 
 def utc_day_start(now: datetime | None = None) -> datetime:
@@ -96,7 +97,8 @@ def get_attempt(db: Client, attempt_id: str) -> RecruitAttemptRecord | None:
         db.table("recruit_attempts")
         .select(
             "id,user_id,scenario_id,question_text,started_at,completed_at,"
-            "status,audio_storage_path,error,candidate_lines,audio_retained"
+            "status,audio_storage_path,error,candidate_lines,audio_retained,"
+            "criterion_id"
         )
         .eq("id", attempt_id)
         .limit(1)
@@ -147,6 +149,7 @@ def create_queued_attempt(
     started_at: datetime,
     filename: str,
     data: bytes,
+    criterion_id: str = "c2",
 ) -> RecruitAttemptRecord:
     """Upload audio, then insert the queued row and its job.
 
@@ -165,6 +168,7 @@ def create_queued_attempt(
                 "p_question_text": question_text,
                 "p_started_at": started_at.isoformat(),
                 "p_audio_storage_path": path,
+                "p_criterion_id": criterion_id,
             },
         ).execute()
     except Exception:
@@ -182,6 +186,7 @@ def create_queued_attempt(
             started_at=started_at,
             status="queued",
             audio_storage_path=path,
+            criterion_id=criterion_id,
         )
     return record
 
