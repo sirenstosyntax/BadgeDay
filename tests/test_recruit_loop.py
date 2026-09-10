@@ -226,6 +226,8 @@ def test_recruit_ui_has_no_rerecord_after_the_first_take() -> None:
     assert "Submit" in recorded_block
     assert "startRecording" not in recorded_block
     assert "Record answer" in source
+    assert "issued.state === 'exhausted'" in source
+    assert "{phase === 'ready' && question && (" in source
 
 
 def test_recruit_ui_polls_after_202() -> None:

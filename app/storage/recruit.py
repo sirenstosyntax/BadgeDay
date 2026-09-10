@@ -53,6 +53,23 @@ def count_attempts(db: Client, *, started_on_or_after: datetime | None = None) -
     return len(rows)
 
 
+def attempted_scenario_ids(db: Client) -> list[str]:
+    """Distinct scenario ids already issued to this candidate. RLS scopes the table.
+
+    Any attempt row consumes novelty — queued, running, completed, failed, or
+    abandoned. The next issue must not re-offer those prompts.
+    """
+    rows = db.table("recruit_attempts").select("scenario_id").execute().data or []
+    seen: list[str] = []
+    found: set[str] = set()
+    for row in rows:
+        sid = row.get("scenario_id")
+        if sid and sid not in found:
+            found.add(sid)
+            seen.append(sid)
+    return seen
+
+
 def get_attempt(db: Client, attempt_id: str) -> RecruitAttemptRecord | None:
     rows = (
         db.table("recruit_attempts")

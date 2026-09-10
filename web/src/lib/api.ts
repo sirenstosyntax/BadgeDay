@@ -109,11 +109,11 @@ export const api = {
       request<PracticeSession>(`/sessions/${sessionId}/complete`, { method: 'POST' }),
   },
 
-  // C2 spoken question. POST returns 202; poll GET until completed or failed.
+  // C2 spoken question. GET is a discriminant: available vs exhausted (200, not 404).
+  // POST returns 202; poll GET until completed or failed.
   // The result is candidate_lines only — no score on this payload.
   recruit: {
-    question: () =>
-      request<{ scenario_id: string; question_text: string }>('/recruit/question'),
+    question: () => request<RecruitQuestion>('/recruit/question'),
     attempt: (file: File) => {
       const form = new FormData()
       form.append('audio', file)
@@ -138,6 +138,21 @@ export type AnswerBody = {
   answered_boolean?: boolean | null
   answered_text?: string | null
 }
+
+export type RecruitQuestionAvailable = {
+  state: 'available'
+  scenario_id: string
+  question_text: string
+}
+
+export type RecruitQuestionExhausted = {
+  state: 'exhausted'
+  answered_count: number
+  bank_size: number
+  next_eligible_at: string | null
+}
+
+export type RecruitQuestion = RecruitQuestionAvailable | RecruitQuestionExhausted
 
 export type RecruitAttemptStatus = 'queued' | 'running' | 'completed' | 'critique_failed'
 
