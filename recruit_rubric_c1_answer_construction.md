@@ -2,28 +2,22 @@
 
 **Criterion 1 of 5 — Answer Construction**
 
-> ## ⚠️ DRAFT — STRUCTURE APPROVED 2026-09-10; ADJACENT BANDS AWAIT GRANT REWRITE. NOT PUBLISHABLE.
+> ## GRANT-APPROVED 2026-09-10 — PUBLISHABLE FOR SCORING
 >
-> Anchors below were **drafted by Red** from the settled Criterion 1 scope in
-> `recruit_design_decisions.md` §10, not authored by Grant as a sitting panelist. That is
-> the reverse of how Criterion 2 was made. Allowed only as generation *into* the review
-> chain — a model (or SME agent) may draft rubric candidates for Grant’s review; nothing
-> here reaches a candidate unreviewed.
+> Anchors kept as drafted after Grant’s captain pass on adjacent bands (5↔4, 4↔3, 3↔2,
+> 2↔1 and scoring note 8). Structure already settled earlier (clean 1–5, three-band
+> Delivery, owns-a-miss on 5, full board of five). Originally drafted by Red into the
+> review chain; Grant authorized this file as Grant-approved / publishable on 2026-09-10.
 >
-> **What is grounded and what is invented** is marked in Provenance. In short: the name
-> (Answer Construction), whole-board scoring, the audio-visible half, the unscoreable half,
-> **no route tags**, and **Delivery as three bands only** are Grant-settled. **The discrimination
-> between adjacent construction scores is not** — that is what only a captain who has sat
-> panels can author. Read the anchors as a first draft to correct, not to approve.
->
-> Nothing here scores a real candidate until that review has happened.
+> This approval does not wire the live scorer, does not go live on pricing, and does not
+> approve Criterion 3 (C4 and C5 are Grant-approved / publishable 2026-09-10).
 
 | | |
 |---|---|
 | Scale | 1–5, **plus not answered / insufficient evidence** — see scoring note 6 |
 | Structure | Generic frame, drafted anchors; delivery as a separate audio-visible sub-score |
-| Anchor authorship | **Red — draft, unreviewed by Grant** |
-| Anchor status | Draft — structure settled 2026-09-10; Grant still owes captain pass on adjacent-band discrimination. |
+| Anchor authorship | Grant approved 2026-09-10 (adjacent bands kept as drafted; originally drafted by Red into the review chain) |
+| Anchor status | **Grant-approved / publishable 2026-09-10.** Adjacent bands kept as drafted after captain pass. |
 | Scored on | **The whole board of five** — practice issues five questions; no designated C1 question; anchors must not reference a specific answer |
 
 ---
@@ -283,16 +277,15 @@ The product names the gap; it does not fill it from audio.
 **Grant settled structure 2026-09-10:** drop route tags; construction is a clean 1–5;
 Delivery is three-band only (Clear / Costly / Blocking); owns-a-miss stays on the 5 as
 drafted (scoring note 5 mind-reading guard stays); practice sessions issue a **full board
-of five** questions — whole-board C1 scoring is not provisional. **Adjacent-band
-discrimination still awaits Grant’s captain pass.** The DRAFT / NOT GRANT-APPROVED banner
-stays until that pass.
+of five** questions — whole-board C1 scoring is not provisional.
 
-**These anchors are drafted, not authored by a sitting panelist.** Criterion 2’s anchors
-represent Grant’s scoring judgment. These represent Red’s draft from the settled scope.
-Adjacent-score discrimination is the part most likely to need rewrite, and it is the part
-Grant should attack first.
+**Grant-approved / publishable 2026-09-10.** Captain pass kept all adjacent boundaries as
+drafted — 5↔4, 4↔3, 3↔2, 2↔1 — and kept scoring note 8 (one weak answer does not set the
+band). Originally drafted by Red into the review chain. This approval does not wire the
+live scorer, does not go live on pricing, and does not approve C3 (C4 and C5 are
+Grant-approved / publishable 2026-09-10).
 
-**What is grounded (Grant-settled).**
+**What is grounded (Grant-settled / Grant-approved).**
 
 - Name: Answer Construction (not Communication) — settled 2026-09-10.
 - Scored across the whole board of five; anchors must not reference a specific answer.
@@ -308,18 +301,15 @@ Grant should attack first.
   2026-09-10). Not mirrored to 1–5; not folded into construction.
 - Owns-a-miss on band 5 as drafted (settled 2026-09-10).
 - Full board of five practice questions (settled 2026-09-10).
+- Adjacent-band boundaries 5↔4, 4↔3, 3↔2, 2↔1 kept as drafted — Grant-approved 2026-09-10.
+- Scoring note 8 (one weak answer does not set the band) kept as drafted — Grant-approved
+  2026-09-10.
 
-**What is invented in this draft (still needs captain pass).**
+**Still outside this file.**
 
-- The 1–5 discrimination and which behaviors sit at which level.
-- How strongly “one weak answer does not set the band” should bind the scorer.
-- The exact wording of the single band-4 construction anchor after routes were dropped.
-
-**Still outside this file (status as of land).**
-
-- Criteria 4 and 5: named and structure-approved 2026-09-10 as separate draft files
+- Criterion 3 still owes a text pass on rewritten anchors (`recruit_rubric_c3_teamwork.md`).
+  Criteria 4 and 5 are Grant-approved / publishable 2026-09-10
   (`recruit_rubric_c4_integrity_ethics.md`, `recruit_rubric_c5_judgment_composure.md`).
-  Adjacent-band rewrites still owed on those too. Not publishable.
 
 **Hard constraint.** Nothing in this criterion references, depicts, or implies any real fire
 department’s name, logo, insignia, apparatus, or facilities. No employer naming.
@@ -334,7 +324,9 @@ judgment; disagreement should be documented as a split, not averaged away.
 
 Scope and naming from `recruit_design_decisions.md` §10 (Criterion 1 scope settled;
 naming and structure settled 2026-09-10 via Grant: no route tags; Delivery three bands;
-owns-a-miss on 5; full board of five). Structure and critique-voice pattern from
+owns-a-miss on 5; full board of five). Grant-approved / publishable 2026-09-10 after
+captain pass kept adjacent boundaries and scoring note 8 as drafted. Structure and
+critique-voice pattern from
 `recruit_rubric_c2_motivation.md` and `recruit_rubric_c3_teamwork.md`. Dimension-frame
 coverage only — not anchors — from the convergent core documented in
 `recruit_oral_board_sources.md`. No commercial hiring-test battery was used for anchor text.

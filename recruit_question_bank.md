@@ -12,11 +12,10 @@ scoring **dimensions**; this file covers the **questions**. First pass 2026-07-2
 
 The convergent evidence below yields ~36 question families. Criterion 2 (Motivation) is
 SME-approved. Criterion 3 (Teamwork) is drafted by Claude, **unreviewed** / still owes a
-text pass. Criteria 4 and 5 (Integrity & Ethics / Judgment & Composure) are
-**Grant-approved / publishable 2026-09-10** (adjacent bands kept as drafted;
-corroboration ±1). Criterion 1 has a **structure-approved draft** on main via PR 46
-(Answer Construction) — **NOT PUBLISHABLE** until Grant rewrites adjacent bands
-(PR 50 may still be open).
+text pass. Criterion 1 (Answer Construction) is **Grant-approved / publishable 2026-09-10**
+(adjacent bands kept as drafted). Criteria 4 and 5 (Integrity & Ethics / Judgment &
+Composure) are **Grant-approved / publishable 2026-09-10** (adjacent bands kept as drafted;
+corroboration ±1).
 
 Mapping the families onto the rubrics gives this:
 
@@ -31,19 +30,19 @@ Mapping the families onto the rubrics gives this:
 | Self-awareness | 4 | C5 Judgment & Composure | **Grant-approved / publishable** 2026-09-10 (adjacent bands kept as drafted) |
 | Understanding of the job | 4 | C2 (partly) / C1 Answer Construction | Partial |
 | Commitment & availability | 2 | C2 | **Approved** |
-| Closing | 2 | C1 Answer Construction | Structure draft (PR 46) — **not publishable** |
+| Closing | 2 | C1 Answer Construction | **Grant-approved / publishable** 2026-09-10 (adjacent bands kept as drafted) |
 
-Roughly **11 of 36 families can be critiqued today**, and 7 of those depend on an
-unreviewed draft. A 300-prompt bank against two criteria is a worse product than a
-60-prompt bank against five: the candidate gets a novel question every session and the
-same two flavours of feedback forever, which is exactly the "confident feedback he cannot
-check" failure `recruit_scope.md` is built to avoid.
+Roughly **25 of 36 families can be critiqued against a Grant-approved rubric today**; 7
+still depend on the unreviewed C3 draft, and 4 are only partial. A 300-prompt bank against
+four criteria is a worse product than a 60-prompt bank against five: the candidate gets a
+novel question every session and the same four flavours of feedback forever, which is
+exactly the "confident feedback he cannot check" failure `recruit_scope.md` is built to
+avoid for the remaining unpublished criterion.
 
-**Consequence for build order:** C4 and C5 are publishable; finishing C1 to publishable
-(adjacent-band rewrite) and the C3 text pass still outrank growing the bank. Bank growth
-and five-question board *build* remain held behind publishable rubrics. The bank is cheap;
-the rubrics are the asset. See "Sizing" below for why the bank turns out to be a much
-smaller job than it looks.
+**Consequence for build order:** C1, C4, and C5 are publishable; the C3 text pass still
+outranks growing the bank. Bank growth and five-question board *build* remain held behind
+the remaining unpublished rubric (C3). The bank is cheap; the rubrics are the asset. See
+"Sizing" below for why the bank turns out to be a much smaller job than it looks.
 
 ---
 
@@ -258,13 +257,11 @@ At 290 prompts a full-board user gets **~58 sessions** — over a year at weekly
 about four months at target cadence. At 500 it is ~100 sessions. That is sufficient for
 launch and the growth path is cheap.
 
-**Do not chase a very large bank before the rubrics are publishable.** C4 and C5 are
-Grant-approved / publishable 2026-09-10. C1 structure draft exists (PR 46) but is not
-publishable until adjacent bands are rewritten (PR 50 may still be open); C3 still owes
-a text pass. Prompts the product cannot critique against a reviewed criterion are
-inventory, not product. The order that maximises value per unit of your review time is:
-finish C1 (and the C3 pass) → variants across the families those criteria unlock →
-more families.
+**Do not chase a very large bank before the rubrics are publishable.** C1, C4, and C5
+are Grant-approved / publishable 2026-09-10. C3 still owes a text pass. Prompts the
+product cannot critique against a reviewed criterion are inventory, not product. The
+order that maximises value per unit of your review time is: finish the C3 pass →
+variants across the families those criteria unlock → more families.
 
 ### Exhaustion
 

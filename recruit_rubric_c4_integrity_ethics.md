@@ -11,7 +11,7 @@
 > chain; Grant authorized this file as Grant-approved / publishable on 2026-09-10.
 >
 > This approval does not wire the live scorer, does not go live on pricing, and does not
-> approve Criteria 3 or 5.
+> approve Criterion 3 (C1 and C5 are Grant-approved / publishable 2026-09-10).
 
 | | |
 |---|---|
@@ -265,7 +265,8 @@ without saying which part each score is reading.
 **Grant-approved / publishable 2026-09-10.** Captain pass kept all adjacent boundaries as
 drafted — 5↔4, 4↔3, 3↔2, 2↔1 — and settled that corroboration may move the designated
 band by at most one. Originally drafted by Red into the review chain. This approval does
-not wire the live scorer, does not go live on pricing, and does not approve C3 or C5.
+not wire the live scorer, does not go live on pricing, and does not approve C3 (C1 and
+C5 are Grant-approved / publishable 2026-09-10).
 
 **What is grounded (Grant-settled / Grant-approved).**
 

@@ -13,7 +13,7 @@
 > Grant-approved / publishable on 2026-09-10.
 >
 > This approval does not wire the live scorer, does not go live on pricing, and does not
-> approve Criteria 1 or 3 (C4 is already Grant-approved on main).
+> approve Criterion 3 (C1 and C4 are Grant-approved / publishable 2026-09-10).
 
 | | |
 |---|---|
@@ -246,7 +246,8 @@ or decision-making under load (here).
 drafted — 5↔4, 4↔3, 3↔2, 2↔1 (5↔4 kept after Grant corrected a mis-tap that briefly said
 rewrite) — and settled that corroboration may move the designated band by at most one.
 Originally drafted by Red into the review chain. This approval does not wire the live
-scorer, does not go live on pricing, and does not approve C1 or C3.
+scorer, does not go live on pricing, and does not approve C3 (C1 and C4 are
+Grant-approved / publishable 2026-09-10).
 
 **What is grounded (Grant-settled / Grant-approved).**
 
