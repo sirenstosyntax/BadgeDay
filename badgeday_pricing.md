@@ -122,40 +122,40 @@ Margin math in this section uses the July competitive pairing (**$119 six-month 
 annual**) for the floor analysis; the held configure-when-live table above may still
 differ — Grant will reconcile SKUs separately. **Do not read $119 as annual here.**
 
-Per-answer marginal cost — two labeled bases. The whole-board Criterion 1 pass is one
-more call per board and is in neither.
+Per-answer marginal cost, **retry-adjusted** (the published basis). The whole-board
+Criterion 1 pass is one more call per board and is not in these numbers.
 
 - Batch ASR on a 3-minute answer: **~$0.013** (3 × $0.0043/min list)
-- **Single-call** critique ≈ **~$0.15** → per-answer ≈ **~$0.16** (ASR ~$0.013 + ~$0.15)
-- **Retry-adjusted** expected critique ≈ **~$0.18** (thinking-token variance is high,
-  `critiquer.py` allows two attempts, August reruns showed some answers needing both;
-  ≈20% retry) → per-answer ≈ **~$0.19** (ASR ~$0.013 + ~$0.18)
+- Critique: a single call lands around ~$0.15, but thinking-token variance is high,
+  `critiquer.py` allows two attempts, and the August reruns showed some answers
+  needing both. Retry-adjusted expected critique (≈20% retry) ≈ **~$0.18**
+- **~$0.19 per answer** (ASR ~$0.013 + ~$0.18)
 
-**The bank is the bound. The daily cap is abuse throttling.** Floor numbers below are
-the **single-call** basis (~$0.16/answer) unless labeled otherwise. At the ~290 prompts
+**The bank is the bound. The daily cap is abuse throttling.** At the ~290 prompts
 recommended in `recruit_question_bank.md`, and with no repeats ever, a candidate
-cannot consume more than ~290 answers ≈ **$46** before the 12-month retirement rule
-recycles anything. "Unlimited" stays safe to advertise.
+cannot consume more than ~290 × ~$0.19 ≈ **~$55** before the 12-month retirement
+rule recycles anything. "Unlimited" stays safe to advertise. (Single-call at
+~$0.16/answer would have been bank ~$46 / floor ~61% on $119; that is not the
+published basis.)
 
-Margin floor — **single-call.** Worst case is a **six-month subscriber who exhausts
-the bank**:
+Margin floor — **retry-adjusted ~$0.19/answer.** Worst case is a **six-month
+subscriber who exhausts the bank**:
 
-- Weekly boards for 26 weeks ≈ **$21** COGS → **~82%** margin on $119
-- Bank-exhausted worst case ≈ **$46** → **~61%**
-- Annual at $179: weekly ≈ **$42** → **~77%**; bank-exhausted ≈ **$46** → **~74%**
+- Weekly boards for 26 weeks: 5 × ~$0.19 × 26 ≈ **~$25** COGS → **~79%** margin on $119
+- Bank-exhausted worst case: ~290 × ~$0.19 ≈ **~$55** → (~$119 − ~$55) / $119 ≈ **~54%**
+- Annual at $179: weekly 5 × ~$0.19 × 52 ≈ **~$49** → **~72%**; bank-exhausted
+  (~$179 − ~$55) / $179 ≈ **~69%**
 
-Retry-adjusted, one clause: 290 × ~$0.19 ≈ ~$55 → floor **~54%** on $119. Everything
-else is better than the single-call **~61%** floor. Price on position and value, not
+Everything else is better than the **~54%** floor. Price on position and value, not
 on cost. There is no cost argument for cutting price.
 
 The bank does not protect monthly on its own. A heavy monthly user who runs the daily
-cap (10/day) burns through ~290 questions in about a month (≈$46 COGS, single-call) —
-a loss on month one relative to monthly revenue. Lifetime COGS is still bounded at
-~$46 single-call (~$55 retry-adjusted); month two onward is nearly pure margin until
-12-month retirement recycles. Cost exposure is fine. This surfaces a **product**
-problem: a heavy user can hit "no unseen questions" inside the term they paid for,
-and the app needs a design decision on what to say when the bank is empty (that
-decision is open; this note does not invent the UX).
+cap (10/day) burns through ~290 questions in about a month (≈$55 COGS) — a loss on
+month one relative to monthly revenue. Lifetime COGS is still bounded at ~$55; month
+two onward is nearly pure margin until 12-month retirement recycles. Cost exposure is
+fine. This surfaces a **product** problem: a heavy user can hit "no unseen questions"
+inside the term they paid for, and the app needs a design decision on what to say
+when the bank is empty (that decision is open; this note does not invent the UX).
 
 ### Packaging stays separate
 
