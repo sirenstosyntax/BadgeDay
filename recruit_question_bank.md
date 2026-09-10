@@ -4,7 +4,7 @@
 2026-09-10 by Grant** — and supplies the evidence base for authoring. Companion to
 `recruit_oral_board_sources.md`, which covers scoring **dimensions**; this file covers
 the **questions**. First pass 2026-07-29; sizing and rotation locked 2026-09-10;
-family pass 1 complete 2026-09-10.*
+family pass 1 + variant pass 2 complete 2026-09-10.*
 
 ---
 
@@ -40,11 +40,13 @@ rubric today**; 4 are only partial (Understanding of the job). The rubric-covera
 that blocked C3 families is closed.
 
 **Consequence for build order:** All five criteria (C1–C5) are publishable for scoring
-docs. **Family pass 1 complete 2026-09-10** (all 36 KEEP; specials in
-`recruit_question_bank_draft.md`). Pass 2 (variant skim) pending. Still nothing
-publishes unreviewed. Five-question board *build* and live scorer wire remain held.
-Does not wire pricing. The bank is cheap; the rubrics are the asset. See "Sizing"
-below for why the bank turns out to be a much smaller job than it looks.
+docs. **Family pass 1 + variant pass 2 complete 2026-09-10** (all 36 KEEP; 16
+variants struck; **272 survive** — record in `recruit_question_bank_draft.md`).
+Review of families and variants is done. Publishing the bank into product is a
+separate start order — nothing publishes until Grant opens publish.
+Five-question board *build* and live scorer wire remain held. Does not wire
+pricing. The bank is cheap; the rubrics are the asset. See "Sizing" below for
+why the bank turns out to be a much smaller job than it looks.
 
 ---
 
@@ -254,16 +256,18 @@ So:
 > Review cost: 36 family reviews (the real work — call it a weekend) plus a batch pass
 > over variants. The reviewable asset stays bounded, exactly as the rubric architecture
 > intends. Growth is family review of the existing 288-item draft, not a second library.
-> Family pass 1 done 2026-09-10; pass 2 next. Still nothing publishes unreviewed.
+> Family pass 1 + variant pass 2 done 2026-09-10; **272 survive**. Publishing is a
+> separate start order. Still nothing publishes until Grant opens publish.
 
 At 290 prompts a full-board user gets **~58 sessions** — over a year at weekly cadence,
 about four months at target cadence. At 500 it is ~100 sessions. That is sufficient for
 launch and the growth path is cheap.
 
 **Do not chase a very large bank ahead of family review.** C1–C5 are Grant-approved /
-publishable for scoring docs (C2 already SME-approved). Family pass 1 complete
-2026-09-10 (all 36 KEEP). Pass 2 pending. Nothing publishes unreviewed. Does not
-wire the live scorer or pricing.
+publishable for scoring docs (C2 already SME-approved). Family pass 1 + variant
+pass 2 complete 2026-09-10 (all 36 KEEP; 16 struck; **272 survive**). Publishing
+the bank into product is a separate start order. Nothing publishes until Grant
+opens publish. Does not wire the live scorer or pricing.
 
 ### Exhaustion
 
@@ -322,18 +326,23 @@ unreviewed.
 **Drafted 2026-07-29 in [`recruit_question_bank_draft.md`](recruit_question_bank_draft.md)
 — 288 items, 36 families × 8.**
 
-**Family review: pass 1 complete 2026-09-10 (Grant Collings).** All 36 families KEEP.
-Pass 2 (variant skim) pending. Nothing publishes.
+**Family review: pass 1 + variant pass 2 complete 2026-09-10 (Grant Collings).**
+All 36 families KEEP. 16 variants struck; **272 survive**. Review of families and
+variants is complete. Publishing the bank into product is a separate start order
+— nothing publishes until Grant opens publish.
 
-Specials (items still unpublished — pass 2 not done):
+Pass 2 specials (struck text retained in the draft for the audit trail):
 
-- **MOT-1** — KEEP as drafted after a skipped widget; recommendation stood.
-- **JOB-3** — KEEP family, **prep-only**. Pass 2 must strike who-they-are / marital-kids
-  inventory / soft “how does your family feel” (item 1 especially). Score preparation,
-  never domestic arrangements. Red agreed.
+- **MOT-1** — KEEP as drafted after a skipped widget; recommendation stood. Pass 2
+  KEEP all 8.
+- **JOB-3** — KEEP family, **prep-only**. Pass 2 STRIKE 1 (family feelings), 2
+  (who talked to), 8 (support inventory). KEEP 3–7. Surviving 5. Score
+  preparation, never domestic arrangements. Red agreed.
 - **JUD-4** — KEEP as citizen-level opinion trap (score defence, not order). Pass 2
-  strike knowledge-gated / budget items: engine-vs-prevention funding; anything needing
-  org-chart, NFPA, or apparatus knowledge. Keep suppression/prevention/education and
-  fire-vs-medical-vs-rescue style as opinion. Red confirmed.
-- **CMT-2, CON-2, SLF-3** — KEEP, flagged `THIN`; expect fewer than 8 variants to
-  survive pass 2.
+  STRIKE 3 (engine vs prevention funding). KEEP 1, 2, 4–8. Surviving 7. Red
+  confirmed.
+- **CMT-2** — KEEP, flagged `THIN`. Pass 2 STRIKE 6. Surviving 7.
+- **CON-2** — KEEP, flagged `THIN`. Pass 2 STRIKE 6, 8. Surviving 6.
+- **SLF-3** — KEEP, flagged `THIN`. Pass 2 STRIKE 5, 8. Surviving 6.
+- **Batch-skim exceptions** (Red accepted; Grant accepted all seven): INT-4.1,
+  INT-4.4, STR-3.6, JOB-1.2, JOB-2.6, JOB-4.5, OPN-2.6. All other items KEEP.

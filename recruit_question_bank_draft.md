@@ -1,16 +1,19 @@
 # Recruit — Question Bank, Draft Items
 
-**288 items across 36 families. Drafted by Claude 2026-07-29. Family pass 1 complete
-2026-09-10 (all 36 KEEP). Items unreviewed until pass 2. Nothing publishes.**
+**288 items drafted across 36 families (Claude 2026-07-29). Family pass 1 +
+variant pass 2 complete 2026-09-10. Surviving bank: 272 items (16 struck;
+text retained below for the audit trail). Review of families and variants is
+complete. Publishing the bank into product is a separate start order —
+nothing publishes until Grant opens publish.**
 
 | | |
 |---|---|
-| Status | Draft. Nothing here publishes. |
+| Status | Draft. Review complete for families + variants. Publish gate is separate. Nothing publishes until Grant opens publish. |
 | Authorship | Claude, drafted into the review chain per `recruit_scope.md` step 1 precedent |
 | Evidence base | `recruit_question_bank.md` — 36 families, each from 2+ independently authored sources |
-| Sizing rationale | 36 families × 8 variants ≈ 290 prompts at launch |
+| Sizing rationale | 36 families × 8 variants = 288 drafted; **272 survive** pass 2 |
 | Reviewer | Grant Collings — fire captain, sat panels |
-| Review status | **Pass 1 complete 2026-09-10.** Pass 2 (variant skim) not started. Nothing publishes. |
+| Review status | **Pass 1 + Pass 2 complete 2026-09-10.** 272 of 288 survive. Publish gate is a separate start order. Nothing publishes until Grant opens publish. |
 
 Family IDs use three-letter group mnemonics (`MOT-1`, `TEA-2`) rather than the A–J letters
 in `recruit_question_bank.md`, because `C2`/`C3` as family IDs would collide visually with
@@ -39,7 +42,8 @@ this one ask something genuinely different from its siblings, and would a panel 
 phrase it this way? Strike the duplicates and the ones that sound like a written test.
 Expect to strike some — I wrote eight per family because eight was the target, not because
 every family naturally has eight distinct things to ask. **Families where I think fewer
-than eight survive are flagged `THIN`.**
+than eight survive are flagged `THIN`.** **Pass 2 is complete 2026-09-10** — see the
+pass-2 record below.
 
 **What I could not judge and you can.** Whether a variant sounds like a real captain
 talking or like a course author writing. I have no ear for that and it is the single most
@@ -51,21 +55,21 @@ likely defect in this file.
 
 **All five oral-board criteria are now publishable for scoring** (C2 SME-approved; C1,
 C3, C4, C5 Grant-approved / publishable 2026-09-10). Family pass 1 is complete
-2026-09-10 (all 36 KEEP). Pass 2 (variant skim) is next. Items remain unreviewed
-until pass 2. Still nothing publishes unreviewed. Marked per family; summarised here.
+2026-09-10 (all 36 KEEP). Variant pass 2 is complete 2026-09-10 (16 struck, 272
+survive). Review of families and variants is done. Publishing the bank into
+product is a separate start order — nothing publishes until Grant opens publish.
+Marked per family; summarised here.
 
-| Criterion | Status | Families it would score | Items |
-|---|---|--:|--:|
-| **c2** Motivation & Preparation | **SME-approved** | MOT-1…5, JOB-1…4, CMT-1…2 | **88** |
-| **c3** Teamwork & Interpersonal | **Grant-approved / publishable 2026-09-10** | TEA-1…4, CON-1…3 | **56** |
-| **c1** Answer Construction | **Grant-approved / publishable 2026-09-10** | OPN-1…2 | 16 |
-| **c4 / c5** | **Grant-approved / publishable 2026-09-10** | INT-1…5, STR-1…3, JUD-1…4, SLF-1…4 | **128** |
+| Criterion | Status | Families it would score | Drafted | Surviving |
+|---|---|--:|--:|--:|
+| **c2** Motivation & Preparation | **SME-approved** | MOT-1…5, JOB-1…4, CMT-1…2 | 88 | **81** |
+| **c3** Teamwork & Interpersonal | **Grant-approved / publishable 2026-09-10** | TEA-1…4, CON-1…3 | 56 | **54** |
+| **c1** Answer Construction | **Grant-approved / publishable 2026-09-10** | OPN-1…2 | 16 | **15** |
+| **c4 / c5** | **Grant-approved / publishable 2026-09-10** | INT-1…5, STR-1…3, JUD-1…4, SLF-1…4 | 128 | **122** |
 
-Family pass 1 is done for every family. The 88 c2-scoreable items still do not publish
-until their variants survive pass 2; same for the rest. Pass 2 is the variant skim —
-strike duplicates and written-test phrasing. Still nothing publishes unreviewed.
-
-**Pass 2 next.** Suggested skim order if batched: MOT → JOB → CMT → TEA → CON → the rest.
+**Pass 2 complete 2026-09-10.** Surviving bank **272** (288 − 16). 81 + 54 + 15 + 122
+= 272. Struck text stays in the family lists, marked `STRIKE`. Still nothing
+publishes until Grant opens publish.
 
 ---
 
@@ -103,13 +107,50 @@ strike duplicates and written-test phrasing. Still nothing publishes unreviewed.
 | Opening & closing | `OPN` | 2 | c1 | J |
 
 ---
+
+## Pass 2 — variant skim (Grant, 2026-09-10)
+
+Complete. Red accepted all seven batch-skim exceptions; Grant accepted all seven.
+Struck items remain in the family lists below, marked `STRIKE`, for the audit
+trail. Do not delete them.
+
+**Flagged families** (decided earlier the same day; applied this pass):
+
+| Family | Struck | Keep | Surviving | Reason |
+|---|---|---|--:|---|
+| JOB-3 | 1, 2, 8 | 3, 4, 5, 6, 7 | 5 | Prep-only. 1 family feelings; 2 who talked to; 8 support inventory. |
+| JUD-4 | 3 | 1, 2, 4, 5, 6, 7, 8 | 7 | Engine vs prevention funding (knowledge-gated / budget). |
+| CMT-2 | 6 | 1–5, 7–8 | 7 | `THIN` skim. |
+| CON-2 | 6, 8 | 1–5, 7 | 6 | `THIN` skim. |
+| SLF-3 | 5, 8 | 1–4, 6–7 | 6 | `THIN` skim. |
+
+**Batch-skim exceptions** (Red accepted; Grant accepted all seven):
+
+| Item | Reason |
+|---|---|
+| INT-4.1 | Definition / why-it-matters; written-test voice |
+| INT-4.4 | “Where's the line” policy ask; course-author |
+| STR-3.6 | Near-dupe of STR-3.4 |
+| JOB-1.2 | Near-dupe of JOB-1.1 |
+| JOB-2.6 | Near-dupe of JOB-2.2 |
+| JOB-4.5 | Near-dupe of JOB-4.1; mild leading |
+| OPN-2.6 | Near-dupe of OPN-2.2 |
+
+**All other items in all other families: KEEP.**
+
+Strike count: JOB-3 × 3 + JUD-4 × 1 + CMT-2 × 1 + CON-2 × 2 + SLF-3 × 2 + 7
+batch = 16. **Surviving: 272.** Publishing the bank into product is a separate
+start order — nothing publishes until Grant opens publish.
+
+---
 ---
 
 # MOT — Motivation & fit
 
-*Criterion **c2**, SME-approved. Family pass 1 complete 2026-09-10. Items remain
-unreviewed until pass 2. The most answerable-in-advance group there is, which is why
-it is the highest-yield coaching target — and why a weak answer here is unforgiving.*
+*Criterion **c2**, SME-approved. Family pass 1 + variant pass 2 complete 2026-09-10.
+Nothing publishes until Grant opens publish. The most answerable-in-advance group
+there is, which is why it is the highest-yield coaching target — and why a weak
+answer here is unforgiving.*
 
 ## MOT-1 — Why the fire service at all
 
@@ -121,7 +162,8 @@ durability over time, the unglamorous case.
 **Sources:** CJ, SLC, FH, TP.
 
 > **Pass 1 (Grant, 2026-09-10):** KEEP as drafted after a skipped widget; recommendation
-> stood. Items still unreviewed until pass 2.
+> stood.
+> **Pass 2 (Grant, 2026-09-10):** KEEP all 8.
 
 1. Why do you want to be a firefighter?
 2. Take us back to the point where this stopped being an idea and became something you were actually going after. What happened?
@@ -202,8 +244,8 @@ interview; and whether it survived contact with cost or doubt.
 
 # TEA — Teamwork & working relationships
 
-*Criterion **c3**, Grant-approved / publishable 2026-09-10. Family pass 1 complete
-2026-09-10. These *items* remain unreviewed until pass 2. Nothing publishes.*
+*Criterion **c3**, Grant-approved / publishable 2026-09-10. Family pass 1 + variant
+pass 2 complete 2026-09-10. Nothing publishes until Grant opens publish.*
 
 ## TEA-1 — Worked as part of a team toward a shared goal
 
@@ -279,8 +321,8 @@ account of other people's faults with nothing about his own contribution.
 
 # CON — Conflict & interpersonal
 
-*Criterion **c3**, Grant-approved / publishable 2026-09-10. Family pass 1 complete
-2026-09-10. Items remain unreviewed until pass 2. Nothing publishes.*
+*Criterion **c3**, Grant-approved / publishable 2026-09-10. Family pass 1 + variant
+pass 2 complete 2026-09-10. Nothing publishes until Grant opens publish.*
 
 ## CON-1 — A specific conflict with a peer or a supervisor
 
@@ -311,16 +353,17 @@ usually follows up for an incident anyway. I would expect 4–5 of these to surv
 are close siblings.
 
 > **Pass 1 (Grant, 2026-09-10):** KEEP, flagged `THIN` — expect fewer than 8 variants to
-> survive pass 2. Items still unreviewed until pass 2.
+> survive pass 2.
+> **Pass 2 (Grant, 2026-09-10):** STRIKE 6, 8. KEEP 1–5, 7. Surviving 6.
 
 1. How do you handle conflict?
 2. What's the first thing you do when you realise you disagree with someone?
 3. How do you know when to let something go and when to press it?
 4. What do you do when you've raised something twice and nothing has changed?
 5. How do you disagree with someone who outranks you?
-6. What does a fair disagreement look like to you?
+6. ~~What does a fair disagreement look like to you?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2) — `THIN` skim.
 7. How do you tell the difference between a disagreement about the work and a problem with the person?
-8. When you're angry, what do the people around you notice?
+8. ~~When you're angry, what do the people around you notice?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2) — `THIN` skim.
 
 ## CON-3 — Friction from living together on shift
 
@@ -343,9 +386,10 @@ dramatic ones.
 
 # INT — Integrity & ethics
 
-*Criteria **c4 / c5**, Grant-approved / publishable 2026-09-10. Family pass 1 complete
-2026-09-10. Items remain unreviewed until pass 2. This is the group candidates most
-often walk into a trap on, so it is also the richest material for pillar 3.*
+*Criteria **c4 / c5**, Grant-approved / publishable 2026-09-10. Family pass 1 +
+variant pass 2 complete 2026-09-10. Nothing publishes until Grant opens publish.
+This is the group candidates most often walk into a trap on, so it is also the
+richest material for pillar 3.*
 
 ## INT-1 — A mistake, and what changed afterward
 
@@ -406,10 +450,12 @@ locate a line without either dismissing the issue or reciting policy language.
 is alone in his view.
 **Sources:** TP.
 
-1. What does harassment mean to you, and why does it matter in a firehouse?
+> **Pass 2 (Grant, 2026-09-10):** STRIKE 1, 4 (Red accepted; Grant accepted). KEEP 2, 3, 5–8. Surviving 6.
+
+1. ~~What does harassment mean to you, and why does it matter in a firehouse?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2; Red accepted) — definition / why-it-matters; written-test voice.
 2. You witness a coworker being harassed by another member of the crew. What do you do?
 3. Someone tells you privately they're being harassed and asks you not to do anything. What do you do?
-4. Where's the line between firehouse humour and harassment?
+4. ~~Where's the line between firehouse humour and harassment?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2; Red accepted) — “where's the line” policy ask; course-author.
 5. Someone tells you that something you said offended them. What do you do?
 6. What would you do if the person doing it was your officer?
 7. What would you do if you were the only person on the crew who thought something had gone too far?
@@ -435,8 +481,8 @@ the background investigation what he chose not to say here.
 
 # STR — Composure under stress
 
-*Criteria **c4 / c5**, Grant-approved / publishable 2026-09-10. Family pass 1 complete
-2026-09-10. Items remain unreviewed until pass 2.*
+*Criteria **c4 / c5**, Grant-approved / publishable 2026-09-10. Family pass 1 +
+variant pass 2 complete 2026-09-10. Nothing publishes until Grant opens publish.*
 
 > **Constraint reminder.** These items ask what he *did* and what he has *built*. Nothing
 > here licenses scoring how his voice sounds. Voice-based confidence and emotion detection
@@ -485,12 +531,14 @@ scores the same way: motion and recency.
 **Axis:** routine vs. one-off, discomfort deliberately sought, and forward plan.
 **Sources:** TP.
 
+> **Pass 2 (Grant, 2026-09-10):** STRIKE 6 (Red accepted; Grant accepted) — near-dupe of STR-3.4. KEEP 1–5, 7–8. Surviving 7.
+
 1. What have you done, specifically, that will help you stay calm at emergencies?
 2. Tell us about something you do regularly that has made you better under pressure.
 3. What have you deliberately put yourself through that was uncomfortable?
 4. How do you prepare for something you know is going to be hard?
 5. Tell us about a skill you've built to the point where you don't have to think about it.
-6. What's your routine when you know a hard day is coming?
+6. ~~What's your routine when you know a hard day is coming?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2; Red accepted) — near-dupe of STR-3.4.
 7. Describe a time your preparation carried you through when your nerves didn't.
 8. What are you doing now to be readier a year from now than you are today?
 
@@ -498,8 +546,8 @@ scores the same way: motion and recency.
 
 # JUD — Judgment & problem solving
 
-*Criteria **c4 / c5**, Grant-approved / publishable 2026-09-10. Family pass 1 complete
-2026-09-10. Items remain unreviewed until pass 2.*
+*Criteria **c4 / c5**, Grant-approved / publishable 2026-09-10. Family pass 1 +
+variant pass 2 complete 2026-09-10. Nothing publishes until Grant opens publish.*
 
 ## JUD-1 — A problem he solved
 
@@ -571,11 +619,12 @@ understands the department as a service rather than as suppression with extras.
 > defence, not order). Pass 2 strike knowledge-gated / budget items: engine-vs-prevention
 > funding; anything needing org-chart, NFPA, or apparatus knowledge. Keep
 > suppression/prevention/education and fire-vs-medical-vs-rescue style as opinion. Red
-> confirmed. Items still unreviewed until pass 2.
+> confirmed.
+> **Pass 2 (Grant, 2026-09-10):** STRIKE 3 (engine vs prevention funding). KEEP 1, 2, 4, 5, 6, 7, 8. Surviving 7.
 
 1. Rank suppression, prevention, and public education in order of importance. Explain your reasoning.
 2. Rank these by what the community most needs: fire response, medical response, rescue. Explain.
-3. If the department could fund only one — a new engine, or a prevention programme — which, and why?
+3. ~~If the department could fund only one — a new engine, or a prevention programme — which, and why?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2) — engine vs prevention funding; knowledge-gated / budget.
 4. What matters more, the calls you run or the calls that never happen? Explain.
 5. Rank these parts of a shift: training, station duties, calls. Explain your reasoning.
 6. Is this a fire department or a medical service? How would you describe it?
@@ -586,8 +635,8 @@ understands the department as a service rather than as suppression with extras.
 
 # SLF — Self-awareness
 
-*Criteria **c4 / c5**, Grant-approved / publishable 2026-09-10. Family pass 1 complete
-2026-09-10. Items remain unreviewed until pass 2.*
+*Criteria **c4 / c5**, Grant-approved / publishable 2026-09-10. Family pass 1 +
+variant pass 2 complete 2026-09-10. Nothing publishes until Grant opens publish.*
 
 ## SLF-1 — Greatest weakness
 
@@ -629,16 +678,17 @@ the same breath.
 **Sources:** TP.
 
 > **Pass 1 (Grant, 2026-09-10):** KEEP, flagged `THIN` — expect fewer than 8 variants to
-> survive pass 2. Items still unreviewed until pass 2.
+> survive pass 2.
+> **Pass 2 (Grant, 2026-09-10):** STRIKE 5, 8. KEEP 1–4, 6–7. Surviving 6.
 
 1. If we called your most recent supervisor, what's one negative thing they'd say about you?
 2. What's the criticism you've received that stung most, and was it fair?
 3. What would your coworkers say is annoying about you?
 4. What's something you were told to improve on that you disagreed with?
-5. If we called three people who've worked with you, what would all three say?
+5. ~~If we called three people who've worked with you, what would all three say?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2) — `THIN` skim.
 6. Tell us about a performance review that didn't go well.
 7. What's the last thing a supervisor asked you to change about how you work?
-8. What would someone who worked under you say about you?
+8. ~~What would someone who worked under you say about you?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2) — `THIN` skim.
 
 ## SLF-4 — Proudest accomplishment
 
@@ -660,8 +710,9 @@ involves anyone but him.
 
 # JOB — Understanding of the job
 
-*Criterion **c2**, SME-approved — scoreable today. Family pass 1 complete 2026-09-10.
-Items remain unreviewed until pass 2. Realism about the life, never fire knowledge.*
+*Criterion **c2**, SME-approved — scoreable today. Family pass 1 + variant pass 2
+complete 2026-09-10. Nothing publishes until Grant opens publish. Realism about
+the life, never fire knowledge.*
 
 ## JOB-1 — The least appealing part
 
@@ -670,8 +721,10 @@ every part of the job has either not thought about it or is managing the panel.
 **Axis:** the unappealing thing — a duty, the schedule, the invisible cost, the worst day.
 **Sources:** TP.
 
+> **Pass 2 (Grant, 2026-09-10):** STRIKE 2 (Red accepted; Grant accepted) — near-dupe of JOB-1.1. KEEP 1, 3–8. Surviving 7.
+
 1. What's the least appealing part of this job to you?
-2. What part of this job are you least looking forward to?
+2. ~~What part of this job are you least looking forward to?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2; Red accepted) — near-dupe of JOB-1.1.
 3. What would make you consider leaving this career?
 4. What do you think you'll like least about the schedule?
 5. What's the part of the job people don't talk about?
@@ -686,12 +739,14 @@ appetite for the routine parts. Scored on realism, not accuracy about a particul
 **Axis:** the whole shift, the downtime, the first month, the sleepless night, probation.
 **Sources:** TP.
 
+> **Pass 2 (Grant, 2026-09-10):** STRIKE 6 (Red accepted; Grant accepted) — near-dupe of JOB-2.2. KEEP 1–5, 7–8. Surviving 7.
+
 1. What do you think a typical shift actually consists of?
 2. What will you do with your downtime on duty?
 3. What do you think happens at a fire station between calls?
 4. If we hired you, how would you spend your first month?
 5. What station duties do you expect, and how do you feel about them?
-6. What would you do on a shift where nothing happened at all?
+6. ~~What would you do on a shift where nothing happened at all?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2; Red accepted) — near-dupe of JOB-2.2.
 7. How do you think you'd handle being woken three times in a night and still working the next day?
 8. What do you think probation is like, and what will be hardest about it?
 
@@ -711,17 +766,17 @@ anything about it. Scored on preparation, never on his domestic arrangements.
 >
 > **Pass 1 (Grant, 2026-09-10):** KEEP family, **prep-only**. Pass 2 must strike
 > who-they-are / marital-kids inventory / soft “how does your family feel” (item 1
-> especially). Score preparation, never domestic arrangements. Red agreed. Items still
-> unreviewed until pass 2.
+> especially). Score preparation, never domestic arrangements. Red agreed.
+> **Pass 2 (Grant, 2026-09-10):** STRIKE 1 (family feelings), 2 (who talked to), 8 (support inventory). KEEP 3, 4, 5, 6, 7. Surviving 5. Prep-only.
 
-1. How do you and your family feel about you working twenty-four hour shifts?
-2. Who have you talked to about what this job is going to ask of you?
+1. ~~How do you and your family feel about you working twenty-four hour shifts?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2) — family feelings; prep-only.
+2. ~~Who have you talked to about what this job is going to ask of you?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2) — who talked to; prep-only.
 3. What will this schedule cost the people close to you?
 4. What have you done to prepare the people around you for this?
 5. What happens when you miss holidays and birthdays?
 6. What would you do if someone close to you asked you to give this up?
 7. How do you plan to stay present at home when you're on this schedule?
-8. What support do you have that will make this workable?
+8. ~~What support do you have that will make this workable?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2) — support inventory; prep-only.
 
 ## JOB-4 — What he expects to find satisfying
 
@@ -730,11 +785,13 @@ is someone other than himself.
 **Axis:** the call, the career, the day, the person helped, the thing taught.
 **Sources:** CJ.
 
+> **Pass 2 (Grant, 2026-09-10):** STRIKE 5 (Red accepted; Grant accepted) — near-dupe of JOB-4.1; mild leading. KEEP 1–4, 6–8. Surviving 7.
+
 1. What part of this work do you expect to find most satisfying?
 2. What kind of call do you most want to be good at?
 3. Twenty years in, what do you want to have been known for?
 4. What would make a shift a good one for you?
-5. Where do you think the satisfaction in this job actually comes from?
+5. ~~Where do you think the satisfaction in this job actually comes from?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2; Red accepted) — near-dupe of JOB-4.1; mild leading.
 6. What do you want to be able to teach someone one day?
 7. What would you want a member of the public to say about you after you'd helped them?
 8. What would make you glad you did this instead of something else?
@@ -743,8 +800,8 @@ is someone other than himself.
 
 # CMT — Commitment & availability
 
-*Criterion **c2**, SME-approved — scoreable today. Family pass 1 complete 2026-09-10.
-Items remain unreviewed until pass 2.*
+*Criterion **c2**, SME-approved — scoreable today. Family pass 1 + variant pass 2
+complete 2026-09-10. Nothing publishes until Grant opens publish.*
 
 ## CMT-1 — Other lists, and a better offer
 
@@ -772,14 +829,15 @@ describe a career rather than a job.
 **Sources:** FH, TP.
 
 > **Pass 1 (Grant, 2026-09-10):** KEEP, flagged `THIN` — expect fewer than 8 variants to
-> survive pass 2. Items still unreviewed until pass 2.
+> survive pass 2.
+> **Pass 2 (Grant, 2026-09-10):** STRIKE 6. KEEP 1–5, 7–8. Surviving 7.
 
 1. Where do you see yourself in five years? In ten?
 2. Do you want to promote? How far?
 3. What do you want to be doing in this department that you couldn't do on day one?
 4. What would you want to specialise in, and why?
 5. What does a successful career in this job look like to you?
-6. What do you want to be doing at the end of this career?
+6. ~~What do you want to be doing at the end of this career?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2) — `THIN` skim.
 7. What would you need to learn in your first five years to get where you want to go?
 8. Is there anything you want out of this career that has nothing to do with rank?
 
@@ -788,9 +846,10 @@ describe a career rather than a job.
 # OPN — Opening & closing
 
 *Criterion **c1** Answer Construction, Grant-approved / publishable 2026-09-10. Family
-pass 1 complete 2026-09-10. Items remain unreviewed until pass 2. Note c1's settled
-scope: it is scored across the whole board, not on one designated answer, so these two
-families are where c1 is most visible rather than where it is exclusively scored.*
+pass 1 + variant pass 2 complete 2026-09-10. Nothing publishes until Grant opens
+publish. Note c1's settled scope: it is scored across the whole board, not on one
+designated answer, so these two families are where c1 is most visible rather than
+where it is exclusively scored.*
 
 ## OPN-1 — Tell us about yourself
 
@@ -817,12 +876,14 @@ failure.
 **Axis:** contribution, omission, comparison, and the open-ended final word.
 **Sources:** CJ, TP.
 
+> **Pass 2 (Grant, 2026-09-10):** STRIKE 6 (Red accepted; Grant accepted) — near-dupe of OPN-2.2. KEEP 1–5, 7–8. Surviving 7.
+
 1. If we selected you, what would you bring to this department?
 2. Is there anything we haven't asked that you'd want us to know?
 3. Why should we hire you over the other people we're seeing today?
 4. What's the one thing you want us to remember about you?
 5. What would you contribute in your first year that we'd notice?
-6. What haven't we given you a chance to say?
+6. ~~What haven't we given you a chance to say?~~ **`STRIKE`** (Grant, 2026-09-10, pass 2; Red accepted) — near-dupe of OPN-2.2.
 7. What would you want us to know about you that we couldn't learn from testing you?
 8. Last question — make your case.
 
@@ -831,47 +892,54 @@ failure.
 
 ## Review record
 
-**Pass 1 complete 2026-09-10 (Grant Collings).** All 36 families KEEP. Listening-for and
-criterion load accepted. Pass 2 (variant skim) not started — **nothing publishes.**
+**Pass 1 + Pass 2 complete 2026-09-10 (Grant Collings).** All 36 families KEEP.
+Listening-for and criterion load accepted. Variant skim done: 16 struck, **272
+survive**. Review of families and variants is complete. Publishing the bank into
+product is a separate start order — **nothing publishes until Grant opens
+publish.**
 
-| Family | Family sound? | *Listening for* correct? | Criterion right? | Variants struck | Notes |
-|---|---|---|---|---|---|
-| MOT-1 | KEEP | Yes | Yes | — | KEEP as drafted after a skipped widget; recommendation stood. Pass 2 pending. |
-| MOT-2 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| MOT-3 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| MOT-4 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| MOT-5 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| TEA-1 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| TEA-2 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| TEA-3 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| TEA-4 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| CON-1 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| CON-2 | KEEP | Yes | Yes | — | KEEP, flagged `THIN` — expect fewer than 8 variants to survive pass 2. |
-| CON-3 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| INT-1 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| INT-2 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| INT-3 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| INT-4 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| INT-5 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| STR-1 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| STR-2 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| STR-3 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| JUD-1 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| JUD-2 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| JUD-3 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| JUD-4 | KEEP | Yes | Yes | — | KEEP as citizen-level opinion trap (score defence, not order). Pass 2 strike knowledge-gated / budget items: engine-vs-prevention funding; anything needing org-chart, NFPA, or apparatus knowledge. Keep suppression/prevention/education and fire-vs-medical-vs-rescue style as opinion. Red confirmed. |
-| SLF-1 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| SLF-2 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| SLF-3 | KEEP | Yes | Yes | — | KEEP, flagged `THIN` — expect fewer than 8 variants to survive pass 2. |
-| SLF-4 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| JOB-1 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| JOB-2 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| JOB-3 | KEEP | Yes | Yes | — | KEEP family, **prep-only**. Pass 2 must strike who-they-are / marital-kids inventory / soft “how does your family feel” (item 1 especially). Score preparation, never domestic arrangements. Red agreed. |
-| JOB-4 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| CMT-1 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| CMT-2 | KEEP | Yes | Yes | — | KEEP, flagged `THIN` — expect fewer than 8 variants to survive pass 2. |
-| OPN-1 | KEEP | Yes | Yes | — | KEEP as drafted. |
-| OPN-2 | KEEP | Yes | Yes | — | KEEP as drafted. |
+| Family | Family sound? | *Listening for* correct? | Criterion right? | Pass 2 struck | Surviving | Notes |
+|---|---|---|---|---|--:|---|
+| MOT-1 | KEEP | Yes | Yes | — | 8 | KEEP as drafted after a skipped widget; recommendation stood. Pass 2 KEEP all 8. |
+| MOT-2 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| MOT-3 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| MOT-4 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| MOT-5 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| TEA-1 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| TEA-2 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| TEA-3 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| TEA-4 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| CON-1 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| CON-2 | KEEP | Yes | Yes | 6, 8 | 6 | Pass 1 KEEP, flagged `THIN`. Pass 2 STRIKE 6, 8. |
+| CON-3 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| INT-1 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| INT-2 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| INT-3 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| INT-4 | KEEP | Yes | Yes | 1, 4 | 6 | Pass 1 KEEP as drafted. Pass 2 STRIKE 1 (definition / why-it-matters; written-test voice), 4 (“where's the line” policy ask; course-author). Red accepted; Grant accepted. |
+| INT-5 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| STR-1 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| STR-2 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| STR-3 | KEEP | Yes | Yes | 6 | 7 | Pass 1 KEEP as drafted. Pass 2 STRIKE 6 (near-dupe of STR-3.4). Red accepted; Grant accepted. |
+| JUD-1 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| JUD-2 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| JUD-3 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| JUD-4 | KEEP | Yes | Yes | 3 | 7 | Pass 1 KEEP as citizen-level opinion trap (score defence, not order). Pass 2 STRIKE 3 (engine vs prevention funding). Red confirmed. |
+| SLF-1 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| SLF-2 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| SLF-3 | KEEP | Yes | Yes | 5, 8 | 6 | Pass 1 KEEP, flagged `THIN`. Pass 2 STRIKE 5, 8. |
+| SLF-4 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| JOB-1 | KEEP | Yes | Yes | 2 | 7 | Pass 1 KEEP as drafted. Pass 2 STRIKE 2 (near-dupe of JOB-1.1). Red accepted; Grant accepted. |
+| JOB-2 | KEEP | Yes | Yes | 6 | 7 | Pass 1 KEEP as drafted. Pass 2 STRIKE 6 (near-dupe of JOB-2.2). Red accepted; Grant accepted. |
+| JOB-3 | KEEP | Yes | Yes | 1, 2, 8 | 5 | Pass 1 KEEP family, **prep-only**. Pass 2 STRIKE 1 (family feelings), 2 (who talked to), 8 (support inventory). KEEP 3–7. Score preparation, never domestic arrangements. Red agreed. |
+| JOB-4 | KEEP | Yes | Yes | 5 | 7 | Pass 1 KEEP as drafted. Pass 2 STRIKE 5 (near-dupe of JOB-4.1; mild leading). Red accepted; Grant accepted. |
+| CMT-1 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| CMT-2 | KEEP | Yes | Yes | 6 | 7 | Pass 1 KEEP, flagged `THIN`. Pass 2 STRIKE 6. |
+| OPN-1 | KEEP | Yes | Yes | — | 8 | Pass 1 KEEP as drafted. Pass 2 KEEP all 8. |
+| OPN-2 | KEEP | Yes | Yes | 6 | 7 | Pass 1 KEEP as drafted. Pass 2 STRIKE 6 (near-dupe of OPN-2.2). Red accepted; Grant accepted. |
+
+Surviving column sums to **272** (25 families × 8 = 200; plus CON-2 6, INT-4 6,
+STR-3 7, JUD-4 7, SLF-3 6, JOB-1 7, JOB-2 7, JOB-3 5, JOB-4 7, CMT-2 7, OPN-2 7
+= 72; 200 + 72 = 272).
 
 ---
 
@@ -883,8 +951,10 @@ vendor-authored and competitor material screened out. **No item is copied from a
 the two clean primary sources total seventeen questions between them and are evidence that a
 theme is asked, not text to reproduce.
 
-Family pass 1 (Grant Collings, 2026-09-10) is recorded in the review table above; all 36
-families KEEP. Items still carry no publishable attribution until pass 2. Per
-`recruit_design_decisions.md` §8, published content carries the SME's attribution.
-Drafting into the review chain is permitted; publishing without SME review is not.
-Nothing publishes.
+Family pass 1 and variant pass 2 (Grant Collings, 2026-09-10) are recorded in the
+review table above; all 36 families KEEP; 16 variants struck; **272 survive**.
+Review of families and variants is complete. Publishing the bank into product is
+a separate start order. Per `recruit_design_decisions.md` §8, published content
+carries the SME's attribution. Drafting into the review chain is permitted;
+publishing without SME review is not. Nothing publishes until Grant opens
+publish.
