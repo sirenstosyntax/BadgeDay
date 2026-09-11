@@ -12,7 +12,6 @@ candidate's identity, and the request is authenticated — here by Stripe's sign
 `read_event` verifies before a single change is applied.
 """
 
-import logging
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Request, status
@@ -35,8 +34,6 @@ from app.billing.plan import (
 from app.billing.recruit_plan import recruit_plan_changes
 from app.storage.billing import apply_change, customer_id_for, user_id_for_customer
 from app.storage.entitlements import apply_entitlement
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["billing"])
 
@@ -139,12 +136,9 @@ async def webhook(
     price_id = stripe_price_id_from_event(event)
     module = module_for_stripe_price(settings, price_id)
 
-    # Grant paths fail closed: a missing or unknown price must not fall
-    # open to Promote plan_changes. Only a mapped Promote price writes
-    # profiles; only a mapped Recruit price writes entitlements.
-    # customer.subscription.deleted is the exception (BD-BILL-001): an
-    # unmapped price still clears Promote for a known customer, and
-    # never clears Recruit without a Recruit price signal.
+    # Fail closed: a missing or unknown price must not fall open to Promote
+    # plan_changes. Only a mapped Promote price writes profiles; only a
+    # mapped Recruit price writes entitlements. Anything else is ack-and-ignore.
     if module == "recruit":
         obj = event.get("data", {}).get("object", {}) or {}
         user_id = (
@@ -166,30 +160,5 @@ async def webhook(
             event, pass_days=settings.intensive_pass_days, now=now
         ):
             apply_change(service, change)
-        return {"received": True}
-
-    if event.get("type") == "customer.subscription.deleted":
-        _clear_promote_on_unmapped_delete(
-            event, service=service, settings=settings, now=now
-        )
 
     return {"received": True}
-
-
-def _clear_promote_on_unmapped_delete(event: dict, *, service, settings, now: datetime) -> None:
-    """BD-BILL-001 path 3: unmapped delete clears Promote for a known user only."""
-    obj = event.get("data", {}).get("object", {}) or {}
-    customer_id = obj.get("customer") or ""
-    subscription_id = obj.get("id") or ""
-    user_id = user_id_for_customer(service, customer_id)
-    logger.info(
-        "subscription.deleted with no mappable price_id "
-        "customer=%s subscription=%s user=%s",
-        customer_id,
-        subscription_id,
-        user_id,
-    )
-    if not user_id:
-        return
-    for change in plan_changes(event, pass_days=settings.intensive_pass_days, now=now):
-        apply_change(service, change)

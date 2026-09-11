@@ -124,9 +124,6 @@ def plan_changes(event: dict, *, pass_days: int, now: datetime) -> list[Change]:
         return []
 
     if kind == "customer.subscription.deleted":
-        # Promote profiles write. The webhook calls this for a mapped Promote
-        # price, and (BD-BILL-001) for an unmapped delete when the Stripe
-        # customer maps to a known user. It does not clear Recruit.
         customer_id = obj.get("customer")
         if customer_id:
             return [SetSubscription(customer_id=customer_id, status="canceled")]

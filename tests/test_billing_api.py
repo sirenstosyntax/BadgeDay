@@ -7,8 +7,6 @@ when there is nothing to manage, and that the webhook trusts the signature and n
 before it writes anything.
 """
 
-import logging
-
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -308,7 +306,6 @@ def test_a_recruit_subscription_webhook_does_not_write_promote_status(
 def test_a_webhook_without_a_price_id_does_not_fall_open_to_promote(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """BD-BILL-001: grant paths stay fail-closed when price_id is blank."""
     client, gateway, applied = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
     gateway.event = {
         "type": "checkout.session.completed",
@@ -329,7 +326,6 @@ def test_a_webhook_without_a_price_id_does_not_fall_open_to_promote(
 def test_an_unknown_price_id_does_not_fall_open_to_promote(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """BD-BILL-001: grant paths stay fail-closed when price_id is unmapped."""
     client, gateway, applied = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
     gateway.event = {
         "type": "customer.subscription.updated",
@@ -372,50 +368,51 @@ def test_a_promote_webhook_still_writes_profiles_when_recruit_prices_exist(
 @pytest.mark.parametrize(
     "items",
     [
-        None,
         {"data": [{"price": {}}]},
         {"data": [{"price": {"id": "price_someone_invented"}}]},
     ],
-    ids=["no-items", "deleted-with-items-missing-price", "unmapped-price"],
+    ids=["deleted-with-items-missing-price", "deleted-with-items-unmapped-price"],
 )
-def test_deleted_subscription_without_mappable_price_clears_promote_not_recruit(
-    monkeypatch: pytest.MonkeyPatch, items: dict | None, caplog: pytest.LogCaptureFixture
+def test_deleted_subscription_with_items_but_no_mappable_price_is_acked_and_ignored(
+    monkeypatch: pytest.MonkeyPatch, items: dict
 ) -> None:
-    """BD-BILL-001: unmapped delete cancels Promote profiles; Recruit stays.
+    """Current fail-closed behavior after PR 68: no mappable price_id means no write.
 
-    SetSubscription canceled is the profiles write that makes has_access
-    false for a subscription. Recruit is not cleared without a Recruit price.
+    `plan_changes` itself would emit SetSubscription canceled for any
+    customer.subscription.deleted with a customer id. The webhook does not
+    call it unless module_for_stripe_price maps a Promote price, so a
+    deleted event that has items but a missing or unknown price_id acks
+    200 and writes nothing — including no Promote cancel and no Recruit
+    clear. Product has not ruled whether a known-customer Promote cancel
+    should still clear Promote when price_id is absent.
     """
     from app.billing.plan import SetSubscription
     from app.storage.entitlements import SetModuleSubscription
 
     client, gateway, applied = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
-    obj: dict = {
-        "id": "sub_legacy",
-        "customer": "cus_existing",
-        "status": "canceled",
+    gateway.event = {
+        "type": "customer.subscription.deleted",
+        "data": {
+            "object": {
+                "id": "sub_legacy",
+                "customer": "cus_existing",
+                "status": "canceled",
+                "items": items,
+            }
+        },
     }
-    if items is not None:
-        obj["items"] = items
-    gateway.event = {"type": "customer.subscription.deleted", "data": {"object": obj}}
-
-    with caplog.at_level(logging.INFO, logger="app.api.billing"):
-        response = client.post(
-            "/billing/webhook", content=b"{}", headers={"stripe-signature": "x"}
-        )
+    response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
     assert response.status_code == 200
     assert response.json() == {"received": True}
-    assert applied == [SetSubscription(customer_id="cus_existing", status="canceled")]
+    assert applied == []
+    assert not any(isinstance(change, SetSubscription) for change in applied)
     assert not any(isinstance(change, SetModuleSubscription) for change in applied)
-    assert "cus_existing" in caplog.text
-    assert "sub_legacy" in caplog.text
-    assert USER_ID in caplog.text
 
 
 def test_deleted_subscription_with_recruit_price_clears_recruit_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """BD-BILL-001: a mapped Recruit delete clears Recruit, not Promote."""
+    """Mapped Recruit delete is an intentional path: Recruit canceled, Promote untouched."""
     from app.billing.plan import SetSubscription
     from app.storage.entitlements import SetModuleSubscription
 
@@ -443,7 +440,7 @@ def test_deleted_subscription_with_recruit_price_clears_recruit_only(
 def test_deleted_subscription_with_promote_price_clears_promote_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """BD-BILL-001: a mapped Promote delete clears Promote, not Recruit."""
+    """Mapped Promote delete is an intentional path: Promote canceled, Recruit untouched."""
     from app.billing.plan import SetSubscription
     from app.storage.entitlements import SetModuleSubscription
 
@@ -463,25 +460,3 @@ def test_deleted_subscription_with_promote_price_clears_promote_only(
     assert response.status_code == 200
     assert applied == [SetSubscription(customer_id="cus_existing", status="canceled")]
     assert not any(isinstance(change, SetModuleSubscription) for change in applied)
-
-
-def test_deleted_subscription_without_price_id_does_not_write_for_unknown_customer(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """BD-BILL-001: unmapped delete clears Promote only when the customer is known."""
-    client, gateway, applied = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
-    monkeypatch.setattr("app.api.billing.user_id_for_customer", lambda *_: None)
-    gateway.event = {
-        "type": "customer.subscription.deleted",
-        "data": {
-            "object": {
-                "id": "sub_unknown",
-                "customer": "cus_unknown",
-                "status": "canceled",
-                "items": {"data": [{"price": {}}]},
-            }
-        },
-    }
-    response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
-    assert response.status_code == 200
-    assert applied == []
