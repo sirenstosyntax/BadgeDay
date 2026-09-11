@@ -1,5 +1,6 @@
 -- ---------------------------------------------------------------------------
--- 0014 — store_purchases.module so a Recruit Play SKU cannot open Promote
+-- 0015 — store_purchases.module so a Recruit Play SKU cannot open Promote
+-- (0014 is recruit_boards; do not reuse that number.)
 -- ---------------------------------------------------------------------------
 -- 0008's has_access treats any live store_purchases row as Promote access.
 -- That was correct when only Promote SKUs existed. Recruit checkout now

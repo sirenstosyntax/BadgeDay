@@ -122,11 +122,9 @@ class RecordPurchase(BaseModel):
     kind: PurchaseKind
     status: str
     expires_at: datetime | None = None
-    # Which product family this row buys. Default promote keeps existing
-    # store_purchases rows and Promote writes on the same footing as 0008.
-    # Recruit Play SKUs must set 'recruit' so has_access does not treat them
-    # as a Lieutenant plan.
-    module: Module = "promote"
+    # Required. An unknown product must not default to promote — that is how
+    # an unmapped Play SKU would satisfy has_access.
+    module: Module
 
 
 class SetPurchaseStatus(BaseModel):
@@ -158,25 +156,29 @@ def status_for(state: StoreState) -> str:
     return _STATUS.get(state, "canceled")
 
 
-def store_changes(facts: PurchaseFacts) -> list[StoreChange]:
-    """The writes a verified store purchase implies. Never empty for a well-formed input.
+def store_changes(facts: PurchaseFacts, *, module: Module | None) -> list[StoreChange]:
+    """The writes a verified store purchase implies.
 
-    Two cases, and the difference between them is whether we can say whose purchase this
-    is:
+    `module` is resolved server-side from the configured product IDs. None
+    (blank, unknown, or unconfigured) emits nothing — an unmapped SKU must
+    not open Promote via a defaulted `module='promote'` row.
 
-      * The facts carry a user id — the candidate just bought it, or the store passed the
-        account token through on the notification. Record the row and bind it.
-      * They do not. Update the existing row by its store identifier. If no such row
-        exists the update matches nothing, which the storage layer logs rather than
-        raises: a notification for a purchase we have never seen is worth a human's
-        attention and is not worth wedging a webhook that the store will otherwise retry
-        forever.
+    Two cases when the module is known, and the difference is whether we can
+    say whose purchase this is:
 
-    What is deliberately NOT here: any attempt to attribute an unattributable purchase by
-    guessing — most recent signup, matching email, sole candidate on that product. Getting
-    that wrong hands one candidate's paid access to another, and the failure is silent on
-    both sides.
+      * The facts carry a user id — the candidate just bought it, or the store
+        passed the account token through on the notification. Record the row
+        and bind it.
+      * They do not. Update the existing row by its store identifier. If no
+        such row exists the update matches nothing, which the storage layer
+        logs rather than raises.
+
+    What is deliberately NOT here: attributing an unattributable purchase by
+    guessing.
     """
+    if module is None:
+        return []
+
     status = status_for(facts.state)
     clears = facts.state in _CLEARS_EXPIRY
 
@@ -192,7 +194,7 @@ def store_changes(facts: PurchaseFacts) -> list[StoreChange]:
                 # A refund cuts access off now, so the expiry the store last told us about
                 # is not carried onto the row it is being written to.
                 expires_at=None if clears else facts.expires_at,
-                module="promote",
+                module=module,
             )
         ]
 

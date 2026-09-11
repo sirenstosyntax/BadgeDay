@@ -91,6 +91,11 @@ def _harness(monkeypatch: pytest.MonkeyPatch, gateway: object, **settings: objec
     monkeypatch.setattr(
         "app.api.store.apply_store_change", lambda _db, change: written.append(change)
     )
+    # Mapped Promote SKUs so a confirmed store purchase can write. Tests that
+    # need a blank or Recruit mapping pass their own IDs; an unmapped product
+    # still fails closed.
+    settings.setdefault("play_product_id_monthly", "badgeday.promote.monthly")
+    settings.setdefault("appstore_product_id_monthly", "badgeday.promote.monthly")
 
     app = FastAPI()
     app.include_router(store_router)
@@ -250,6 +255,31 @@ def test_a_confirmed_appstore_purchase_is_recorded(monkeypatch: pytest.MonkeyPat
     assert len(written) == 1
     assert written[0].platform == "appstore"
     assert written[0].purchase_identifier == "2000000012345678"
+    assert written[0].module == "promote"
+
+
+def test_an_unmapped_play_product_is_refused_without_writing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Store confirmation is not a module mapping. An unknown SKU must not
+    default to promote, write has_access, or ack a Play purchase we will not keep.
+    """
+    gateway = _AcknowledgingGateway()
+    entitlements: list = []
+    monkeypatch.setattr(
+        "app.api.store.apply_entitlement", lambda _db, change: entitlements.append(change)
+    )
+    client, written = _harness(monkeypatch, gateway)
+    response = client.post(
+        "/billing/store/play/purchase",
+        json={"purchase_token": "token-x", "product_id": "badgeday.someone.invented"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["entitled"] is False
+    assert written == []
+    assert entitlements == []
+    assert gateway.acks == []
 
 
 # --- The store reporting it ---------------------------------------------------

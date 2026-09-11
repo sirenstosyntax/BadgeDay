@@ -26,6 +26,10 @@ USER_ID = "55555555-5555-5555-5555-555555555555"
 PAID_THROUGH = datetime(2026, 9, 30, tzinfo=UTC)
 
 
+def _changes(facts: PurchaseFacts, *, module: str | None = "promote"):
+    return store_changes(facts, module=module)  # type: ignore[arg-type]
+
+
 def _facts(state: str, **overrides: object) -> PurchaseFacts:
     base: dict = {
         "platform": "play",
@@ -61,7 +65,7 @@ def test_turning_off_renewal_is_not_being_cut_off() -> None:
     """The status stops granting, and the expiry keeps serving the days already bought."""
     assert status_for("auto_renew_off") == "canceled"
 
-    changes = store_changes(_facts("auto_renew_off"))
+    changes = _changes(_facts("auto_renew_off"))
     assert changes[0].expires_at == PAID_THROUGH
 
 
@@ -69,7 +73,7 @@ def test_a_refund_ends_access_immediately() -> None:
     """The one case where the paid-through date must not be honoured."""
     assert status_for("revoked") == "canceled"
 
-    change = store_changes(_facts("revoked", user_id=USER_ID))[0]
+    change = _changes(_facts("revoked", user_id=USER_ID))[0]
     assert isinstance(change, RecordPurchase)
     assert change.status == "canceled"
     assert change.expires_at is None
@@ -88,11 +92,12 @@ def test_an_unknown_state_withholds_access_rather_than_granting_it() -> None:
 
 
 def test_a_purchase_carrying_a_candidate_binds_the_row_to_them() -> None:
-    change = store_changes(_facts("purchased", user_id=USER_ID))[0]
+    change = _changes(_facts("purchased", user_id=USER_ID))[0]
     assert isinstance(change, RecordPurchase)
     assert change.user_id == USER_ID
     assert change.status == "active"
     assert change.expires_at == PAID_THROUGH
+    assert change.module == "promote"
 
 
 def test_a_notification_without_a_candidate_updates_by_the_stores_own_identifier() -> None:
@@ -101,7 +106,7 @@ def test_a_notification_without_a_candidate_updates_by_the_stores_own_identifier
     The row already knows whose purchase it is, which is exactly why the update is keyed on
     the store's identifier rather than on a user we would otherwise have to guess at.
     """
-    change = store_changes(_facts("expired"))[0]
+    change = _changes(_facts("expired"))[0]
     assert isinstance(change, SetPurchaseStatus)
     assert change.purchase_identifier == "token-abc"
     assert change.platform == "play"
@@ -115,23 +120,30 @@ def test_an_unattributable_purchase_is_never_guessed_at() -> None:
     the failure is silent on both sides: the payer sees a paywall, and a stranger gets a
     subscription neither of them can explain.
     """
-    change = store_changes(_facts("purchased"))[0]
+    change = _changes(_facts("purchased"))[0]
     assert isinstance(change, SetPurchaseStatus)
     assert not hasattr(change, "user_id")
 
 
 def test_only_a_refund_clears_the_expiry() -> None:
     """The flag is what separates 'this event is silent about expiry' from 'end it now'."""
-    assert store_changes(_facts("revoked"))[0].clear_expiry is True
+    assert _changes(_facts("revoked"))[0].clear_expiry is True
     for quiet in ("expired", "auto_renew_off", "on_hold", "grace_period"):
-        assert store_changes(_facts(quiet))[0].clear_expiry is False
+        assert _changes(_facts(quiet))[0].clear_expiry is False
 
 
 def test_a_pass_and_a_subscription_travel_the_same_path() -> None:
     """The store is a different till, not a different product line."""
-    change = store_changes(
+    change = _changes(
         _facts("purchased", kind="pass", platform="appstore", user_id=USER_ID)
     )[0]
     assert isinstance(change, RecordPurchase)
     assert change.kind == "pass"
     assert change.platform == "appstore"
+    assert change.module == "promote"
+
+
+def test_an_unknown_module_emits_no_store_changes() -> None:
+    """An unmapped SKU must not default to promote and open has_access."""
+    assert _changes(_facts("purchased", user_id=USER_ID), module=None) == []
+    assert store_changes(_facts("purchased", user_id=USER_ID), module=None) == []

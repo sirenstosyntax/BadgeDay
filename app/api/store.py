@@ -29,7 +29,7 @@ from app.api.deps import CurrentUserDep, ServiceDbDep, SettingsDep, StoreGateway
 from app.billing.module import module_for_store_product, pass_days_for_store_product
 from app.billing.play_gateway import persist_then_acknowledge
 from app.billing.recruit_plan import recruit_entitlement_from_store
-from app.billing.store import PurchaseFacts, RecordPurchase, store_changes
+from app.billing.store import PurchaseFacts, store_changes
 from app.billing.store_gateway import StoreNotConfigured, StoreVerificationError
 from app.config import Settings
 from app.storage.entitlements import apply_entitlement
@@ -82,8 +82,10 @@ def play_purchase(
             "Google could not confirm that purchase.",
         ) from exc
 
-    _persist_play_purchase(service, gateway, facts, settings)
-    return Unlocked(entitled=facts.state == "purchased", product_id=facts.product_id)
+    granted = _persist_play_purchase(service, gateway, facts, settings)
+    return Unlocked(
+        entitled=granted and facts.state == "purchased", product_id=facts.product_id
+    )
 
 
 @router.post("/billing/store/appstore/purchase")
@@ -109,9 +111,11 @@ def appstore_purchase(
             "Apple could not confirm that purchase.",
         ) from exc
 
-    _apply_store_facts(service, facts, settings)
+    granted = _apply_store_facts(service, facts, settings)
 
-    return Unlocked(entitled=facts.state == "purchased", product_id=facts.product_id)
+    return Unlocked(
+        entitled=granted and facts.state == "purchased", product_id=facts.product_id
+    )
 
 
 @router.post("/billing/store/play/notifications")
@@ -176,17 +180,26 @@ async def appstore_notifications(
 
 def _persist_play_purchase(
     service, gateway, facts: PurchaseFacts, settings: Settings
-) -> None:
-    """Record the verified purchase, then acknowledge. Ack-before-write is a leak."""
+) -> bool:
+    """Record the verified purchase, then acknowledge. Ack-before-write is a leak.
+
+    An unknown product is refused before persist-and-ack: writing a Promote
+    default would open has_access, and ack-without-a-row blocks Play's refund.
+    """
+    if module_for_store_product(settings, facts.product_id) is None:
+        return False
     persist_then_acknowledge(
         gateway,
         facts,
         lambda: _apply_store_facts(service, facts, settings),
     )
+    return True
 
 
-def _apply_store_facts(service, facts: PurchaseFacts, settings: Settings) -> None:
+def _apply_store_facts(service, facts: PurchaseFacts, settings: Settings) -> bool:
     module = module_for_store_product(settings, facts.product_id)
+    if module is None:
+        return False
     stamped = facts
     if (
         module == "recruit"
@@ -200,18 +213,14 @@ def _apply_store_facts(service, facts: PurchaseFacts, settings: Settings) -> Non
                 update={"expires_at": datetime.now(UTC) + timedelta(days=days)}
             )
 
-    for change in store_changes(stamped):
-        if isinstance(change, RecordPurchase) and module:
-            change = change.model_copy(update={"module": module})
+    for change in store_changes(stamped, module=module):
         apply_store_change(service, change)
 
-    if module != "recruit":
-        return
-
-    user_id = stamped.user_id or user_id_for_purchase(
-        service, stamped.platform, stamped.purchase_identifier
-    )
-    if not user_id:
-        return
-    for change in recruit_entitlement_from_store(stamped, user_id):
-        apply_entitlement(service, change)
+    if module == "recruit":
+        user_id = stamped.user_id or user_id_for_purchase(
+            service, stamped.platform, stamped.purchase_identifier
+        )
+        if user_id:
+            for change in recruit_entitlement_from_store(stamped, user_id):
+                apply_entitlement(service, change)
+    return True

@@ -231,6 +231,7 @@ def test_a_verified_pass_webhook_grants_the_pass(monkeypatch: pytest.MonkeyPatch
                 "customer": "cus_existing",
                 "mode": "payment",
                 "payment_status": "paid",
+                "metadata": {"price_id": "price_intensive"},
             }
         },
     }
@@ -300,6 +301,45 @@ def test_a_recruit_subscription_webhook_does_not_write_promote_status(
         SetModuleSubscription(user_id=USER_ID, module="recruit", status="active")
     ]
     assert not any(isinstance(change, SetSubscription) for change in applied)
+
+
+def test_a_webhook_without_a_price_id_does_not_fall_open_to_promote(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, gateway, applied = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
+    gateway.event = {
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "client_reference_id": USER_ID,
+                "customer": "cus_existing",
+                "mode": "payment",
+                "payment_status": "paid",
+            }
+        },
+    }
+    response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
+    assert response.status_code == 200
+    assert applied == []
+
+
+def test_an_unknown_price_id_does_not_fall_open_to_promote(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, gateway, applied = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
+    gateway.event = {
+        "type": "customer.subscription.updated",
+        "data": {
+            "object": {
+                "customer": "cus_existing",
+                "status": "active",
+                "items": {"data": [{"price": {"id": "price_someone_invented"}}]},
+            }
+        },
+    }
+    response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
+    assert response.status_code == 200
+    assert applied == []
 
 
 def test_a_promote_webhook_still_writes_profiles_when_recruit_prices_exist(

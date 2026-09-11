@@ -761,3 +761,13 @@ def test_migration_0014_is_board_units_not_checkout() -> None:
     assert "price_id" not in sql.lower()
     assert "checkout" in sql.lower()
     assert "does not" in sql.lower() and "enable checkout" in sql.lower()
+
+
+def test_migration_0015_is_store_purchases_module_not_boards() -> None:
+    """0014 is recruit_boards. The store_purchases.module filter is 0015."""
+    migrations = Path(__file__).resolve().parents[1] / "supabase" / "migrations"
+    assert not (migrations / "0014_store_purchases_module.sql").exists()
+    sql = (migrations / "0015_store_purchases_module.sql").read_text()
+    assert "add column module" in sql
+    assert "sp.module = 'promote'" in sql
+    assert "0014 is recruit_boards" in sql

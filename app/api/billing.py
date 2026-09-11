@@ -134,8 +134,11 @@ async def webhook(
 
     now = datetime.now(UTC)
     price_id = stripe_price_id_from_event(event)
-    module = module_for_stripe_price(settings, price_id) if price_id else None
+    module = module_for_stripe_price(settings, price_id)
 
+    # Fail closed: a missing or unknown price must not fall open to Promote
+    # plan_changes. Only a mapped Promote price writes profiles; only a
+    # mapped Recruit price writes entitlements. Anything else is ack-and-ignore.
     if module == "recruit":
         obj = event.get("data", {}).get("object", {}) or {}
         user_id = (
@@ -152,10 +155,10 @@ async def webhook(
                 apply_entitlement(service, change)
         return {"received": True}
 
-    # Promote — and any event that does not name a mapped Recruit price.
-    # Legacy Promote webhooks carry no price id; they must keep writing profiles.
-    changes = plan_changes(event, pass_days=settings.intensive_pass_days, now=now)
-    for change in changes:
-        apply_change(service, change)
+    if module == "promote":
+        for change in plan_changes(
+            event, pass_days=settings.intensive_pass_days, now=now
+        ):
+            apply_change(service, change)
 
     return {"received": True}

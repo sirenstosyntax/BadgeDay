@@ -22,7 +22,7 @@ from app.billing.module import store_product_ids_for
 from app.storage.account import purge_account
 from app.storage.billing import Entitlement, customer_id_for, entitlement
 from app.storage.entitlements import module_entitlement
-from app.storage.store import managed_elsewhere, managed_elsewhere_for
+from app.storage.store import managed_elsewhere_for
 
 router = APIRouter(tags=["account"])
 
@@ -68,7 +68,9 @@ class Account(Entitlement):
 @router.get("/me")
 def me(user: CurrentUserDep, db: DbDep, settings: SettingsDep) -> Account:
     state = entitlement(db, user.id)
-    store = managed_elsewhere(db, user.id)
+    store = managed_elsewhere_for(
+        db, user.id, product_ids=store_product_ids_for(settings, "promote")
+    )
     recruit_state = module_entitlement(db, user.id, "recruit")
     recruit_store = managed_elsewhere_for(
         db, user.id, product_ids=store_product_ids_for(settings, "recruit")
