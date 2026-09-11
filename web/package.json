@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --test src/lib/*.test.ts"
+    "test": "tsx --test src/lib/*.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",
@@ -23,6 +23,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "oxlint": "^1.71.0",
+    "tsx": "^4.23.13",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
   }
