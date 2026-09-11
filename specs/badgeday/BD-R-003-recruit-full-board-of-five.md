@@ -37,12 +37,12 @@ A signed-in pre-hire Recruit candidate can run one practice session as a **full 
 - Mid-board abandon = **incomplete board**; issued prompts count as **seen**; **no fake C1** on incomplete boards (Zazu default).
 - Web UI: Q1–Q5 progress; no preview of upcoming questions; board summary only at end.
 - API: start-board → next/current Q → submit audio → poll attempt; on board complete → run C1 and release held notes.
-- This board START ORDER does not configure Stripe products. A later START ORDER 2026-09-11 opened **Recruit paid go-live** (see `badgeday_pricing.md`); live Stripe price IDs and Play product IDs remain ops (Zazu). Promote stays held.
+- This board START ORDER does not configure Stripe products or invent price IDs. A later START ORDER 2026-09-11 opened **Recruit paid go-live**; Promote paid go-live opened the same evening (see `badgeday_pricing.md`). Recruit live Stripe / Play IDs remain ops (Zazu). Promote live Stripe IDs are ops-filled (**$29/mo** + **$129** 90-day); Play production publish is **in flight**.
 - Record START ORDER 2026-09-11 in `recruit_design_decisions.md` and `recruit_scope.md`.
 
 ### Out
 
-- Filling live Stripe price IDs or Play / App Store product IDs (ops). This board spec does not configure Stripe products. Recruit paid go-live is approved separately (START ORDER 2026-09-11 — see `badgeday_pricing.md`); Promote checkout stays held.
+- Filling live Stripe price IDs or Play / App Store product IDs (ops). This board spec does not configure Stripe products or invent price IDs. Recruit and Promote paid go-live are both approved (START ORDER 2026-09-11; Promote evening — see `badgeday_pricing.md`).
 - Promote quiz, DrillGround, department-specific content.
 - Showing internal 1–5 scores, route tags, determinations, clause ids, or percentiles to the candidate.
 - Re-record / retry a question inside a board.
@@ -130,7 +130,7 @@ Minimum that still honors Grant locks: board of five with real multi-criterion d
 20. **Free:** a candidate with no Recruit entitlement may complete **one** complete five-question board (Grant). `recruit_free_sessions` semantics become **free boards**, default 1. Starting or abandoning does not consume the free board; **completing** a board with released notes does.
 21. **Daily ceiling:** counts **boards started** per UTC day, default **2** (Zazu). Exceeding answers **429**. Replaces the default 10 question-attempt daily limit for Recruit practice.
 22. Paid Recruit entitlement (`has_recruit_access` / entitlements recruit) still required after free boards are used. Promote entitlement does not grant Recruit (existing gate rule).
-23. This board work does not configure Stripe products or fill live IDs. A later START ORDER 2026-09-11 opened Recruit paid go-live (see `badgeday_pricing.md`); live IDs remain ops. Promote stays held.
+23. This board work does not configure Stripe products or invent price IDs. A later START ORDER 2026-09-11 opened Recruit paid go-live; Promote paid go-live opened the same evening (see `badgeday_pricing.md`). Live IDs remain ops for Recruit; Promote Stripe IDs are ops-filled. Play production publish is in flight.
 
 ### UI
 
