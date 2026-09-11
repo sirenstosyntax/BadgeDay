@@ -65,6 +65,9 @@ def run_one(db: Client, settings: Settings, worker: str) -> bool:
         path = attempt.audio_storage_path if attempt else None
         mark_failed(db, exc.attempt_id, exc.detail)
         delete_audio(db, path)
+        from app.worker.pipeline import _maybe_enqueue_c1
+
+        _maybe_enqueue_c1(db, attempt.board_id if attempt else None)
         succeed(db, job)
         return True
     except Exception as exc:
@@ -90,6 +93,12 @@ def _give_up(db: Client, job: Job, detail: str) -> None:
             "The critique could not be finished. Try a new question.",
         )
         delete_audio(db, path)
+        from app.worker.pipeline import _maybe_enqueue_c1
+
+        _maybe_enqueue_c1(db, attempt.board_id if attempt else None)
+        return
+    if job.kind == "recruit_c1" and job.board_id:
+        logger.error("recruit C1 job for board %s died: %s", job.board_id, detail)
         return
     if job.document_id:
         set_status(

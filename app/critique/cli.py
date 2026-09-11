@@ -32,11 +32,16 @@ from app.critique.critiquer import critique_answer
 from app.critique.render import render_critique, render_for_candidate  # noqa: F401
 
 QUESTIONS = {
+    "c1": (
+        "Across these five answers — how they were built. Not a score on any one of them."
+    ),
     "c2": (
         "Why do you want to be a firefighter with this department, and what have you "
         "done to prepare?"
     ),
     "c3": "Tell us about a time you worked with someone who wasn't doing their share.",
+    "c4": "Tell us about a time you saw a crew member do something that was not right.",
+    "c5": "Tell us about a time you had to stay composed when something went wrong.",
 }
 
 # Fixtures are synthetic. No real candidate is described.
@@ -126,6 +131,11 @@ at work. I'm not sure what to tell you there.
 """,
     },
 }
+
+# C1 / C4 / C5 reuse the C2 fixtures until dedicated ones exist. The CLI
+# must not KeyError now that those rubrics are live scorers.
+for _criterion_id in ("c1", "c4", "c5"):
+    FIXTURES.setdefault(_criterion_id, FIXTURES["c2"])
 
 
 def _run_one(label: str, transcript: str, rubric, client, settings, draft: bool) -> bool:

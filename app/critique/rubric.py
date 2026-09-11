@@ -129,15 +129,26 @@ def load_rubric(criterion_id: str, path: Path, name: str) -> Rubric:
     return Rubric(criterion_id=criterion_id, name=name, text=region, clauses=clauses)
 
 
-# The rubrics that exist. Criterion 3 is a draft and is marked as such wherever a human
-# sees its output; the pipeline treats both alike, because the gate's job is to check that
-# a point is anchored, not to judge whether the anchor is any good.
+# Live scorers (START ORDER 2026-09-11). C1 is whole-board; C2–C5 are
+# designated per answer. All five are Grant-approved / publishable.
 RUBRIC_FILES = {
+    "c1": (
+        Path("recruit_rubric_c1_answer_construction.md"),
+        "Criterion 1 — Answer Construction",
+    ),
     "c2": (Path("recruit_rubric_c2_motivation.md"), "Criterion 2 — Motivation & Preparation"),
     "c3": (Path("recruit_rubric_c3_teamwork.md"), "Criterion 3 — Teamwork & Interpersonal"),
+    "c4": (
+        Path("recruit_rubric_c4_integrity_ethics.md"),
+        "Criterion 4 — Integrity & Ethics",
+    ),
+    "c5": (
+        Path("recruit_rubric_c5_judgment_composure.md"),
+        "Criterion 5 — Judgment & Composure",
+    ),
 }
 
-DRAFT_RUBRICS = frozenset({"c3"})
+DRAFT_RUBRICS: frozenset[str] = frozenset()
 
 
 def available() -> list[str]:

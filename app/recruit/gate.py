@@ -1,11 +1,11 @@
-"""Whether this candidate may start a Recruit attempt.
+"""Whether this candidate may start a Recruit board.
 
 Auth is the caller's problem (`CurrentUserDep`). This module answers the two
 questions that remain after they have signed in:
 
-1. Have they already used today's ceiling?
-2. Are they still inside the free first session(s), or do they have Recruit
-   entitlement?
+1. Have they already used today's board-start ceiling?
+2. Are they still inside the free first complete board(s), or do they have
+   Recruit entitlement?
 
 Promote's `has_access` is a different product and is never consulted. Paid
 Recruit access is `has_recruit_access`, which reads entitlements(user,
@@ -47,10 +47,10 @@ def evaluate_recruit_gate(
 ) -> RecruitGate:
     """Pure decision. Neither count includes this start.
 
-    `today_count` is attempts already started today (the daily ceiling).
-    `lifetime_count` is delivered critiques — completed rows with
-    non-empty `candidate_lines`. A completed row that never showed notes
-    does not consume a free session.
+    `today_count` is boards already started today (the daily ceiling).
+    `lifetime_count` is completed boards with released notes. Abandoned
+    boards do not consume a free session. Promote entitlement is not
+    an input.
     """
     if daily_limit <= 0:
         raise ValueError("recruit daily attempt limit must be positive")
@@ -63,7 +63,7 @@ def evaluate_recruit_gate(
             status_code=429,
             detail=(
                 f"You have reached today's limit of {daily_limit} practice "
-                "attempts. Try again tomorrow."
+                "boards. Try again tomorrow."
             ),
         )
     if entitled or lifetime_count < free_sessions:

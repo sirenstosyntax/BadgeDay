@@ -19,6 +19,7 @@ from app.config import Settings
 from app.critique.cli import QUESTIONS
 from app.critique.critiquer import CritiqueOutcome, RecruitPersist
 from app.critique.models import Critique, Point
+from app.storage.boards import RecruitBoardRecord
 from app.storage.recruit import RecruitAttemptRecord
 from app.worker.jobs import Job, enqueue
 from app.worker.pipeline import EmptyRecruitAudio, run_recruit_critique
@@ -26,6 +27,7 @@ from tests.test_recruit_loop import DEEPGRAM_PAYLOAD, USER_ID
 from tests.test_worker import FakeDb
 
 ATTEMPT = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+BOARD = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
 
 
 def _settings(**overrides) -> Settings:
@@ -35,10 +37,28 @@ def _settings(**overrides) -> Settings:
         "generation_model": "claude-sonnet-5",
         "generation_effort": "high",
         "recruit_free_sessions": 1,
-        "recruit_daily_attempt_limit": 10,
+        "recruit_daily_attempt_limit": 2,
     }
     values.update(overrides)
     return Settings(**values)
+
+
+def _board(**overrides) -> RecruitBoardRecord:
+    values = {
+        "id": BOARD,
+        "user_id": USER_ID,
+        "started_at": datetime(2026, 9, 11, 18, 0, tzinfo=UTC),
+        "status": "in_progress",
+        "current_index": 0,
+        "current_question_text": "Why do you want to be a firefighter?",
+        "current_scenario_id": "MOT-1.1",
+        "current_criterion_id": "c2",
+        "current_family": "MOT-1",
+        "issued_families": ["MOT-1", "TEA-1", "INT-1", "SLF-1", "OPN-1"],
+        "issued_scenario_ids": ["MOT-1.1", "TEA-1.1", "INT-1.1", "SLF-1.1", "OPN-1.1"],
+    }
+    values.update(overrides)
+    return RecruitBoardRecord(**values)
 
 
 def _record(**overrides) -> RecruitAttemptRecord:
@@ -64,6 +84,7 @@ def _client(
     today_count: int = 0,
     delivered_count: int = 0,
     entitled: bool = False,
+    resume_open: bool | None = None,
 ) -> TestClient:
     app = FastAPI()
     app.include_router(router)
@@ -80,13 +101,35 @@ def _client(
     monkeypatch.setattr("app.api.recruit.attempted_scenario_ids", lambda db: seen)
     monkeypatch.setattr("app.api.recruit.completed_scenario_ids", lambda db: completed)
     monkeypatch.setattr(
-        "app.api.recruit.count_attempts",
+        "app.api.recruit.count_boards_started",
         lambda db, started_on_or_after=None: today_count,
     )
     monkeypatch.setattr(
-        "app.api.recruit.count_delivered_attempts",
+        "app.api.recruit.count_completed_boards",
         lambda db, started_on_or_after=None: delivered_count,
     )
+    monkeypatch.setattr("app.api.recruit.issued_scenario_ids", lambda db: seen)
+    monkeypatch.setattr("app.api.recruit.recent_board_families", lambda db, limit=8: [])
+    if resume_open is None:
+        resume_open = today_count == 0 and delivered_count == 0 and not seen
+    held: dict[str, RecruitBoardRecord | None] = {
+        "open": _board() if resume_open else None
+    }
+
+    def fake_open(_db):
+        return held["open"]
+
+    def fake_start(db, user_id, drawn, started_at):
+        board = _board(user_id=user_id, started_at=started_at)
+        held["open"] = board
+        return board
+
+    monkeypatch.setattr("app.api.recruit.get_open_board", fake_open)
+    monkeypatch.setattr(
+        "app.api.recruit.get_board",
+        lambda db, _id: held["open"] or _board(id=_id),
+    )
+    monkeypatch.setattr("app.api.recruit.start_board", fake_start)
     monkeypatch.setattr("app.recruit.gate.recruit_entitled", lambda *a: entitled)
     return TestClient(app)
 
@@ -192,12 +235,13 @@ def test_empty_recruit_price_ids_are_placeholders() -> None:
 
 
 def test_daily_cap_is_429(monkeypatch) -> None:
-    response = _client(_settings(), monkeypatch, today_count=10).post(
+    response = _client(_settings(), monkeypatch, today_count=2).post(
         "/recruit/attempts",
         files={"audio": ("answer.webm", b"x", "audio/webm")},
     )
     assert response.status_code == 429
-    assert "today's limit of 10" in response.json()["detail"]
+    assert "today's limit of 2" in response.json()["detail"]
+    assert "boards" in response.json()["detail"]
 
 
 def test_used_free_session_without_entitlement_is_402(monkeypatch) -> None:

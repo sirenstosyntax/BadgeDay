@@ -19,9 +19,21 @@ would deliberately show it to a candidate; it was that step 4 would build a UI o
 the thing that was already there.
 """
 
-from collections.abc import Iterable
+import re
+from collections.abc import Iterable, Sequence
 
 from app.critique.models import Critique, Point
+from app.recruit.copy import (
+    C1_COSTS,
+    C1_HELD,
+    C1_INSUFFICIENT,
+    C1_LEAD,
+    C1_NOT_ANSWERED,
+    C1_OUTSIDE,
+    C1_OUTSIDE_BODY,
+    PER_ANSWER_NOT_ANSWERED,
+    PER_ANSWER_NOT_ASSESSABLE,
+)
 
 # The three sections, in reading order, with the note under each. Read down: what he did,
 # then what to work on, then what to watch if he tells this story again.
@@ -211,3 +223,94 @@ def render_for_candidate(critique: Critique) -> None:
     """Print the candidate's view. A preview of a surface that does not exist yet."""
     for line in candidate_lines(critique):
         print(line)
+
+
+def board_answer_lines(critique: Critique) -> list[str]:
+    """Per-answer notes at board end. Same shape as `candidate_lines`, signed AC7/AC8."""
+    lines = candidate_lines(critique)
+    if critique.outcome == "not_assessable":
+        return [PER_ANSWER_NOT_ASSESSABLE, *lines[1:]]
+    if critique.outcome == "not_answered":
+        return [PER_ANSWER_NOT_ANSWERED, *lines[1:]]
+    return lines
+
+
+_PRESENCE_RE = re.compile(
+    r"\b(presence|eye contact|how you sit|sit in the room|sitting in the room)\b",
+    re.I,
+)
+
+
+def routes_presence(critique: Critique) -> bool:
+    """True when the critique sends presence / eye contact off the tool."""
+    for point in critique.points:
+        blob = f"{point.observation} {point.ask or ''}"
+        if _PRESENCE_RE.search(blob):
+            return True
+    return False
+
+
+def c1_candidate_lines(critique: Critique) -> list[str]:
+    """Whole-board C1 block. Headings and lead are Red-signed."""
+    if critique.outcome == "not_answered":
+        return [C1_NOT_ANSWERED]
+    if critique.outcome == "not_assessable":
+        return [C1_INSUFFICIENT]
+
+    lines: list[str] = [C1_LEAD]
+    held = critique.worked
+    costs = (
+        critique.answer_gaps
+        + critique.inventory_gaps
+        + critique.development_gaps
+        + critique.risks
+    )
+    if held:
+        if lines[-1] != "":
+            lines.append("")
+        lines.append(C1_HELD)
+        _append_point_lines(lines, held)
+    if costs:
+        if not lines or lines[-1] != "":
+            lines.append("")
+        lines.append(C1_COSTS)
+        _append_point_lines(lines, costs)
+    if routes_presence(critique):
+        if not lines or lines[-1] != "":
+            lines.append("")
+        lines.append(C1_OUTSIDE)
+        lines.append(C1_OUTSIDE_BODY)
+    return lines
+
+
+def _append_point_lines(lines: list[str], points: list[Point]) -> None:
+    for point in points:
+        lines.append("")
+        if point.answer_quote:
+            lines.append(f'You said: "{point.answer_quote}"')
+        lines.append(point.observation)
+        if point.ask:
+            lines.append(f"→ {point.ask}")
+
+
+# Board-end must never leak the instrument. Checked on the assembled payload.
+_BOARD_END_BANNED = re.compile(
+    r"(?i)"
+    r"\b(?:internal[_\s-]?score|criterion\s*[1-5]|anchor\s*[1-5]"
+    r"|c[1-5]\.(?:anchor|note)\.\S+"
+    r"|delivery\s+(?:clear|costly|blocking)"
+    r"|4[ab]\b|determination|deciding\s+clause"
+    r"|answer\s+construction|motivation\s*&\s*preparation"
+    r"|teamwork\s*&\s*interpersonal|integrity\s*&\s*ethics"
+    r"|judgment\s*&\s*composure)\b"
+)
+
+
+def board_end_leaks(lines: Sequence[str] | list[str]) -> tuple[str, ...]:
+    """Return banned fragments found in board-end lines."""
+    found: list[str] = []
+    for line in lines:
+        match = _BOARD_END_BANNED.search(line)
+        if match:
+            found.append(match.group(0))
+    return tuple(found)

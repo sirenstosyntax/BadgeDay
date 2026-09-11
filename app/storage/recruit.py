@@ -14,6 +14,7 @@ from uuid import uuid4
 from pydantic import BaseModel
 from supabase import Client
 
+from app.recruit.copy import PER_ANSWER_NOT_ANSWERED
 from app.storage.documents import safe_filename
 
 logger = logging.getLogger(__name__)
@@ -34,8 +35,11 @@ class RecruitAttemptRecord(BaseModel):
     audio_storage_path: str | None = None
     error: str | None = None
     candidate_lines: list[str] = []
+    held_candidate_lines: list[str] = []
     audio_retained: bool = False
     criterion_id: str | None = None
+    board_id: str | None = None
+    slot_index: int | None = None
 
 
 def utc_day_start(now: datetime | None = None) -> datetime:
@@ -134,8 +138,8 @@ def get_attempt(db: Client, attempt_id: str) -> RecruitAttemptRecord | None:
         db.table("recruit_attempts")
         .select(
             "id,user_id,scenario_id,question_text,started_at,completed_at,"
-            "status,audio_storage_path,error,candidate_lines,audio_retained,"
-            "criterion_id"
+            "status,audio_storage_path,error,candidate_lines,"
+            "audio_retained,criterion_id,board_id,slot_index"
         )
         .eq("id", attempt_id)
         .limit(1)
@@ -145,10 +149,11 @@ def get_attempt(db: Client, attempt_id: str) -> RecruitAttemptRecord | None:
     if not rows:
         return None
     row = rows[0]
-    lines = row.get("candidate_lines") or []
-    if not isinstance(lines, list):
-        lines = []
-    row["candidate_lines"] = [str(line) for line in lines]
+    for key in ("candidate_lines", "held_candidate_lines"):
+        lines = row.get(key) or []
+        if not isinstance(lines, list):
+            lines = []
+        row[key] = [str(line) for line in lines]
     return RecruitAttemptRecord.model_validate(row)
 
 
@@ -187,6 +192,8 @@ def create_queued_attempt(
     filename: str,
     data: bytes,
     criterion_id: str = "c2",
+    board_id: str | None = None,
+    slot_index: int | None = None,
 ) -> RecruitAttemptRecord:
     """Upload audio, then insert the queued row and its job.
 
@@ -206,6 +213,8 @@ def create_queued_attempt(
                 "p_started_at": started_at.isoformat(),
                 "p_audio_storage_path": path,
                 "p_criterion_id": criterion_id,
+                "p_board_id": board_id,
+                "p_slot_index": slot_index,
             },
         ).execute()
     except Exception:
@@ -224,6 +233,8 @@ def create_queued_attempt(
             status="queued",
             audio_storage_path=path,
             criterion_id=criterion_id,
+            board_id=board_id,
+            slot_index=slot_index,
         )
     return record
 
@@ -246,6 +257,7 @@ def mark_failed(
         "status": "critique_failed",
         "error": error[:2000],
         "audio_storage_path": None,
+        "held_candidate_lines": [PER_ANSWER_NOT_ANSWERED],
     }
     if transcript is not None:
         patch["transcript"] = transcript

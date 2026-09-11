@@ -1,25 +1,12 @@
-"""C2 spoken question: issue the prompt, enqueue the critique, poll the result.
+"""Five-question Recruit board: start, current Q only, submit, poll, abandon.
 
-GET /question is a discriminant: `available` carries the next novel C2 bank
-item, `exhausted` is a 200 milestone when nothing novel remains (empty bank
-or every published item already issued). Exhaustion is not a 404. The poll
-payload is `candidate_lines` only. Score, route, determination, and clause
-ids stay on the server via 0010 / 0011; they are not in this payload.
+Notes stay withheld until the board is complete. Then per-answer notes and
+the C1 whole-board block land together. Free = one complete board with
+released notes. Daily ceiling = boards started (UTC). Promote entitlement
+does not open this gate.
 
-GET /question and POST /attempts share `_enforce_recruit_access`. A free
-session is consumed only after a completed attempt with non-empty
-`candidate_lines` — starting a question the submit would 402 is the
-failure mode this closes.
-
-The live worker uses Deepgram only. If the key is unset this returns 503 rather
-than enqueueing work that cannot run. `get_transcriber` stays for tests.
-
-Word timestamps from that transcript are run through `metrics.compute` on the
-worker and passed into `critique_answer`. Without them the prompt falls back to
-"no delivery metrics were computed" and production critiques cannot cite pace,
-pauses, or filler.
-
-Audio is transcribed and discarded. `audio_retained` stays false.
+Legacy GET /question and POST /attempts wrap the board: they resume or start
+one, return only the current prompt, and never release notes mid-board.
 """
 
 from datetime import UTC, datetime
@@ -36,16 +23,27 @@ from app.config import Settings
 from app.critique.models import Metric
 from app.recruit.bank import (
     C2_SCENARIO_ID,  # noqa: F401 — re-exported for tests and the worker
-    AvailableIssue,
+    DrawnBoard,
     ExhaustedIssue,
-    issue,
+    draw_board,
+    draw_is_c2_only,
 )
+from app.recruit.copy import BOARD_FRAMING, SOFT_TIMER_SECONDS
 from app.recruit.gate import RecruitAccessDenied, check_recruit_access
+from app.storage.boards import (
+    RecruitBoardRecord,
+    abandon_board,
+    count_boards_started,
+    count_completed_boards,
+    get_board,
+    get_open_board,
+    issued_scenario_ids,
+    recent_board_families,
+    start_board,
+)
 from app.storage.recruit import (
     attempted_scenario_ids,
     completed_scenario_ids,
-    count_attempts,
-    count_delivered_attempts,
     create_queued_attempt,
     get_attempt,
     utc_day_start,
@@ -56,12 +54,17 @@ router = APIRouter(prefix="/recruit", tags=["recruit"])
 MAX_AUDIO_BYTES = 10 * 1024 * 1024
 
 AttemptViewStatus = Literal["queued", "running", "completed", "critique_failed"]
+BoardViewStatus = Literal["in_progress", "scoring", "completed", "abandoned", "exhausted"]
 
 
 class RecruitQuestionAvailable(BaseModel):
     state: Literal["available"] = "available"
     scenario_id: str
     question_text: str
+    board_id: str | None = None
+    question_index: int = Field(default=1, ge=1, le=5)
+    board_size: int = 5
+    soft_timer_seconds: int = SOFT_TIMER_SECONDS
 
 
 class RecruitQuestionExhausted(BaseModel):
@@ -76,43 +79,33 @@ class RecruitQuestionExhausted(BaseModel):
 RecruitQuestion = RecruitQuestionAvailable | RecruitQuestionExhausted
 
 
-def _question_payload(decision: AvailableIssue | ExhaustedIssue) -> RecruitQuestion:
-    if isinstance(decision, ExhaustedIssue):
-        return RecruitQuestionExhausted(
-            answered_count=decision.answered_count,
-            bank_size=decision.bank_size,
-            next_eligible_at=decision.next_eligible_at,
-        )
-    return RecruitQuestionAvailable(
-        scenario_id=decision.scenario_id,
-        question_text=decision.question_text,
-    )
+class BoardAnswerNotes(BaseModel):
+    question_index: int
+    question_text: str
+    lines: list[str]
 
 
-def _enforce_recruit_access(user: CurrentUser, db: Client, settings: Settings) -> None:
-    """Same gate for issuing a question and submitting an attempt.
+class RecruitBoardView(BaseModel):
+    """Candidate-facing board. Upcoming prompts and notes stay off until the end."""
 
-    Lifetime counts delivered critiques only. Starting a session that
-    cannot be submitted (and therefore cannot show notes) is the bug
-    this exists to close.
-    """
-    try:
-        check_recruit_access(
-            db,
-            user.id,
-            settings,
-            today_count=count_attempts(db, started_on_or_after=utc_day_start()),
-            lifetime_count=count_delivered_attempts(db),
-        )
-    except RecruitAccessDenied as exc:
-        raise HTTPException(exc.status_code, exc.detail) from exc
+    board_id: str
+    status: BoardViewStatus
+    question_index: int = Field(ge=1, le=5)
+    board_size: int = 5
+    question_text: str | None = None
+    scenario_id: str | None = None
+    attempt_id: str | None = None
+    soft_timer_seconds: int = SOFT_TIMER_SECONDS
+    framing: str | None = None
+    answers: list[BoardAnswerNotes] = []
+    c1_lines: list[str] = []
 
 
 class RecruitResult(BaseModel):
     """What the mic screen is allowed to show. No score field on purpose.
 
     Used for both the 202 enqueue acknowledgement and the poll payload.
-    `lines` is empty until the worker finishes.
+    `lines` is empty until the board releases notes.
     """
 
     attempt_id: str | None
@@ -120,14 +113,12 @@ class RecruitResult(BaseModel):
     lines: list[str] = []
     failed: bool = False
     failure: str | None = None
+    board_id: str | None = None
+    question_index: int | None = None
 
 
 def metrics_for_critique(transcript: Transcript) -> dict[str, Metric]:
-    """Map timestamp arithmetic onto the Metric type `critique_answer` already accepts.
-
-    `compute` returns an audio-side dataclass with notes the prompt does not take.
-    The four fields here are the ones the prompt and the verification gate cite.
-    """
+    """Map timestamp arithmetic onto the Metric type `critique_answer` already accepts."""
     return {
         metric.name: Metric(
             name=metric.name,
@@ -139,39 +130,115 @@ def metrics_for_critique(transcript: Transcript) -> dict[str, Metric]:
     }
 
 
-@router.get("/question")
-def issued_question(user: CurrentUserDep, db: DbDep, settings: SettingsDep) -> RecruitQuestion:
-    """Next novel bank item, or the exhausted milestone.
+def _enforce_recruit_access(user: CurrentUser, db: Client, settings: Settings) -> None:
+    """Same gate for starting a board and submitting into one.
 
-    Auth is required. The first `recruit_free_sessions` delivered
-    critiques (default 1) need no card. Further starts need a Recruit
-    row on entitlements or this answers 402 — the same check as submit,
-    so a candidate never records into a paywall.
+    Lifetime counts completed boards with released notes. Daily counts
+    boards started today. Starting a board the submit would 402 is the
+    failure mode this exists to close.
     """
-    _enforce_recruit_access(user, db, settings)
-    return _question_payload(
-        issue(
-            attempted_scenario_ids(db),
-            completed_scenario_ids=completed_scenario_ids(db),
+    try:
+        check_recruit_access(
+            db,
+            user.id,
+            settings,
+            today_count=count_boards_started(db, started_on_or_after=utc_day_start()),
+            lifetime_count=count_completed_boards(db),
         )
+    except RecruitAccessDenied as exc:
+        raise HTTPException(exc.status_code, exc.detail) from exc
+
+
+def _seen_ids(db: Client) -> list[str]:
+    # Board slots count as seen on start, even with no attempt row yet.
+    board_ids = issued_scenario_ids(db)
+    attempt_ids = attempted_scenario_ids(db)
+    seen: list[str] = []
+    found: set[str] = set()
+    for sid in [*board_ids, *attempt_ids]:
+        if sid and sid not in found:
+            found.add(sid)
+            seen.append(sid)
+    return seen
+
+
+def _draw_or_exhausted(db: Client) -> DrawnBoard | ExhaustedIssue:
+    decision = draw_board(
+        _seen_ids(db),
+        recent_families=recent_board_families(db),
+        completed_scenario_ids=completed_scenario_ids(db),
+    )
+    if isinstance(decision, DrawnBoard) and draw_is_c2_only(decision):
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "The board draw produced five C2-only questions.",
+        )
+    return decision
+
+
+def _start_new_board(user: CurrentUser, db: Client, settings: Settings) -> RecruitBoardRecord:
+    _enforce_recruit_access(user, db, settings)
+    decision = _draw_or_exhausted(db)
+    if isinstance(decision, ExhaustedIssue):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "There is no new board to start right now.",
+        )
+    return start_board(db, user.id, decision, started_at=datetime.now(UTC))
+
+
+def _resume_or_start(user: CurrentUser, db: Client, settings: Settings) -> RecruitBoardRecord:
+    open_board = get_open_board(db)
+    if open_board is not None:
+        return open_board
+    return _start_new_board(user, db, settings)
+
+
+def _question_from_board(board: RecruitBoardRecord) -> RecruitQuestionAvailable:
+    return RecruitQuestionAvailable(
+        scenario_id=board.current_scenario_id,
+        question_text=board.current_question_text,
+        board_id=board.id,
+        question_index=board.current_index + 1,
     )
 
 
-@router.post("/attempts", status_code=status.HTTP_202_ACCEPTED)
-def submit_attempt(
-    user: CurrentUserDep,
-    db: DbDep,
-    settings: SettingsDep,
-    audio: UploadFile,
-) -> RecruitResult:
-    """Accept a recording and return 202. The worker transcribes and critiques.
+def _released_answers(db: Client, board: RecruitBoardRecord) -> list[BoardAnswerNotes]:
+    if not board.notes_released:
+        return []
+    from app.storage.boards import board_attempts
 
-    Auth is required. The first `recruit_free_sessions` delivered
-    critiques (default 1) need no card. Further attempts need a Recruit
-    row on entitlements or this answers 402. A UTC daily ceiling
-    (`recruit_daily_attempt_limit`, default 10) answers 429 even for an
-    entitled candidate. Starting a question uses this same check.
-    """
+    notes: list[BoardAnswerNotes] = []
+    for record in board_attempts(db, board.id):
+        index = (record.slot_index or 0) + 1
+        notes.append(
+            BoardAnswerNotes(
+                question_index=index,
+                question_text=record.question_text,
+                lines=record.candidate_lines,
+            )
+        )
+    notes.sort(key=lambda item: item.question_index)
+    return notes
+
+
+def _board_view(db: Client, board: RecruitBoardRecord) -> RecruitBoardView:
+    released = board.status == "completed" and board.notes_released
+    in_progress = board.status == "in_progress"
+    return RecruitBoardView(
+        board_id=board.id,
+        status=board.status,
+        question_index=board.current_index + 1,
+        question_text=board.current_question_text if in_progress else None,
+        scenario_id=board.current_scenario_id if in_progress else None,
+        attempt_id=board.current_attempt_id if board.status == "scoring" else None,
+        framing=BOARD_FRAMING if released else None,
+        answers=_released_answers(db, board) if released else [],
+        c1_lines=board.c1_candidate_lines if released else [],
+    )
+
+
+def _read_audio(audio: UploadFile, settings: Settings) -> bytes:
     if not settings.transcription_configured:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -182,7 +249,6 @@ def submit_attempt(
             status.HTTP_503_SERVICE_UNAVAILABLE,
             "Critique is not configured.",
         )
-
     data = audio.file.read(MAX_AUDIO_BYTES + 1)
     if len(data) > MAX_AUDIO_BYTES:
         raise HTTPException(
@@ -191,43 +257,164 @@ def submit_attempt(
         )
     if not data:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "That recording is empty.")
+    return data
 
-    _enforce_recruit_access(user, db, settings)
 
-    decision = issue(attempted_scenario_ids(db))
-    if isinstance(decision, ExhaustedIssue):
+def _submit_current_slot(
+    user: CurrentUser,
+    db: Client,
+    settings: Settings,
+    audio: UploadFile,
+    board: RecruitBoardRecord,
+) -> RecruitResult:
+    if board.status != "in_progress":
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            "There is no new question to answer right now.",
+            "This board is not waiting for an answer.",
         )
-
+    data = _read_audio(audio, settings)
     started_at = datetime.now(UTC)
     record = create_queued_attempt(
         db,
         user.id,
-        scenario_id=decision.scenario_id,
-        question_text=decision.question_text,
+        scenario_id=board.current_scenario_id,
+        question_text=board.current_question_text,
         started_at=started_at,
         filename=audio.filename or "answer.webm",
         data=data,
-        criterion_id=decision.criterion_id,
+        criterion_id=board.current_criterion_id,
+        board_id=board.id,
+        slot_index=board.current_index,
     )
-    return RecruitResult(attempt_id=record.id, status="queued")
+    return RecruitResult(
+        attempt_id=record.id,
+        status="queued",
+        board_id=board.id,
+        question_index=board.current_index + 1,
+    )
+
+
+@router.post("/boards", status_code=status.HTTP_201_CREATED)
+def create_board(
+    user: CurrentUserDep, db: DbDep, settings: SettingsDep
+) -> RecruitBoardView:
+    """Start a five-question board. Returns Q1 only."""
+    open_board = get_open_board(db)
+    if open_board is not None:
+        return _board_view(db, open_board)
+    board = _start_new_board(user, db, settings)
+    return _board_view(db, board)
+
+
+@router.get("/boards/{board_id}")
+def read_board(board_id: str, db: DbDep) -> RecruitBoardView:
+    board = get_board(db, board_id)
+    if board is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such board.")
+    return _board_view(db, board)
+
+
+@router.post("/boards/{board_id}/answers", status_code=status.HTTP_202_ACCEPTED)
+def submit_board_answer(
+    board_id: str,
+    user: CurrentUserDep,
+    db: DbDep,
+    settings: SettingsDep,
+    audio: UploadFile,
+) -> RecruitResult:
+    board = get_board(db, board_id)
+    if board is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such board.")
+    if board.user_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such board.")
+    return _submit_current_slot(user, db, settings, audio, board)
+
+
+@router.post("/boards/{board_id}/abandon")
+def abandon(board_id: str, user: CurrentUserDep, db: DbDep) -> RecruitBoardView:
+    board = get_board(db, board_id)
+    if board is None or board.user_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such board.")
+    if board.status in ("in_progress", "scoring"):
+        abandon_board(db, board_id)
+        board = get_board(db, board_id) or board
+    view = _board_view(db, board)
+    return view.model_copy(
+        update={
+            "status": "abandoned",
+            "framing": None,
+            "answers": [],
+            "c1_lines": [],
+            "question_text": None,
+        }
+    )
+
+
+@router.get("/question")
+def issued_question(user: CurrentUserDep, db: DbDep, settings: SettingsDep) -> RecruitQuestion:
+    """Current board question, or start a board. Never previews Q2–Q5.
+
+    Exhaustion is a 200 milestone. Auth is required. The first complete
+    board with released notes is free; further starts need Recruit
+    entitlement. Same check as submit.
+    """
+    open_board = get_open_board(db)
+    if open_board is not None:
+        if open_board.status == "scoring":
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                "This board is finished recording. Notes are still being prepared.",
+            )
+        return _question_from_board(open_board)
+    try:
+        board = _start_new_board(user, db, settings)
+    except HTTPException as exc:
+        if exc.status_code == 409:
+            decision = _draw_or_exhausted(db)
+            if isinstance(decision, ExhaustedIssue):
+                return RecruitQuestionExhausted(
+                    answered_count=decision.answered_count,
+                    bank_size=decision.bank_size,
+                    next_eligible_at=decision.next_eligible_at,
+                )
+        raise
+    return _question_from_board(board)
+
+
+@router.post("/attempts", status_code=status.HTTP_202_ACCEPTED)
+def submit_attempt(
+    user: CurrentUserDep,
+    db: DbDep,
+    settings: SettingsDep,
+    audio: UploadFile,
+) -> RecruitResult:
+    """Submit audio for the current board slot. Wraps the five-question board."""
+    board = _resume_or_start(user, db, settings)
+    return _submit_current_slot(user, db, settings, audio, board)
 
 
 @router.get("/attempts/{attempt_id}")
 def read_attempt(attempt_id: str, db: DbDep) -> RecruitResult:
-    """Poll one attempt. 404 for missing and for somebody else's id."""
+    """Poll one attempt. Lines stay empty until the board releases notes."""
     record = get_attempt(db, attempt_id)
     if record is None or record.status == "abandoned":
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such attempt.")
     if record.status not in ("queued", "running", "completed", "critique_failed"):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such attempt.")
     failed = record.status == "critique_failed"
+    released = False
+    if record.board_id:
+        board = get_board(db, record.board_id)
+        released = bool(board and board.status == "completed" and board.notes_released)
+    else:
+        released = record.status == "completed"
+    lines = record.candidate_lines if released and record.status == "completed" else []
     return RecruitResult(
         attempt_id=record.id,
         status=record.status,
-        lines=record.candidate_lines if record.status == "completed" else [],
+        lines=lines,
         failed=failed or bool(record.error and record.status == "completed"),
         failure=record.error if failed else None,
+        board_id=record.board_id,
+        question_index=(record.slot_index + 1) if record.slot_index is not None else None,
     )

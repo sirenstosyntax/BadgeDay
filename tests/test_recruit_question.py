@@ -31,13 +31,14 @@ def _published_ids() -> list[str]:
     return [item.scenario_id for item in published_items()]
 
 
-def test_live_bank_is_c2_issuable_subset() -> None:
+def test_live_bank_is_the_reviewed_non_c2_set() -> None:
     items = published_items()
-    assert len(items) == 81
+    assert len(items) == 272
     assert items[0].scenario_id == "MOT-1.1"
     assert items[0].question_text == "Why do you want to be a firefighter?"
     assert items[0].criterion_id == "c2"
-    assert 290 not in (item.scenario_id for item in items)
+    assert any(item.criterion_id == "c3" for item in items)
+    assert any(item.criterion_id == "c1" for item in items)
     assert "c2" not in (item.scenario_id for item in items)
 
 
@@ -53,8 +54,8 @@ def test_issue_exhausted_when_every_published_item_was_seen() -> None:
     ids = _published_ids()
     decision = issue(ids, completed_scenario_ids=ids)
     assert isinstance(decision, ExhaustedIssue)
-    assert decision.answered_count == 81
-    assert decision.bank_size == 81
+    assert decision.answered_count == 272
+    assert decision.bank_size == 272
     assert decision.next_eligible_at is None
 
 
@@ -64,7 +65,7 @@ def test_issue_answered_count_ignores_non_completed() -> None:
     decision = issue(ids, completed_scenario_ids=[])
     assert isinstance(decision, ExhaustedIssue)
     assert decision.answered_count == 0
-    assert decision.bank_size == 81
+    assert decision.bank_size == 272
 
 
 def test_issue_exhausted_on_empty_bank_fixture() -> None:
@@ -97,9 +98,10 @@ def test_question_and_submit_share_the_same_access_check() -> None:
     source = (
         Path(__file__).resolve().parents[1] / "app" / "api" / "recruit.py"
     ).read_text()
-    assert source.count("_enforce_recruit_access(") >= 3
-    assert "lifetime_count=count_delivered_attempts(db)" in source
+    assert source.count("_enforce_recruit_access(") >= 2
+    assert "lifetime_count=count_completed_boards(db)" in source
     assert "lifetime_count=count_attempts(db)" not in source
+    assert "lifetime_count=count_delivered_attempts(db)" not in source
 
 
 def test_get_question_is_402_when_the_free_critique_was_delivered(monkeypatch) -> None:
@@ -133,8 +135,8 @@ def test_get_question_exhausted_is_200_not_404(monkeypatch) -> None:
     assert response.status_code != 404
     body = response.json()
     assert body["state"] == "exhausted"
-    assert body["answered_count"] == 81
-    assert body["bank_size"] == 81
+    assert body["answered_count"] == 272
+    assert body["bank_size"] == 272
     assert body["next_eligible_at"] is None
     assert "scenario_id" not in body
     RecruitQuestionExhausted.model_validate(body)
@@ -231,14 +233,14 @@ def test_get_question_exhausted_answered_count_ignores_non_completed(
     body = response.json()
     assert body["state"] == "exhausted"
     assert body["answered_count"] == 0
-    assert body["bank_size"] == 81
+    assert body["bank_size"] == 272
 
 
 def test_get_question_empty_bank_fixture_is_exhausted_200(monkeypatch) -> None:
     monkeypatch.setattr("app.recruit.bank.published_items", lambda: ())
-    response = _client(_settings(), monkeypatch, seen_scenario_ids=[]).get(
-        "/recruit/question"
-    )
+    response = _client(
+        _settings(), monkeypatch, seen_scenario_ids=[], resume_open=False
+    ).get("/recruit/question")
     assert response.status_code == 200
     body = response.json()
     assert body["state"] == "exhausted"

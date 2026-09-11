@@ -88,10 +88,10 @@ class Settings(BaseSettings):
     # row on entitlements(user, module). Promote's has_access is a different
     # product and is never consulted.
     recruit_free_sessions: int = 1
-    # Cost ceiling while the bank is still one C2 prompt. 10/day is enough for
-    # a real practice day and cheap enough that a leaked magic-link cannot run
-    # up an unbounded Anthropic bill. UTC day.
-    recruit_daily_attempt_limit: int = 10
+    # Cost ceiling in board starts per UTC day (START ORDER 2026-09-11).
+    # ~2 boards/day. A leaked magic-link cannot run unbounded Deepgram +
+    # Anthropic spend. The setting name is historical (was question-attempts).
+    recruit_daily_attempt_limit: int = 2
 
     # --- Stripe --------------------------------------------------------------
     stripe_secret_key: str = ""

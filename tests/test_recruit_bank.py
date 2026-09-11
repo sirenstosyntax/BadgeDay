@@ -19,10 +19,10 @@ from app.recruit.bank_data import PUBLISHED_ITEMS
 from app.recruit.draft import (
     C2_GROUPS,
     DRAFT_PATH,
-    DraftItem,
     fd_name_hits,
     issuable,
     parse_draft,
+    parse_issuable,
     parse_issuable_c2,
 )
 
@@ -58,7 +58,7 @@ def _ids(items=None) -> list[str]:
 
 
 def test_parse_skips_strike_and_non_c2_families() -> None:
-    rows = parse_draft(SAMPLE)
+    rows = parse_draft(SAMPLE, groups=C2_GROUPS, criterion_id="c2")
     assert [item.scenario_id for item in rows] == [
         "MOT-1.1",
         "MOT-1.2",
@@ -79,7 +79,7 @@ def test_parse_skips_strike_and_non_c2_families() -> None:
 
 
 def test_draft_c2_surviving_count_is_81() -> None:
-    rows = parse_draft(DRAFT_PATH.read_text())
+    rows = parse_draft(DRAFT_PATH.read_text(), groups=C2_GROUPS, criterion_id="c2")
     kept = issuable(rows)
     struck = [item for item in rows if item.struck]
     assert len(rows) == 88
@@ -100,29 +100,31 @@ def test_draft_c2_surviving_count_is_81() -> None:
     assert len(kept) == 81
 
 
-def test_published_items_are_the_81_c2_issuable_subset() -> None:
+def test_published_items_are_the_reviewed_272() -> None:
     items = published_items()
-    parsed = parse_issuable_c2()
-    assert len(items) == 81
-    assert len(PUBLISHED_ITEMS) == 81
+    parsed = parse_issuable()
+    assert len(items) == 272
+    assert len(PUBLISHED_ITEMS) == 272
     assert _ids(items) == [item.scenario_id for item in parsed]
     assert items[0].scenario_id == "MOT-1.1"
     assert items[0].question_text == "Why do you want to be a firefighter?"
-    assert items[-1].scenario_id == "CMT-2.8"
     assert C2_SCENARIO_ID not in _ids(items)
-    assert all(item.criterion_id == "c2" for item in items)
-    assert all(item.family.split("-", 1)[0] in C2_GROUPS for item in items)
+    assert {item.criterion_id for item in items} == {"c1", "c2", "c3", "c4", "c5"}
     assert all("." in item.scenario_id for item in items)
-    generated = [
-        DraftItem(
-            scenario_id=raw["scenario_id"],
-            question_text=raw["question_text"],
-            family=raw["family"],
-            criterion_id=raw["criterion_id"],
-        )
-        for raw in PUBLISHED_ITEMS
+    c2_only = parse_issuable_c2()
+    assert len(c2_only) == 81
+    assert _ids(c2_only) == [
+        item.scenario_id for item in items if item.family.split("-", 1)[0] in C2_GROUPS
     ]
-    assert tuple(generated) == parsed
+
+
+def test_c2_issuable_subset_still_parses_to_81() -> None:
+    parsed = parse_issuable_c2()
+    assert len(parsed) == 81
+    assert parsed[0].scenario_id == "MOT-1.1"
+    assert parsed[-1].scenario_id == "CMT-2.8"
+    assert all(item.criterion_id == "c2" for item in parsed)
+    assert all(item.family.split("-", 1)[0] in C2_GROUPS for item in parsed)
 
 
 def test_issue_first_unseen_never_repeats() -> None:
@@ -139,12 +141,12 @@ def test_issue_first_unseen_never_repeats() -> None:
     assert third.scenario_id == items[2].scenario_id
 
 
-def test_issue_exhausted_when_all_81_were_seen() -> None:
+def test_issue_exhausted_when_the_published_bank_was_seen() -> None:
     ids = _ids()
     decision = issue(ids, completed_scenario_ids=ids)
     assert isinstance(decision, ExhaustedIssue)
-    assert decision.answered_count == 81
-    assert decision.bank_size == 81
+    assert decision.answered_count == 272
+    assert decision.bank_size == 272
     assert decision.next_eligible_at is None
 
 
@@ -180,10 +182,11 @@ def test_legacy_c2_does_not_reissue_the_same_words() -> None:
 def test_criterion_id_for_decouples_item_from_rubric() -> None:
     assert criterion_id_for("MOT-1.3") == "c2"
     assert criterion_id_for("c2") == "c2"
-    assert "c1" not in rubric_module.RUBRIC_FILES
-    assert "c4" not in rubric_module.RUBRIC_FILES
-    assert "c5" not in rubric_module.RUBRIC_FILES
-    assert rubric_module.DRAFT_RUBRICS == frozenset({"c3"})
+    assert criterion_id_for("TEA-1.1") == "c3"
+    assert criterion_id_for("INT-1.1") == "c4"
+    assert criterion_id_for("OPN-1.1") == "c1"
+    assert set(rubric_module.RUBRIC_FILES) == {"c1", "c2", "c3", "c4", "c5"}
+    assert rubric_module.DRAFT_RUBRICS == frozenset()
 
 
 def test_published_strings_name_no_real_department() -> None:

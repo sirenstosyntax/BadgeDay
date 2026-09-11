@@ -58,6 +58,30 @@ def test_entitled_candidate_is_not_blocked_after_the_free_session() -> None:
     assert gate.allowed is True
 
 
+def test_two_board_starts_hit_the_utc_day_ceiling() -> None:
+    """START ORDER 2026-09-11: daily unit is boards started, ~2."""
+    ok = evaluate_recruit_gate(
+        today_count=1,
+        lifetime_count=0,
+        daily_limit=2,
+        free_sessions=1,
+        entitled=True,
+    )
+    assert ok.allowed is True
+    blocked = evaluate_recruit_gate(
+        today_count=2,
+        lifetime_count=0,
+        daily_limit=2,
+        free_sessions=1,
+        entitled=True,
+    )
+    assert blocked.allowed is False
+    assert blocked.status_code == 429
+    assert blocked.detail is not None
+    assert "today's limit of 2" in blocked.detail
+    assert "boards" in blocked.detail
+
+
 def test_daily_cap_beats_entitlement() -> None:
     gate = evaluate_recruit_gate(
         today_count=10,

@@ -20,7 +20,7 @@ from pydantic import ValidationError
 from app.config import Settings
 from app.critique.models import Critique, DraftCritique, Metric
 from app.critique.prompt import SYSTEM_PROMPT, build_retry_message, build_user_message
-from app.critique.render import candidate_lines
+from app.critique.render import board_answer_lines
 from app.critique.rubric import Rubric
 from app.critique.verify import Rejection, verify_critique
 from app.llm_output import (
@@ -109,7 +109,7 @@ def _persist_verified(
         name = "complete_queued_recruit_attempt"
         args = {
             "p_attempt_id": persist.attempt_id,
-            "p_candidate_lines": candidate_lines(critique),
+            "p_candidate_lines": board_answer_lines(critique),
             **shared,
         }
     else:

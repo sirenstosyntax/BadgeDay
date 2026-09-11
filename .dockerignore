@@ -21,7 +21,11 @@ supabase
 scripts
 deploy
 *.md
+!recruit_rubric_c1_answer_construction.md
 !recruit_rubric_c2_motivation.md
+!recruit_rubric_c3_teamwork.md
+!recruit_rubric_c4_integrity_ethics.md
+!recruit_rubric_c5_judgment_composure.md
 .pytest_cache
 .ruff_cache
 __pycache__
