@@ -379,6 +379,7 @@ issue, and live scorer wire. C2-only ~81 was the prior live bank.
 
 - **Session = full board of five.** Build is now open.
 - **Free session = one complete five-question board** (not one question).
+  Consumes only when the board is complete and notes are released.
 - **Critique cadence = hold ALL notes until the board ends;** then per-answer notes
   and the C1 whole-board pass together.
 - **Phase 0 = C1–C5 live scorer wire + publish the non-C2 bank** so the draw shape

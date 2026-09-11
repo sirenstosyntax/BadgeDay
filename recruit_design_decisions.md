@@ -972,7 +972,7 @@ Naming and structure for Criteria 1, 4 and 5 — recorded so the open table abov
 Locked by Grant 2026-09-11 via Zazu. Spec id **BD-R-003** (Geppetto BD-R-003 full board of five). Treat these locks as authoritative. This order **supersedes** the 2026-09-10 implementation hold on full board of five, non-C2 issue, and live scorer wire. C2-only ~81 was the prior live bank; this order opens non-C2 publish and the full-board build so the draw shape is real, not a C2-only fake board. **Paid / Stripe live / Play Activate stay HELD** — this order does not enable pricing go-live.
 
 1. **Session = full board of five.** Build is now open.
-2. **Free session = one complete five-question board** (not one question).
+2. **Free session = one complete five-question board** (not one question). Consumes only when the board is complete and notes are released.
 3. **Critique cadence = hold ALL notes until the board ends;** then deliver per-answer notes and the C1 whole-board pass together.
 4. **Phase 0 = C1–C5 live scorer wire + publish the non-C2 bank** so the draw shape is real (not a C2-only fake board).
 5. **Paid / Stripe live / Play Activate stay HELD** — out of scope.
