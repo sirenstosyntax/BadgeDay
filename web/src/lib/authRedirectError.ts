@@ -89,6 +89,11 @@ export function consumeFreshAuthRedirectError(): string | null {
   return message
 }
 
-export function resetAuthRedirectErrorForTests() {
+/** Drop a remembered redirect error so a later SignIn mount (sign-out) stays clean. */
+export function clearAuthRedirectError() {
   consumed = null
+}
+
+export function resetAuthRedirectErrorForTests() {
+  clearAuthRedirectError()
 }

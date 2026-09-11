@@ -1,5 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
 import { useEffect, useState } from 'react'
+import { clearAuthRedirectError } from './authRedirectError'
 import { emailOtpVerifyParams } from './emailOtp'
 import { supabase } from './supabase'
 
@@ -16,6 +17,7 @@ export function readRememberedSignInEmail(): string {
 
 export function forgetSignInEmail() {
   window.localStorage.removeItem(SIGNIN_EMAIL_KEY)
+  clearAuthRedirectError()
 }
 
 /**
@@ -67,5 +69,6 @@ export async function verifyEmailOtp(email: string, token: string) {
 
 export async function signOut() {
   forgetSignInEmail()
+  clearAuthRedirectError()
   await supabase.auth.signOut()
 }

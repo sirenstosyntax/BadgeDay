@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
+  clearAuthRedirectError,
   consumeAuthRedirectError,
   readAuthRedirectError,
   resetAuthRedirectErrorForTests,
@@ -59,4 +60,12 @@ test('hashchange does not revive a stale consumed error when the URL is clean', 
   assert.equal(takeFreshAuthRedirectError('#', ''), null)
   // Mount / Strict Mode may still reuse consumed when there is no window.
   assert.equal(consumeAuthRedirectError(), expired)
+})
+
+test('after clear, consume on a clean URL returns null', () => {
+  resetAuthRedirectErrorForTests()
+  takeFreshAuthRedirectError(LIVE_HASH)
+  assert.ok(consumeAuthRedirectError())
+  clearAuthRedirectError()
+  assert.equal(consumeAuthRedirectError(), null)
 })
