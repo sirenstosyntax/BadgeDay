@@ -279,6 +279,115 @@ def test_a_recruit_pass_webhook_writes_entitlements_not_profiles(
     assert applied[1].user_id == USER_ID
 
 
+def test_recruit_subscription_checkout_grants_without_subscription_updated(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression: paid Recruit monthly linked the customer and left
+    entitlements empty when subscription.updated was missing or unordered.
+
+    checkout.session.completed (subscription, paid) must write
+    entitlements(user, recruit) on its own.
+    """
+    from app.storage.entitlements import SetModuleSubscription
+
+    client, gateway, applied = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
+    gateway.event = {
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "client_reference_id": USER_ID,
+                "customer": "cus_existing",
+                "mode": "subscription",
+                "payment_status": "paid",
+                "status": "complete",
+                "metadata": {
+                    "price_id": "price_recruit_mo",
+                    "plan": "recruit_monthly",
+                    "user_id": USER_ID,
+                },
+            }
+        },
+    }
+    response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
+    assert response.status_code == 200
+    assert applied == [
+        LinkCustomer(user_id=USER_ID, customer_id="cus_existing"),
+        SetModuleSubscription(user_id=USER_ID, module="recruit", status="active"),
+    ]
+
+
+def test_recruit_subscription_updated_resolves_user_from_metadata_without_customer_link(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.storage.entitlements import SetModuleSubscription
+
+    client, gateway, applied = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
+    monkeypatch.setattr("app.api.billing.user_id_for_customer", lambda *_: None)
+    gateway.event = {
+        "type": "customer.subscription.updated",
+        "data": {
+            "object": {
+                "customer": "cus_existing",
+                "status": "active",
+                "metadata": {"price_id": "price_recruit_mo", "user_id": USER_ID},
+                "items": {"data": [{"price": {"id": "price_recruit_mo"}}]},
+            }
+        },
+    }
+    response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
+    assert response.status_code == 200
+    assert applied == [
+        SetModuleSubscription(user_id=USER_ID, module="recruit", status="active")
+    ]
+
+
+def test_recruit_subscription_updated_resolves_user_from_linked_customer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.storage.entitlements import SetModuleSubscription
+
+    client, gateway, applied = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
+    gateway.event = {
+        "type": "customer.subscription.updated",
+        "data": {
+            "object": {
+                "customer": {"id": "cus_existing"},
+                "status": "active",
+                "items": {"data": [{"price": {"id": "price_recruit_mo"}}]},
+            }
+        },
+    }
+    response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
+    assert response.status_code == 200
+    assert applied == [
+        SetModuleSubscription(user_id=USER_ID, module="recruit", status="active")
+    ]
+
+
+def test_a_promote_subscription_checkout_still_only_links(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.storage.entitlements import SetModuleSubscription
+
+    client, gateway, applied = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
+    gateway.event = {
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "client_reference_id": USER_ID,
+                "customer": "cus_existing",
+                "mode": "subscription",
+                "payment_status": "paid",
+                "metadata": {"price_id": "price_monthly"},
+            }
+        },
+    }
+    response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
+    assert response.status_code == 200
+    assert applied == [LinkCustomer(user_id=USER_ID, customer_id="cus_existing")]
+    assert not any(isinstance(change, SetModuleSubscription) for change in applied)
+
+
 def test_a_recruit_subscription_webhook_does_not_write_promote_status(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

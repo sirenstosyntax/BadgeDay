@@ -94,7 +94,8 @@ def test_a_recruit_90day_checkout_uses_intensive_pass_days() -> None:
     assert changes[1].expires_at == NOW + timedelta(days=90)
 
 
-def test_a_recruit_subscription_checkout_only_links() -> None:
+def test_a_paid_recruit_subscription_checkout_grants_the_recruit_row() -> None:
+    """Do not wait on subscription.* — paid checkout must write entitlements."""
     changes = _recruit(
         {
             "type": "checkout.session.completed",
@@ -109,7 +110,108 @@ def test_a_recruit_subscription_checkout_only_links() -> None:
             },
         }
     )
+    assert changes == [
+        LinkCustomer(user_id=USER, customer_id=CUSTOMER),
+        SetModuleSubscription(user_id=USER, module="recruit", status="active"),
+    ]
+
+
+def test_a_complete_recruit_subscription_checkout_grants_without_paid_status() -> None:
+    changes = _recruit(
+        {
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "client_reference_id": USER,
+                    "customer": CUSTOMER,
+                    "mode": "subscription",
+                    "status": "complete",
+                    "metadata": {"price_id": "price_recruit_yr"},
+                }
+            },
+        }
+    )
+    assert changes == [
+        LinkCustomer(user_id=USER, customer_id=CUSTOMER),
+        SetModuleSubscription(user_id=USER, module="recruit", status="active"),
+    ]
+
+
+def test_an_unpaid_open_recruit_subscription_checkout_only_links() -> None:
+    changes = _recruit(
+        {
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "client_reference_id": USER,
+                    "customer": CUSTOMER,
+                    "mode": "subscription",
+                    "payment_status": "unpaid",
+                    "status": "open",
+                    "metadata": {"price_id": "price_recruit_mo"},
+                }
+            },
+        }
+    )
     assert changes == [LinkCustomer(user_id=USER, customer_id=CUSTOMER)]
+
+
+def test_subscription_event_uses_metadata_user_id_when_webhook_passes_none() -> None:
+    changes = _recruit(
+        {
+            "type": "customer.subscription.updated",
+            "data": {
+                "object": {
+                    "customer": CUSTOMER,
+                    "status": "active",
+                    "metadata": {"price_id": "price_recruit_mo", "user_id": USER},
+                    "items": {"data": [{"price": {"id": "price_recruit_mo"}}]},
+                }
+            },
+        },
+        user_id=None,
+    )
+    assert changes == [
+        SetModuleSubscription(user_id=USER, module="recruit", status="active")
+    ]
+
+
+def test_subscription_event_without_a_user_id_writes_nothing() -> None:
+    assert (
+        _recruit(
+            {
+                "type": "customer.subscription.updated",
+                "data": {
+                    "object": {
+                        "customer": CUSTOMER,
+                        "status": "active",
+                        "items": {"data": [{"price": {"id": "price_recruit_mo"}}]},
+                    }
+                },
+            },
+            user_id=None,
+        )
+        == []
+    )
+
+
+def test_incomplete_subscription_does_not_cancel_recruit() -> None:
+    """Same-second subscription.created(incomplete) must not undo a checkout grant."""
+    assert (
+        _recruit(
+            {
+                "type": "customer.subscription.created",
+                "data": {
+                    "object": {
+                        "customer": CUSTOMER,
+                        "status": "incomplete",
+                        "items": {"data": [{"price": {"id": "price_recruit_mo"}}]},
+                    }
+                },
+            }
+        )
+        == []
+    )
 
 
 def test_a_recruit_subscription_event_sets_the_recruit_row() -> None:

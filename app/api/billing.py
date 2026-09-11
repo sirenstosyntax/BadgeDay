@@ -32,7 +32,11 @@ from app.billing.plan import (
     plan_changes,
     stripe_price_id_from_event,
 )
-from app.billing.recruit_plan import recruit_plan_changes
+from app.billing.recruit_plan import (
+    recruit_plan_changes,
+    stripe_object_id,
+    user_id_carried_on_object,
+)
 from app.storage.billing import apply_change, customer_id_for, user_id_for_customer
 from app.storage.entitlements import apply_entitlement
 
@@ -147,10 +151,13 @@ async def webhook(
     # never clears Recruit without a Recruit price signal.
     if module == "recruit":
         obj = event.get("data", {}).get("object", {}) or {}
-        user_id = (
-            obj.get("client_reference_id")
-            or (obj.get("metadata") or {}).get("user_id")
-            or user_id_for_customer(service, obj.get("customer") or "")
+        # subscription.created/updated carry no client_reference_id. Prefer
+        # metadata.user_id (copied onto the subscription at checkout), then
+        # the profile linked by stripe_customer_id — including after this
+        # request's checkout.session.completed LinkCustomer, or the one
+        # written when checkout started.
+        user_id = user_id_carried_on_object(obj) or user_id_for_customer(
+            service, stripe_object_id(obj.get("customer"))
         )
         for change in recruit_plan_changes(
             event, settings=settings, user_id=user_id, now=now
@@ -179,8 +186,8 @@ async def webhook(
 def _clear_promote_on_unmapped_delete(event: dict, *, service, settings, now: datetime) -> None:
     """BD-BILL-001 path 3: unmapped delete clears Promote for a known user only."""
     obj = event.get("data", {}).get("object", {}) or {}
-    customer_id = obj.get("customer") or ""
-    subscription_id = obj.get("id") or ""
+    customer_id = stripe_object_id(obj.get("customer"))
+    subscription_id = stripe_object_id(obj.get("id"))
     user_id = user_id_for_customer(service, customer_id)
     logger.info(
         "subscription.deleted with no mappable price_id "
