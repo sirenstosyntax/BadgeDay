@@ -13,11 +13,12 @@ test('strips spaces and punctuation from a typed OTP', () => {
   assert.equal(normalizeEmailOtp('  847291  '), '847291')
 })
 
-test('accepts 6- and 8-digit codes and rejects anything else', () => {
+test('accepts 6- to 8-digit codes and rejects shorter or longer', () => {
   assert.equal(isCompleteEmailOtp('123456'), true)
+  assert.equal(isCompleteEmailOtp('1234567'), true)
   assert.equal(isCompleteEmailOtp('12345678'), true)
   assert.equal(isCompleteEmailOtp('12345'), false)
-  assert.equal(isCompleteEmailOtp('1234567'), false)
+  assert.equal(isCompleteEmailOtp('123456789'), false)
   assert.equal(isCompleteEmailOtp(''), false)
   assert.equal(isCompleteEmailOtp(normalizeEmailOtp('12 34 56')), true)
 })

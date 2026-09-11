@@ -53,7 +53,7 @@ export function SignIn() {
     event.preventDefault()
     const token = normalizeEmailOtp(code)
     if (!isCompleteEmailOtp(token)) {
-      setError('Enter the 6- or 8-digit code from the email.')
+      setError('Enter the 6- to 8-digit code from the email.')
       return
     }
     setVerifying(true)
@@ -157,7 +157,7 @@ export function SignIn() {
                   required
                   value={code}
                   onChange={(event) => setCode(normalizeEmailOtp(event.target.value))}
-                  placeholder="6 or 8 digits"
+                  placeholder="6 to 8 digits"
                   className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 tracking-widest text-stone-900 outline-none focus:border-stone-900 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:focus:border-stone-400"
                 />
                 <button
