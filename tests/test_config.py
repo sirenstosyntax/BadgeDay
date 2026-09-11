@@ -38,7 +38,7 @@ def test_rejection_message_names_the_variable_and_where_to_find_it() -> None:
 def test_recruit_access_defaults() -> None:
     settings = Settings()
     assert settings.recruit_free_sessions == 1
-    assert settings.recruit_daily_attempt_limit == 10
+    assert settings.recruit_daily_attempt_limit == 2
     assert settings.stripe_price_id_recruit_monthly == ""
     assert settings.stripe_price_id_recruit_intensive_90day == ""
     assert settings.stripe_price_id_recruit_6month == ""
