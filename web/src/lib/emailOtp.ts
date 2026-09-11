@@ -4,7 +4,7 @@ export function normalizeEmailOtp(raw: string): string {
 }
 
 export function isCompleteEmailOtp(token: string): boolean {
-  return /^\d{6,8}$/.test(token)
+  return /^\d{6}$|^\d{8}$/.test(token)
 }
 
 /**

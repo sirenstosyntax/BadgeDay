@@ -17,7 +17,7 @@ test('accepts 6- and 8-digit codes and rejects anything else', () => {
   assert.equal(isCompleteEmailOtp('123456'), true)
   assert.equal(isCompleteEmailOtp('12345678'), true)
   assert.equal(isCompleteEmailOtp('12345'), false)
-  assert.equal(isCompleteEmailOtp('1234567'), true)
+  assert.equal(isCompleteEmailOtp('1234567'), false)
   assert.equal(isCompleteEmailOtp(''), false)
   assert.equal(isCompleteEmailOtp(normalizeEmailOtp('12 34 56')), true)
 })
