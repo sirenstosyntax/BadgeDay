@@ -188,8 +188,10 @@ Promote's pipeline was CLI-testable before it had a frontend.
      as drafted; clean 1–5, no route tags). It exists to close the gap Criterion 2
      recorded: its level 2 anchor catches the qualified self-focused candidate. That gap
      is closed. Criteria 1–5 are all Grant-approved / publishable for scoring docs (C2
-     already SME-approved). Bank growth, five-question board *build*, and live scorer
-     wire remain held until Grant opens them — do not invent a start order.
+     already SME-approved). **START ORDER 2026-09-11 (Grant)** opens the five-question
+     board *build*, C1–C5 live scorer wire, and non-C2 bank publish so the draw shape
+     is real. Paid / Stripe live / Play Activate stay HELD. See the START ORDER
+     subsection under Open questions, and `recruit_design_decisions.md` §10.
 2. ~~**The critique pipeline, CLI-first.**~~ **Built 2026-07-28** — `app/critique/`,
    exercisable now with `badgeday-critique --rubric c3 --all-fixtures`. Rubric clauses are
    parsed out of the markdown rather than kept beside it, so a point cites `c3.anchor.2`
@@ -324,9 +326,11 @@ either way.
    and the least risky, so the schedule impact is smaller than it looks — but **the binding
    constraint is not pillar 3, it is rubric coverage.** C1–C5 are Grant-approved /
    publishable for scoring docs (C2 already SME-approved; C3 Grant-approved 2026-09-10
-   after the captain text pass). Bank growth, five-question board *build*, and live scorer
-   wire remain held until Grant opens them — implementation hold, not a rubric hold. Do
-   not invent a start order.
+   after the captain text pass). **START ORDER 2026-09-11 (Grant)** opens Phase 0:
+   C1–C5 live scorer wire and non-C2 bank publish so the full-board draw is real, not a
+   C2-only fake board. Paid / Stripe live / Play Activate stay HELD — do not enable
+   pricing go-live. See the START ORDER subsection below and
+   `recruit_design_decisions.md` §10.
 
    Pillar 2 additionally becomes the free tier — see `badgeday_pricing.md`. That raises its
    quality bar (it is now the first thing a stranger sees) without changing its scope.
@@ -348,8 +352,9 @@ either way.
    repeat a prompt; no family within a rolling 8 sessions; 70/30 weighted/random
    selection; full-board draw shape as already described (one from each of A, B/C,
    D/E/F, G/H, J). Family review of the existing 288-item draft is in progress (not a
-   second library). Nothing publishes unreviewed. Does not wire the live scorer or
-   pricing. See `recruit_design_decisions.md` §10 Settles 2026-09-10.
+   second library). Nothing publishes unreviewed. **START ORDER 2026-09-11** opens
+   non-C2 publish and C1–C5 scorer wire; paid / Stripe live stay HELD. See
+   `recruit_design_decisions.md` §10 Settles 2026-09-10 and START ORDER 2026-09-11.
 
    The reason a large bank turns out to be affordable: **a Recruit question is an unkeyed
    prompt** — no answer, no distractors, no citation — so per-item review is seconds rather
@@ -361,6 +366,28 @@ either way.
 
 5. ~~**Does a practice session issue one question or a full board of five?**~~
    **Settled 2026-09-10: full board of five** (session shape). Whole-board scoring for C1.
-   Five-question board *build* remains held until Grant opens it — implementation not
-   started. Session shape is settled. See `recruit_design_decisions.md` §10 Settles
-   2026-09-10.
+   The 2026-09-10 line that held the five-question board *build* is **superseded
+   2026-09-11** — see START ORDER below. See `recruit_design_decisions.md` §10 Settles
+   2026-09-10 and START ORDER 2026-09-11.
+
+### START ORDER 2026-09-11 (Grant)
+
+Locked by Grant 2026-09-11 via Zazu. Spec id **BD-R-003** — implementers: **Geppetto
+BD-R-003 full board of five**. If `specs/` later holds that file, read it there. This
+order **supersedes** the 2026-09-10 implementation hold on full board of five, non-C2
+issue, and live scorer wire. C2-only ~81 was the prior live bank.
+
+- **Session = full board of five.** Build is now open.
+- **Free session = one complete five-question board** (not one question).
+- **Critique cadence = hold ALL notes until the board ends;** then per-answer notes
+  and the C1 whole-board pass together.
+- **Phase 0 = C1–C5 live scorer wire + publish the non-C2 bank** so the draw shape
+  is real (not a C2-only fake board). Draw itself is already in
+  `recruit_question_bank.md` (one from each A · B/C · D/E/F · G/H · J; never
+  repeat; family-within-8; 70/30; 12-month retirement preferred).
+- **Paid / Stripe live / Play Activate stay HELD** — out of scope. Do not enable
+  pricing go-live.
+
+Zazu defaults (also recorded): daily cap counts **boards**, ~2 boards/day (replaces
+10 question-attempts); soft timer only — no hard auto-submit; mid-board abandon =
+incomplete, issued prompts count as seen, no fake C1 on incomplete boards.

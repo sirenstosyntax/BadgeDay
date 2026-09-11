@@ -42,10 +42,10 @@ that blocked C3 families is closed.
 **Consequence for build order:** All five criteria (C1–C5) are publishable for scoring
 docs. **Family pass 1 + variant pass 2 complete 2026-09-10** (all 36 KEEP; 16
 variants struck; **272 survive** — record in `recruit_question_bank_draft.md`).
-Review of families and variants is done. Publishing the bank into product is a
-separate start order — nothing publishes until Grant opens publish.
-Five-question board *build* and live scorer wire remain held. Does not wire
-pricing. The bank is cheap; the rubrics are the asset. See "Sizing" below for
+Review of families and variants is done. Publishing was a separate start order.
+**START ORDER 2026-09-11** opens non-C2 publish, the five-question board *build*,
+and C1–C5 live scorer wire — see `recruit_design_decisions.md` §10. Paid / Stripe
+live stay HELD. The bank is cheap; the rubrics are the asset. See "Sizing" below for
 why the bank turns out to be a much smaller job than it looks.
 
 ---
@@ -256,8 +256,8 @@ So:
 > Review cost: 36 family reviews (the real work — call it a weekend) plus a batch pass
 > over variants. The reviewable asset stays bounded, exactly as the rubric architecture
 > intends. Growth is family review of the existing 288-item draft, not a second library.
-> Family pass 1 + variant pass 2 done 2026-09-10; **272 survive**. Publishing is a
-> separate start order. Still nothing publishes until Grant opens publish.
+> Family pass 1 + variant pass 2 done 2026-09-10; **272 survive**. Publishing was a
+> separate start order; **START ORDER 2026-09-11** opens non-C2 publish.
 
 At 290 prompts a full-board user gets **~58 sessions** — over a year at weekly cadence,
 about four months at target cadence. At 500 it is ~100 sessions. That is sufficient for
@@ -266,8 +266,8 @@ launch and the growth path is cheap.
 **Do not chase a very large bank ahead of family review.** C1–C5 are Grant-approved /
 publishable for scoring docs (C2 already SME-approved). Family pass 1 + variant
 pass 2 complete 2026-09-10 (all 36 KEEP; 16 struck; **272 survive**). Publishing
-the bank into product is a separate start order. Nothing publishes until Grant
-opens publish. Does not wire the live scorer or pricing.
+was a separate start order; **START ORDER 2026-09-11** opens non-C2 publish and
+C1–C5 scorer wire. Paid / Stripe live stay HELD.
 
 ### Exhaustion
 
@@ -299,7 +299,8 @@ A heavy user will eventually run out. Three options, in order of preference:
   which reintroduces rehearsal through the back door.
 - **A full-board session draws one from each of A, B/C, D/E/F, G/H, J** — mirroring the
   intro → behavioral → scenario → values → closing shape every source describes. Never five
-  from one group.
+  from one group. **START ORDER 2026-09-11** opens non-C2 publish and the full-board build
+  so this draw is live — see `recruit_design_decisions.md` §10. Paid / Stripe live stay HELD.
 
 ---
 
@@ -328,8 +329,8 @@ unreviewed.
 
 **Family review: pass 1 + variant pass 2 complete 2026-09-10 (Grant Collings).**
 All 36 families KEEP. 16 variants struck; **272 survive**. Review of families and
-variants is complete. Publishing the bank into product is a separate start order
-— nothing publishes until Grant opens publish.
+variants is complete. Publishing was a separate start order; **START ORDER
+2026-09-11** opens non-C2 publish — see `recruit_design_decisions.md` §10.
 
 Pass 2 specials (struck text retained in the draft for the audit trail):
 
