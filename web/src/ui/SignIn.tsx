@@ -10,7 +10,7 @@ import {
   consumeFreshAuthRedirectError,
 } from '../lib/authRedirectError'
 import { isCompleteEmailOtp, normalizeEmailOtp } from '../lib/emailOtp'
-import { showSignInCodeField } from '../lib/signInCodeField'
+import { looksLikeSignInEmail, showSignInCodeField } from '../lib/signInCodeField'
 import { LegalLinks } from './LegalLinks'
 
 export function SignIn() {
@@ -53,6 +53,10 @@ export function SignIn() {
   async function submitCode(event: React.FormEvent) {
     event.preventDefault()
     const token = normalizeEmailOtp(code)
+    if (!looksLikeSignInEmail(email)) {
+      setError('Enter the email the code was sent to.')
+      return
+    }
     if (!isCompleteEmailOtp(token)) {
       setError('Enter the 6- to 8-digit code from the email.')
       return
@@ -163,7 +167,7 @@ export function SignIn() {
                 />
                 <button
                   type="submit"
-                  disabled={verifying || !isCompleteEmailOtp(code)}
+                  disabled={verifying || !looksLikeSignInEmail(email) || !isCompleteEmailOtp(code)}
                   className="w-full rounded-lg bg-stone-900 px-3 py-2 font-medium text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
                 >
                   {verifying ? 'Signing in…' : 'Sign in with code'}
