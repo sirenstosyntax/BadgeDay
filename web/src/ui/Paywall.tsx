@@ -6,18 +6,17 @@ import {
   type PlayItemDetails,
   type PlayProductIds,
 } from '../lib/playBilling'
-import type { Plan } from '../lib/types'
+import type { PaywallModule, Plan } from '../lib/types'
 
 /**
- * Shown when a candidate tries to do the one thing that costs money — add a document or
- * start a session — without an active plan. Reading and deleting are never gated, so this
- * is an overlay over their documents, not a wall that replaces them.
+ * Shown when a candidate tries to do the one thing that costs money — add a document,
+ * start a Promote session, or start another Recruit board — without an active plan.
  *
- * No prices are printed here as ours. On the web, the amount lives in Stripe. Inside the
- * TWA, Play is the till — and until Grant names a Play offer, there is nothing to buy
- * and no figure to show. A number typed here would be a second source of truth.
+ * No prices are printed here as ours. On the web, the amount lives in Stripe. Inside
+ * the TWA, Play is the till and the figure comes from Digital Goods getDetails.
+ * A number typed here would be a second source of truth.
  */
-const PLANS: { plan: Plan; name: string; blurb: string }[] = [
+const PROMOTE_PLANS: { plan: Plan; name: string; blurb: string }[] = [
   {
     plan: 'monthly',
     name: 'Monthly',
@@ -30,16 +29,41 @@ const PLANS: { plan: Plan; name: string; blurb: string }[] = [
   },
 ]
 
+const RECRUIT_PLANS: { plan: Plan; name: string; blurb: string }[] = [
+  {
+    plan: 'recruit_monthly',
+    name: 'Monthly',
+    blurb: 'Keep practicing the oral board. Cancel anytime from billing.',
+  },
+  {
+    plan: 'recruit_intensive_90day',
+    name: '90-day pass',
+    blurb: 'One payment, ninety days of oral-board practice.',
+  },
+  {
+    plan: 'recruit_6month',
+    name: '6-month pass',
+    blurb: 'One payment for a hiring-cycle stretch of practice.',
+  },
+  {
+    plan: 'recruit_annual',
+    name: 'Annual',
+    blurb: 'A year of oral-board practice. Renews until you cancel.',
+  },
+]
+
 type Till = 'checking' | 'stripe' | 'play' | 'play-unlisted'
 
 export function Paywall({
   onClose,
   playProducts,
   onPlayUnlocked,
+  module = 'promote',
 }: {
   onClose: () => void
   playProducts?: PlayProductIds | null
   onPlayUnlocked?: () => void
+  module?: PaywallModule
 }) {
   const [pending, setPending] = useState<Plan | string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -55,7 +79,7 @@ export function Paywall({
         setTill('stripe')
         return
       }
-      const skus = configuredSkus(playProducts)
+      const skus = configuredSkus(playProducts, module)
       if (skus.length === 0) {
         setTill('play-unlisted')
         return
@@ -74,7 +98,7 @@ export function Paywall({
     return () => {
       cancelled = true
     }
-  }, [playProducts])
+  }, [playProducts, module])
 
   async function chooseStripe(plan: Plan) {
     setPending(plan)
@@ -125,12 +149,19 @@ export function Paywall({
         className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-stone-900"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold">Drill until badge day</h2>
+        <h2 className="text-lg font-semibold">
+          {module === 'recruit' ? 'Keep practicing the oral board' : 'Drill until badge day'}
+        </h2>
         {till === 'play-unlisted' ? (
           <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
             This Play build does not sell a plan yet. The offer has not been named, so
             there is nothing to buy here and no price to show. The website still uses
             Stripe test checkout until then.
+          </p>
+        ) : module === 'recruit' ? (
+          <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+            Your free board is used. A Recruit plan unlocks more oral-board practice.
+            Amounts are the ones Stripe or Play show at checkout — not a figure typed here.
           </p>
         ) : (
           <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
@@ -145,7 +176,7 @@ export function Paywall({
 
         {till === 'stripe' && (
           <div className="mt-5 space-y-3">
-            {PLANS.map(({ plan, name, blurb }) => (
+            {(module === 'recruit' ? RECRUIT_PLANS : PROMOTE_PLANS).map(({ plan, name, blurb }) => (
               <button
                 key={plan}
                 onClick={() => void chooseStripe(plan)}
@@ -188,8 +219,10 @@ export function Paywall({
 
         {till === 'stripe' && (
           <p className="mt-4 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
-            Monthly renews until you cancel; the 90-day intensive is a single payment and does
-            not renew. Payments are non-refundable — cancelling keeps your access to the end of
+            {module === 'recruit'
+              ? 'Monthly and annual renew until you cancel; the 90-day and 6-month passes are single payments and do not renew. '
+              : 'Monthly renews until you cancel; the 90-day intensive is a single payment and does not renew. '}
+            Payments are non-refundable — cancelling keeps your access to the end of
             the period you have paid for. Choosing a plan takes you to Stripe, and means you
             agree to the{' '}
             <a href="/terms" className="underline">

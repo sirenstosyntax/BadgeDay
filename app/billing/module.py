@@ -13,9 +13,19 @@ candidate grants themselves access.
 
 from typing import Literal
 
+from app.billing.plan import Plan
 from app.config import Settings
 
 Module = Literal["promote", "recruit"]
+
+_PLAN_PRICE_ATTR: dict[Plan, str] = {
+    "monthly": "stripe_price_id_monthly",
+    "intensive_90day": "stripe_price_id_intensive_90day",
+    "recruit_monthly": "stripe_price_id_recruit_monthly",
+    "recruit_intensive_90day": "stripe_price_id_recruit_intensive_90day",
+    "recruit_6month": "stripe_price_id_recruit_6month",
+    "recruit_annual": "stripe_price_id_recruit_annual",
+}
 
 
 def _filled(*ids: str) -> frozenset[str]:
@@ -75,4 +85,53 @@ def module_for_store_product(settings: Settings, product_id: str) -> Module | No
         return "recruit"
     if product_id in store_product_ids_for(settings, "promote"):
         return "promote"
+    return None
+
+
+def module_for_plan(plan: Plan) -> Module:
+    return "recruit" if plan.startswith("recruit_") else "promote"
+
+
+def price_id_for_plan(settings: Settings, plan: Plan) -> str:
+    """The configured Stripe price for a named plan. Blank means not for sale yet."""
+    return getattr(settings, _PLAN_PRICE_ATTR[plan])
+
+
+def plan_for_stripe_price(settings: Settings, price_id: str) -> Plan | None:
+    """Which named plan a Stripe price ID is. None if blank or unknown."""
+    if not price_id:
+        return None
+    for plan, attr in _PLAN_PRICE_ATTR.items():
+        if getattr(settings, attr) == price_id:
+            return plan
+    return None
+
+
+def pass_days_for_plan(settings: Settings, plan: Plan) -> int | None:
+    """How long a one-time pass grants access. None for a subscription."""
+    if plan in ("intensive_90day", "recruit_intensive_90day"):
+        return settings.intensive_pass_days
+    if plan == "recruit_6month":
+        return settings.recruit_6month_pass_days
+    return None
+
+
+def pass_days_for_store_product(settings: Settings, product_id: str) -> int | None:
+    """How long a one-time store pass grants access. None for a subscription or unknown."""
+    if not product_id:
+        return None
+    ninety = _filled(
+        settings.play_product_id_intensive_90day,
+        settings.play_product_id_recruit_intensive_90day,
+        settings.appstore_product_id_intensive_90day,
+        settings.appstore_product_id_recruit_intensive_90day,
+    )
+    six = _filled(
+        settings.play_product_id_recruit_6month,
+        settings.appstore_product_id_recruit_6month,
+    )
+    if product_id in ninety:
+        return settings.intensive_pass_days
+    if product_id in six:
+        return settings.recruit_6month_pass_days
     return None

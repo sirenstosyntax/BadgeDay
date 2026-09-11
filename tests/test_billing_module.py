@@ -65,3 +65,30 @@ def test_blank_placeholders_are_not_treated_as_a_shared_id() -> None:
     assert module_for_stripe_price(settings, "") is None
     assert "" not in stripe_price_ids_for(settings, "recruit")
     assert "" not in stripe_price_ids_for(settings, "promote")
+
+
+def test_price_id_for_plan_reads_the_named_placeholder() -> None:
+    from app.billing.module import price_id_for_plan
+
+    settings = Settings(stripe_price_id_recruit_monthly="price_recruit_mo")
+    assert price_id_for_plan(settings, "recruit_monthly") == "price_recruit_mo"
+    assert price_id_for_plan(settings, "monthly") == ""
+
+
+def test_pass_days_follow_the_named_plan() -> None:
+    from app.billing.module import pass_days_for_plan, pass_days_for_store_product
+
+    settings = Settings(
+        intensive_pass_days=90,
+        recruit_6month_pass_days=183,
+        play_product_id_recruit_intensive_90day="badgeday.recruit.90day",
+        play_product_id_recruit_6month="badgeday.recruit.6month",
+        play_product_id_recruit_monthly="badgeday.recruit.monthly",
+    )
+    assert pass_days_for_plan(settings, "recruit_intensive_90day") == 90
+    assert pass_days_for_plan(settings, "recruit_6month") == 183
+    assert pass_days_for_plan(settings, "recruit_monthly") is None
+    assert pass_days_for_plan(settings, "recruit_annual") is None
+    assert pass_days_for_store_product(settings, "badgeday.recruit.90day") == 90
+    assert pass_days_for_store_product(settings, "badgeday.recruit.6month") == 183
+    assert pass_days_for_store_product(settings, "badgeday.recruit.monthly") is None

@@ -19,8 +19,21 @@ from pydantic import BaseModel
 
 from app.api.deps import CurrentUserDep, DbDep, GatewayDep, ServiceDbDep, SettingsDep
 from app.billing.gateway import WebhookVerificationError
-from app.billing.plan import CHECKOUT_MODE, LinkCustomer, Plan, plan_changes
-from app.storage.billing import apply_change, customer_id_for
+from app.billing.module import (
+    module_for_stripe_price,
+    price_id_for_plan,
+)
+from app.billing.plan import (
+    CHECKOUT_MODE,
+    PROMOTE_PLANS,
+    LinkCustomer,
+    Plan,
+    plan_changes,
+    stripe_price_id_from_event,
+)
+from app.billing.recruit_plan import recruit_plan_changes
+from app.storage.billing import apply_change, customer_id_for, user_id_for_customer
+from app.storage.entitlements import apply_entitlement
 
 router = APIRouter(tags=["billing"])
 
@@ -43,15 +56,22 @@ def checkout(
     settings: SettingsDep,
 ) -> Redirect:
     """Begin paying for a plan, and return the Stripe URL to send the candidate to."""
-    if not settings.stripe_configured:
+    price_id = price_id_for_plan(settings, body.plan)
+    # Promote's readiness check is unchanged: secret + both Promote prices.
+    # Recruit needs the secret and *its* price; a blank Recruit ID is not for sale.
+    if body.plan in PROMOTE_PLANS:
+        if not settings.stripe_configured:
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE, "Billing is not configured yet."
+            )
+    elif not settings.stripe_secret_key or not price_id:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE, "Billing is not configured yet."
         )
-
-    price_id = {
-        "monthly": settings.stripe_price_id_monthly,
-        "intensive_90day": settings.stripe_price_id_intensive_90day,
-    }[body.plan]
+    if not price_id:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, "Billing is not configured yet."
+        )
 
     # Create the Stripe customer now, and record the link before returning, so the customer
     # id is on the profile before any webhook can fire. Subscription events carry only the
@@ -69,6 +89,7 @@ def checkout(
         client_reference_id=user.id,
         success_url=f"{settings.public_web_url}/?checkout=success",
         cancel_url=f"{settings.public_web_url}/?checkout=cancelled",
+        metadata={"plan": body.plan, "price_id": price_id, "user_id": user.id},
     )
     return Redirect(url=url)
 
@@ -111,8 +132,33 @@ async def webhook(
     except WebhookVerificationError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid signature.") from exc
 
-    changes = plan_changes(event, pass_days=settings.intensive_pass_days, now=datetime.now(UTC))
-    for change in changes:
-        apply_change(service, change)
+    now = datetime.now(UTC)
+    price_id = stripe_price_id_from_event(event)
+    module = module_for_stripe_price(settings, price_id)
+
+    # Fail closed: a missing or unknown price must not fall open to Promote
+    # plan_changes. Only a mapped Promote price writes profiles; only a
+    # mapped Recruit price writes entitlements. Anything else is ack-and-ignore.
+    if module == "recruit":
+        obj = event.get("data", {}).get("object", {}) or {}
+        user_id = (
+            obj.get("client_reference_id")
+            or (obj.get("metadata") or {}).get("user_id")
+            or user_id_for_customer(service, obj.get("customer") or "")
+        )
+        for change in recruit_plan_changes(
+            event, settings=settings, user_id=user_id, now=now
+        ):
+            if isinstance(change, LinkCustomer):
+                apply_change(service, change)
+            else:
+                apply_entitlement(service, change)
+        return {"received": True}
+
+    if module == "promote":
+        for change in plan_changes(
+            event, pass_days=settings.intensive_pass_days, now=now
+        ):
+            apply_change(service, change)
 
     return {"received": True}

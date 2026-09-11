@@ -1,7 +1,7 @@
 """The second and third tills: purchases made inside the Android and iOS apps.
 
-`api/billing.py` is the Stripe route and is unchanged by any of this. These endpoints are
-its store-side counterpart, and they come in two kinds:
+`api/billing.py` is the Stripe route. These endpoints are its store-side counterpart,
+and they come in two kinds:
 
 **The app reports its own purchase** (`/billing/store/{platform}/purchase`). Authenticated
 as the candidate. It exists so the unlock is immediate: a store notification can be seconds
@@ -20,14 +20,20 @@ recorded by the app and the notification that follows it cannot disagree: the no
 updates the row the app wrote, keyed on the store's own identifier.
 """
 
+from datetime import UTC, datetime, timedelta
+
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUserDep, ServiceDbDep, SettingsDep, StoreGatewayDep
+from app.billing.module import module_for_store_product, pass_days_for_store_product
 from app.billing.play_gateway import persist_then_acknowledge
+from app.billing.recruit_plan import recruit_entitlement_from_store
 from app.billing.store import PurchaseFacts, store_changes
 from app.billing.store_gateway import StoreNotConfigured, StoreVerificationError
-from app.storage.store import apply_store_change
+from app.config import Settings
+from app.storage.entitlements import apply_entitlement
+from app.storage.store import apply_store_change, user_id_for_purchase
 
 router = APIRouter(tags=["billing"])
 
@@ -54,6 +60,7 @@ def play_purchase(
     user: CurrentUserDep,
     service: ServiceDbDep,
     gateway: StoreGatewayDep,
+    settings: SettingsDep,
 ) -> Unlocked:
     """Confirm and record a Play Billing purchase the Android app has just completed."""
     try:
@@ -75,8 +82,10 @@ def play_purchase(
             "Google could not confirm that purchase.",
         ) from exc
 
-    _persist_play_purchase(service, gateway, facts)
-    return Unlocked(entitled=facts.state == "purchased", product_id=facts.product_id)
+    granted = _persist_play_purchase(service, gateway, facts, settings)
+    return Unlocked(
+        entitled=granted and facts.state == "purchased", product_id=facts.product_id
+    )
 
 
 @router.post("/billing/store/appstore/purchase")
@@ -85,6 +94,7 @@ def appstore_purchase(
     user: CurrentUserDep,
     service: ServiceDbDep,
     gateway: StoreGatewayDep,
+    settings: SettingsDep,
 ) -> Unlocked:
     """Confirm and record a StoreKit purchase the iOS app has just completed."""
     try:
@@ -101,10 +111,11 @@ def appstore_purchase(
             "Apple could not confirm that purchase.",
         ) from exc
 
-    for change in store_changes(facts):
-        apply_store_change(service, change)
+    granted = _apply_store_facts(service, facts, settings)
 
-    return Unlocked(entitled=facts.state == "purchased", product_id=facts.product_id)
+    return Unlocked(
+        entitled=granted and facts.state == "purchased", product_id=facts.product_id
+    )
 
 
 @router.post("/billing/store/play/notifications")
@@ -137,7 +148,7 @@ async def play_notifications(
     if facts is None:
         return {"received": True}
 
-    _persist_play_purchase(service, gateway, facts)
+    _persist_play_purchase(service, gateway, facts, settings)
     return {"received": True}
 
 
@@ -163,20 +174,53 @@ async def appstore_notifications(
     if facts is None:
         return {"received": True}
 
-    for change in store_changes(facts):
-        apply_store_change(service, change)
+    _apply_store_facts(service, facts, settings)
     return {"received": True}
 
 
-def _persist_play_purchase(service, gateway, facts: PurchaseFacts) -> None:
-    """Record the verified purchase, then acknowledge. Ack-before-write is a leak."""
+def _persist_play_purchase(
+    service, gateway, facts: PurchaseFacts, settings: Settings
+) -> bool:
+    """Record the verified purchase, then acknowledge. Ack-before-write is a leak.
+
+    An unknown product is refused before persist-and-ack: writing a Promote
+    default would open has_access, and ack-without-a-row blocks Play's refund.
+    """
+    if module_for_store_product(settings, facts.product_id) is None:
+        return False
     persist_then_acknowledge(
         gateway,
         facts,
-        lambda: _apply_store_facts(service, facts),
+        lambda: _apply_store_facts(service, facts, settings),
     )
+    return True
 
 
-def _apply_store_facts(service, facts: PurchaseFacts) -> None:
-    for change in store_changes(facts):
+def _apply_store_facts(service, facts: PurchaseFacts, settings: Settings) -> bool:
+    module = module_for_store_product(settings, facts.product_id)
+    if module is None:
+        return False
+    stamped = facts
+    if (
+        module == "recruit"
+        and facts.kind == "pass"
+        and facts.expires_at is None
+        and facts.state == "purchased"
+    ):
+        days = pass_days_for_store_product(settings, facts.product_id)
+        if days:
+            stamped = facts.model_copy(
+                update={"expires_at": datetime.now(UTC) + timedelta(days=days)}
+            )
+
+    for change in store_changes(stamped, module=module):
         apply_store_change(service, change)
+
+    if module == "recruit":
+        user_id = stamped.user_id or user_id_for_purchase(
+            service, stamped.platform, stamped.purchase_identifier
+        )
+        if user_id:
+            for change in recruit_entitlement_from_store(stamped, user_id):
+                apply_entitlement(service, change)
+    return True

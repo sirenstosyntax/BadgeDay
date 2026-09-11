@@ -23,12 +23,32 @@ from typing import Literal
 from pydantic import BaseModel
 
 # plan name (what the web app asks for) -> how Stripe should charge for it. Subscription is
-# recurring; the intensive pass is a single payment. The price ids themselves come from
-# settings, never from the client — the client names a plan, not a price.
-Plan = Literal["monthly", "intensive_90day"]
+# recurring; a pass is a single payment. The price ids themselves come from settings,
+# never from the client — the client names a plan, not a price.
+Plan = Literal[
+    "monthly",
+    "intensive_90day",
+    "recruit_monthly",
+    "recruit_intensive_90day",
+    "recruit_6month",
+    "recruit_annual",
+]
+PROMOTE_PLANS: frozenset[Plan] = frozenset({"monthly", "intensive_90day"})
+RECRUIT_PLANS: frozenset[Plan] = frozenset(
+    {
+        "recruit_monthly",
+        "recruit_intensive_90day",
+        "recruit_6month",
+        "recruit_annual",
+    }
+)
 CHECKOUT_MODE: dict[Plan, Literal["subscription", "payment"]] = {
     "monthly": "subscription",
     "intensive_90day": "payment",
+    "recruit_monthly": "subscription",
+    "recruit_intensive_90day": "payment",
+    "recruit_6month": "payment",
+    "recruit_annual": "subscription",
 }
 
 # Stripe subscription.status -> our four-value column. trialing counts as active because a
@@ -110,6 +130,39 @@ def plan_changes(event: dict, *, pass_days: int, now: datetime) -> list[Change]:
         return []
 
     return []
+
+
+def stripe_price_id_from_event(event: dict) -> str:
+    """The price Stripe charged, if the event names one.
+
+    Checkout sessions do not include line items unless expanded, so the id we
+    wrote onto session / subscription metadata is the reliable checkout path.
+    Subscription events carry items.data[].price.id. Blank IDs are ignored —
+    they are placeholders, not a shared product.
+    """
+    obj = event.get("data", {}).get("object", {}) or {}
+    for candidate in (
+        _price_id_from_items(obj.get("items")),
+        _price_id_from_items(obj.get("lines")),
+        (obj.get("metadata") or {}).get("price_id"),
+    ):
+        if candidate:
+            return str(candidate)
+    return ""
+
+
+def _price_id_from_items(items: object) -> str:
+    if not isinstance(items, dict):
+        return ""
+    for item in items.get("data") or []:
+        if not isinstance(item, dict):
+            continue
+        price = item.get("price")
+        if isinstance(price, str) and price:
+            return price
+        if isinstance(price, dict) and price.get("id"):
+            return str(price["id"])
+    return ""
 
 
 def _from_checkout(session: dict, *, pass_days: int, now: datetime) -> list[Change]:

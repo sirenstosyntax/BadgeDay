@@ -47,19 +47,33 @@ def _client(
     *,
     recruit: ModuleEntitlement | None = None,
     recruit_store: ManagedElsewhere | None = None,
+    settings: Settings | None = None,
 ) -> TestClient:
+    configured = settings or Settings()
     app = FastAPI()
     app.include_router(account_router)
     app.dependency_overrides[current_user] = lambda: CurrentUser(
         id=USER_ID, email="c@example.com", access_token="t"
     )
     app.dependency_overrides[user_db] = _Db
+    app.dependency_overrides[get_settings] = lambda: configured
     monkeypatch.setattr("app.api.account.entitlement", lambda *_: state)
-    monkeypatch.setattr("app.api.account.managed_elsewhere", lambda *_: store)
     monkeypatch.setattr(
         "app.api.account.module_entitlement", lambda *_: recruit or _recruit()
     )
-    monkeypatch.setattr("app.api.account.managed_elsewhere_for", lambda *_a, **_k: recruit_store)
+
+    def _managed(_db, _user_id, *, product_ids):
+        # Same rule as managed_elsewhere_for: only a row whose product is in
+        # the requested set counts. A Recruit Play SKU must not satisfy a
+        # Promote query (and the reverse).
+        if not product_ids:
+            return None
+        for row in (store, recruit_store):
+            if row is not None and row.product_id in product_ids:
+                return row
+        return None
+
+    monkeypatch.setattr("app.api.account.managed_elsewhere_for", _managed)
     return TestClient(app)
 
 
@@ -72,7 +86,14 @@ def test_me_reports_the_entitlement_verdict(monkeypatch: pytest.MonkeyPatch) -> 
     body = client.get("/me").json()
     assert body["entitled"] is True
     assert body["subscription_status"] == "active"
-    assert body["play_products"] == {"monthly": None, "intensive_90day": None}
+    assert body["play_products"] == {
+        "monthly": None,
+        "intensive_90day": None,
+        "recruit_monthly": None,
+        "recruit_intensive_90day": None,
+        "recruit_6month": None,
+        "recruit_annual": None,
+    }
 
 
 def test_me_carries_the_candidates_identity(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -123,6 +144,7 @@ def test_a_store_subscription_is_reported_so_the_app_can_send_them_to_the_right_
         ManagedElsewhere(
             platform="appstore", product_id="badgeday.promote.monthly", status="active"
         ),
+        settings=Settings(appstore_product_id_monthly="badgeday.promote.monthly"),
     )
     body = client.get("/me").json()
     assert body["managed_by"] == "appstore"
@@ -173,6 +195,10 @@ def test_me_reports_store_managed_recruit_only_from_recruit_products(
         recruit_store=ManagedElsewhere(
             platform="appstore", product_id="named.by.grant.recruit", status="active"
         ),
+        settings=Settings(
+            play_product_id_monthly="badgeday.promote.monthly",
+            appstore_product_id_recruit_monthly="named.by.grant.recruit",
+        ),
     )
     body = client.get("/me").json()
     assert body["managed_by"] == "play"
@@ -198,14 +224,48 @@ def test_me_exposes_configured_play_product_ids_and_never_invents_them(
     client = _client(
         monkeypatch,
         Entitlement(entitled=False, subscription_status="none", access_expires_at=None),
-    )
-    client.app.dependency_overrides[get_settings] = lambda: Settings(
-        play_product_id_monthly="named.by.grant.monthly",
-        play_product_id_intensive_90day="",
+        settings=Settings(
+            play_product_id_monthly="named.by.grant.monthly",
+            play_product_id_intensive_90day="",
+            play_product_id_recruit_monthly="named.by.grant.recruit.monthly",
+            play_product_id_recruit_intensive_90day="",
+            play_product_id_recruit_6month="named.by.grant.recruit.6month",
+            play_product_id_recruit_annual="named.by.grant.recruit.annual",
+        ),
     )
     body = client.get("/me").json()
     assert body["play_products"]["monthly"] == "named.by.grant.monthly"
     assert body["play_products"]["intensive_90day"] is None
+    assert body["play_products"]["recruit_monthly"] == "named.by.grant.recruit.monthly"
+    assert body["play_products"]["recruit_intensive_90day"] is None
+    assert body["play_products"]["recruit_6month"] == "named.by.grant.recruit.6month"
+    assert body["play_products"]["recruit_annual"] == "named.by.grant.recruit.annual"
+
+
+def test_a_recruit_play_row_does_not_set_promote_managed_by(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Top-level managed_by is Promote SKUs only. A Recruit Play purchase must not
+    send the reading-list Billing button to Play.
+    """
+    client = _client(
+        monkeypatch,
+        Entitlement(entitled=False, subscription_status="none", access_expires_at=None),
+        store=ManagedElsewhere(
+            platform="play", product_id="badgeday.recruit.monthly", status="active"
+        ),
+        recruit=_recruit(entitled=True, subscription_status="active"),
+        recruit_store=ManagedElsewhere(
+            platform="play", product_id="badgeday.recruit.monthly", status="active"
+        ),
+        settings=Settings(
+            play_product_id_monthly="badgeday.promote.monthly",
+            play_product_id_recruit_monthly="badgeday.recruit.monthly",
+        ),
+    )
+    body = client.get("/me").json()
+    assert body["managed_by"] is None
+    assert body["recruit"]["managed_by"] == "play"
 
 
 # --- Deleting the account ----------------------------------------------------

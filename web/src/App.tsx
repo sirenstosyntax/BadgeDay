@@ -3,6 +3,7 @@ import { ApiError, api } from './lib/api'
 import { useAccount } from './lib/account'
 import { signOut, useSession } from './lib/auth'
 import { browserPlayBilling } from './lib/playBilling'
+import type { PaywallModule } from './lib/types'
 import { Account } from './ui/Account'
 import { Choose } from './ui/Choose'
 import { Documents } from './ui/Documents'
@@ -35,6 +36,7 @@ export default function App() {
   const [view, setView] = useState<View>({ name: 'choose' })
   const [starting, setStarting] = useState(false)
   const [showPaywall, setShowPaywall] = useState(false)
+  const [paywallModule, setPaywallModule] = useState<PaywallModule>('promote')
   const [notice, setNotice] = useState<string | null>(null)
 
   // Coming back from a successful checkout, entitlement was set by Stripe's webhook, not by
@@ -83,6 +85,13 @@ export default function App() {
 
   function needsAccess() {
     void refreshAccount()
+    setPaywallModule('promote')
+    setShowPaywall(true)
+  }
+
+  function needsRecruitAccess() {
+    void refreshAccount()
+    setPaywallModule('recruit')
     setShowPaywall(true)
   }
 
@@ -170,7 +179,10 @@ export default function App() {
               </button>
             ) : (
               <button
-                onClick={() => setShowPaywall(true)}
+                onClick={() => {
+                  setPaywallModule(view.name === 'recruit' ? 'recruit' : 'promote')
+                  setShowPaywall(true)
+                }}
                 className="rounded-md bg-stone-900 px-2 py-1 font-medium text-white dark:bg-stone-100 dark:text-stone-900"
               >
                 Subscribe
@@ -214,7 +226,10 @@ export default function App() {
           <Account
             account={account}
             onManageBilling={() => void manageBilling()}
-            onSubscribe={() => setShowPaywall(true)}
+            onSubscribe={() => {
+              setPaywallModule('promote')
+              setShowPaywall(true)
+            }}
             onDeleted={() => void afterDeleted()}
             onDone={() => setView({ name: 'choose' })}
           />
@@ -223,6 +238,7 @@ export default function App() {
             onDone={() => setView({ name: 'choose' })}
             account={account}
             onOpenAccount={() => setView({ name: 'account' })}
+            onNeedsAccess={needsRecruitAccess}
           />
         ) : view.name === 'documents' ? (
           <Documents
@@ -246,6 +262,7 @@ export default function App() {
         <Paywall
           onClose={() => setShowPaywall(false)}
           playProducts={account?.play_products}
+          module={paywallModule}
           onPlayUnlocked={() => {
             void refreshAccount()
             setShowPaywall(false)
