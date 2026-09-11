@@ -109,10 +109,21 @@ export const api = {
       request<PracticeSession>(`/sessions/${sessionId}/complete`, { method: 'POST' }),
   },
 
-  // C2 spoken question. GET is a discriminant: available vs exhausted (200, not 404).
-  // POST returns 202; poll GET until completed or failed.
-  // The result is candidate_lines only — no score on this payload.
+  // Five-question board. Notes stay empty on poll until the board completes.
   recruit: {
+    startBoard: () =>
+      request<RecruitBoardView>('/recruit/boards', { method: 'POST' }),
+    board: (boardId: string) => request<RecruitBoardView>(`/recruit/boards/${boardId}`),
+    answer: (boardId: string, file: File) => {
+      const form = new FormData()
+      form.append('audio', file)
+      return request<RecruitResult>(`/recruit/boards/${boardId}/answers`, {
+        method: 'POST',
+        body: form,
+      })
+    },
+    abandon: (boardId: string) =>
+      request<RecruitBoardView>(`/recruit/boards/${boardId}/abandon`, { method: 'POST' }),
     question: () => request<RecruitQuestion>('/recruit/question'),
     attempt: (file: File) => {
       const form = new FormData()
@@ -143,6 +154,10 @@ export type RecruitQuestionAvailable = {
   state: 'available'
   scenario_id: string
   question_text: string
+  board_id?: string | null
+  question_index?: number
+  board_size?: number
+  soft_timer_seconds?: number
 }
 
 export type RecruitQuestionExhausted = {
@@ -162,4 +177,28 @@ export type RecruitResult = {
   lines: string[]
   failed: boolean
   failure: string | null
+  board_id?: string | null
+  question_index?: number | null
+}
+
+export type RecruitBoardStatus = 'in_progress' | 'scoring' | 'completed' | 'abandoned' | 'exhausted'
+
+export type RecruitBoardAnswer = {
+  question_index: number
+  question_text: string
+  lines: string[]
+}
+
+export type RecruitBoardView = {
+  board_id: string
+  status: RecruitBoardStatus
+  question_index: number
+  board_size: number
+  question_text: string | null
+  scenario_id: string | null
+  attempt_id: string | null
+  soft_timer_seconds: number
+  framing: string | null
+  answers: RecruitBoardAnswer[]
+  c1_lines: string[]
 }

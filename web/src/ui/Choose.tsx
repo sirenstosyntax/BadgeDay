@@ -11,7 +11,8 @@ export function Choose({ onOralBoard, onReadingList }: ChooseProps) {
         Sign in, then pick Oral board or reading list.
       </p>
       <p className="text-sm text-stone-600 dark:text-stone-400">
-        Oral board: you answer out loud. You get notes on what went well and what to improve.
+        Oral board: five questions, answered out loud. Notes wait until the end, same as a
+        real board.
       </p>
       <p className="text-sm text-stone-600 dark:text-stone-400">
         Reading list: add the material you’re testing on. The practice questions come from that.

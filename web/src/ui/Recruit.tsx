@@ -1,5 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, ApiError, type RecruitQuestionExhausted, type RecruitResult } from '../lib/api'
+import {
+  api,
+  ApiError,
+  type RecruitBoardView,
+  type RecruitQuestionExhausted,
+  type RecruitResult,
+} from '../lib/api'
+import {
+  BOARD_FRAMING,
+  SOFT_TIMER_SECONDS,
+  boardProgressLabel,
+  formatSoftTimer,
+} from '../lib/recruitBoard'
 import type { Account } from '../lib/types'
 import { RecruitMilestone } from './RecruitMilestone'
 
@@ -10,7 +22,6 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/** POST returns 202; keep asking GET until the worker writes a terminal status. */
 async function pollRecruitAttempt(
   attemptId: string,
   isCancelled: () => boolean = () => false,
@@ -32,6 +43,27 @@ async function pollRecruitAttempt(
   throw new ApiError(499, 'Left before the critique finished.')
 }
 
+async function pollBoardComplete(
+  boardId: string,
+  isCancelled: () => boolean = () => false,
+): Promise<RecruitBoardView> {
+  const started = Date.now()
+  while (!isCancelled()) {
+    const board = await api.recruit.board(boardId)
+    if (board.status === 'completed' || board.status === 'abandoned') {
+      return board
+    }
+    if (Date.now() - started > POLL_TIMEOUT_MS) {
+      throw new ApiError(
+        504,
+        'Those notes are taking too long. Leave and open Oral board again in a moment.',
+      )
+    }
+    await sleep(POLL_MS)
+  }
+  throw new ApiError(499, 'Left before the notes were ready.')
+}
+
 type Phase =
   | 'loading'
   | 'ready'
@@ -40,7 +72,8 @@ type Phase =
   | 'recording'
   | 'recorded'
   | 'submitting'
-  | 'done'
+  | 'holding'
+  | 'summary'
 
 function pickMime(): string {
   const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
@@ -52,7 +85,6 @@ function filenameFor(mime: string): string {
   return 'answer.webm'
 }
 
-/** Empty HTTP/2 statusText and a missing detail must not hide the failed submit. */
 export function submitErrorMessage(
   caught: unknown,
   fallback = 'That answer could not be critiqued.',
@@ -62,9 +94,8 @@ export function submitErrorMessage(
 }
 
 /**
- * One C2 spoken question. Record once, submit, read the candidate critique.
- * The server never sends a score on this path; this screen does not invent one.
- * Exhausted bank is a milestone, not an error — no Record without a live question.
+ * Five-question board. Record once per question. Notes stay held until the
+ * last answer is in — same as a real board. Soft timer is display only.
  */
 export function Recruit({
   onDone,
@@ -76,35 +107,57 @@ export function Recruit({
   onOpenAccount: () => void
 }) {
   const [phase, setPhase] = useState<Phase>('loading')
-  const [question, setQuestion] = useState('')
+  const [board, setBoard] = useState<RecruitBoardView | null>(null)
   const [exhausted, setExhausted] = useState<RecruitQuestionExhausted | null>(null)
-  const [lines, setLines] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [persistFailed, setPersistFailed] = useState(false)
+  const [remaining, setRemaining] = useState(SOFT_TIMER_SECONDS)
 
   const chunks = useRef<Blob[]>([])
   const recorder = useRef<MediaRecorder | null>(null)
   const stream = useRef<MediaStream | null>(null)
   const blob = useRef<Blob | null>(null)
   const left = useRef(false)
+  const abandoned = useRef(false)
 
   useEffect(() => {
     left.current = false
     void api.recruit
-      .question()
-      .then((issued) => {
+      .startBoard()
+      .then((started) => {
         if (left.current) return
-        if (issued.state === 'exhausted') {
-          setExhausted(issued)
-          setPhase('milestone')
+        setBoard(started)
+        setRemaining(started.soft_timer_seconds || SOFT_TIMER_SECONDS)
+        if (started.status === 'completed') {
+          setPhase('summary')
           return
         }
-        setQuestion(issued.question_text)
+        if (started.status === 'scoring') {
+          setPhase('holding')
+          return
+        }
         setPhase('ready')
       })
       .catch((caught: unknown) => {
         if (left.current) return
-        setError(submitErrorMessage(caught, 'Could not load the question.'))
+        if (caught instanceof ApiError && caught.status === 409) {
+          void api.recruit
+            .question()
+            .then((issued) => {
+              if (issued.state === 'exhausted') {
+                setExhausted(issued)
+                setPhase('milestone')
+              } else {
+                setError(submitErrorMessage(caught, 'Could not start the board.'))
+                setPhase('blocked')
+              }
+            })
+            .catch((inner: unknown) => {
+              setError(submitErrorMessage(inner, 'Could not start the board.'))
+              setPhase('blocked')
+            })
+          return
+        }
+        setError(submitErrorMessage(caught, 'Could not start the board.'))
         setPhase('blocked')
       })
     return () => {
@@ -113,14 +166,54 @@ export function Recruit({
     }
   }, [])
 
+  // Soft timer. Display only — hitting 0:00 does not submit.
+  useEffect(() => {
+    if (phase !== 'ready' && phase !== 'recording' && phase !== 'recorded') return
+    const tick = window.setInterval(() => {
+      setRemaining((value) => Math.max(0, value - 1))
+    }, 1000)
+    return () => window.clearInterval(tick)
+  }, [phase, board?.question_index])
+
+  useEffect(() => {
+    if (phase !== 'holding' || !board?.board_id) return
+    void pollBoardComplete(board.board_id, () => left.current)
+      .then((finished) => {
+        if (left.current) return
+        setBoard(finished)
+        setPhase(finished.status === 'completed' ? 'summary' : 'blocked')
+      })
+      .catch((caught: unknown) => {
+        if (left.current) return
+        setError(submitErrorMessage(caught, 'Those notes could not be finished.'))
+        setPhase('blocked')
+      })
+  }, [phase, board?.board_id])
+
   function stopTracks() {
     stream.current?.getTracks().forEach((track) => track.stop())
     stream.current = null
   }
 
+  async function leave() {
+    if (
+      board &&
+      !abandoned.current &&
+      (board.status === 'in_progress' || board.status === 'scoring')
+    ) {
+      abandoned.current = true
+      try {
+        await api.recruit.abandon(board.board_id)
+      } catch {
+        // Leaving still leaves; the server will treat an unfinished board as abandoned
+        // the next time they start, or they can reopen this one.
+      }
+    }
+    onDone()
+  }
+
   async function startRecording() {
-    // First take only. A finished recording stays in `recorded`; this is not a retry.
-    if (!question || phase !== 'ready') return
+    if (!board?.question_text || phase !== 'ready') return
     setError(null)
     blob.current = null
     chunks.current = []
@@ -142,7 +235,7 @@ export function Recruit({
       setPhase('recording')
     } catch {
       setError('The microphone was blocked. Allow it in the browser and try again.')
-      setPhase(question ? 'ready' : 'blocked')
+      setPhase(board?.question_text ? 'ready' : 'blocked')
     }
   }
 
@@ -153,37 +246,50 @@ export function Recruit({
   }
 
   async function submit() {
-    if (!blob.current || phase === 'submitting') return
+    if (!blob.current || !board || phase === 'submitting') return
     setPhase('submitting')
     setError(null)
-    setPersistFailed(false)
     try {
       const mime = blob.current.type || 'audio/webm'
       const file = new File([blob.current], filenameFor(mime), { type: mime })
-      const accepted = await api.recruit.attempt(file)
+      const accepted = await api.recruit.answer(board.board_id, file)
       if (!accepted.attempt_id) {
         throw new ApiError(502, 'That answer was accepted but no attempt id came back.')
       }
-      const result = await pollRecruitAttempt(accepted.attempt_id, () => left.current)
+      await pollRecruitAttempt(accepted.attempt_id, () => left.current)
       if (left.current) return
-      setLines(result.lines)
-      setPersistFailed(result.failed && result.status === 'completed')
-      if (result.status === 'critique_failed') {
-        setError(result.failure?.trim() || 'That answer could not be critiqued.')
+      const next = await api.recruit.board(board.board_id)
+      if (left.current) return
+      setBoard(next)
+      blob.current = null
+      if (next.status === 'completed') {
+        setPhase('summary')
+        return
       }
-      setPhase('done')
+      if (next.status === 'scoring' || next.question_index >= 5 && !next.question_text) {
+        setPhase('holding')
+        return
+      }
+      setRemaining(next.soft_timer_seconds || SOFT_TIMER_SECONDS)
+      setPhase('ready')
     } catch (caught) {
       setError(submitErrorMessage(caught))
       setPhase('recorded')
     }
   }
 
+  const question = board?.question_text || ''
+  const index = board?.question_index || 1
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between text-sm text-stone-500 dark:text-stone-400">
-        <button onClick={onDone} className="hover:underline">
+        <button onClick={() => void leave()} className="hover:underline">
           ← Leave
         </button>
+        {phase !== 'milestone' && phase !== 'summary' && board && (
+          <span>{boardProgressLabel(index, board.board_size)}</span>
+        )}
       </div>
 
       {phase === 'milestone' && exhausted && (
@@ -195,13 +301,36 @@ export function Recruit({
         />
       )}
 
-      {phase !== 'milestone' && (
-        <h2 className="text-lg font-medium">{question || 'Loading…'}</h2>
-      )}
-      {phase !== 'milestone' && question && (
-        <p className="text-sm text-stone-600 dark:text-stone-400">
-          Answer out loud. You’ll get notes on what went well and what to improve.
-        </p>
+      {phase !== 'milestone' && phase !== 'summary' && (
+        <>
+          <div className="flex justify-center gap-2" aria-hidden="true">
+            {[1, 2, 3, 4, 5].map((slot) => (
+              <span
+                key={slot}
+                className={
+                  slot < index
+                    ? 'h-2 w-2 rounded-full bg-stone-700 dark:bg-stone-300'
+                    : slot === index
+                      ? 'h-2 w-2 rounded-full bg-stone-900 dark:bg-stone-100'
+                      : 'h-2 w-2 rounded-full bg-stone-300 dark:bg-stone-700'
+                }
+              />
+            ))}
+          </div>
+          <h2 className="text-lg font-medium">{question || 'Loading…'}</h2>
+          {question && phase !== 'holding' && (
+            <p className="text-sm text-stone-600 dark:text-stone-400">
+              Answer out loud. Notes are held until the end of the board — same as a real
+              board.
+            </p>
+          )}
+          {(phase === 'ready' || phase === 'recording' || phase === 'recorded') && (
+            <p className="text-sm tabular-nums text-stone-500" data-testid="soft-timer">
+              Soft timer {formatSoftTimer(remaining)} — guidance only. It will not submit
+              for you.
+            </p>
+          )}
+        </>
       )}
 
       {phase === 'ready' && question && (
@@ -222,7 +351,6 @@ export function Recruit({
         </button>
       )}
 
-      {/* One take. No re-record — CLAUDE.md binding constraint. */}
       {phase === 'recorded' && (
         <button
           onClick={() => void submit()}
@@ -233,24 +361,54 @@ export function Recruit({
       )}
 
       {phase === 'submitting' && (
-        <p className="text-sm text-stone-500">Working on your critique…</p>
+        <p className="text-sm text-stone-500">Saving that answer…</p>
       )}
 
-      {phase === 'done' && (
-        <div className="space-y-3 rounded-lg border border-stone-200 p-4 dark:border-stone-800">
-          {lines.map((line, index) =>
-            line === '' ? (
-              <div key={index} className="h-2" />
-            ) : (
-              <p key={index} className="text-sm text-stone-800 dark:text-stone-200">
-                {line}
+      {phase === 'holding' && (
+        <p className="text-sm text-stone-500">
+          Board complete. Working on the notes held until the end…
+        </p>
+      )}
+
+      {phase === 'summary' && board && (
+        <div className="space-y-6">
+          <p className="text-sm font-medium text-stone-800 dark:text-stone-200">
+            {board.framing || BOARD_FRAMING}
+          </p>
+          {board.answers.map((answer) => (
+            <div
+              key={answer.question_index}
+              className="space-y-3 rounded-lg border border-stone-200 p-4 dark:border-stone-800"
+            >
+              <p className="text-xs uppercase tracking-wide text-stone-500">
+                Question {answer.question_index}
               </p>
-            ),
-          )}
-          {persistFailed && (
-            <p className="text-sm text-stone-500">
-              The critique is above. Saving it to your history did not finish.
-            </p>
+              <p className="text-sm font-medium text-stone-800 dark:text-stone-200">
+                {answer.question_text}
+              </p>
+              {answer.lines.map((line, lineIndex) =>
+                line === '' ? (
+                  <div key={lineIndex} className="h-2" />
+                ) : (
+                  <p key={lineIndex} className="text-sm text-stone-800 dark:text-stone-200">
+                    {line}
+                  </p>
+                ),
+              )}
+            </div>
+          ))}
+          {board.c1_lines.length > 0 && (
+            <div className="space-y-3 rounded-lg border border-stone-200 p-4 dark:border-stone-800">
+              {board.c1_lines.map((line, lineIndex) =>
+                line === '' ? (
+                  <div key={lineIndex} className="h-2" />
+                ) : (
+                  <p key={lineIndex} className="text-sm text-stone-800 dark:text-stone-200">
+                    {line}
+                  </p>
+                ),
+              )}
+            </div>
           )}
           <button
             onClick={onDone}
