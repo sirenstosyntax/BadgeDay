@@ -130,6 +130,23 @@ def test_a_recruit_subscription_event_sets_the_recruit_row() -> None:
     ]
 
 
+def test_a_recruit_deleted_subscription_cancels_recruit() -> None:
+    changes = _recruit(
+        {
+            "type": "customer.subscription.deleted",
+            "data": {
+                "object": {
+                    "customer": CUSTOMER,
+                    "items": {"data": [{"price": {"id": "price_recruit_mo"}}]},
+                }
+            },
+        }
+    )
+    assert changes == [
+        SetModuleSubscription(user_id=USER, module="recruit", status="canceled")
+    ]
+
+
 def test_a_promote_price_is_ignored_by_recruit_plan_changes() -> None:
     assert (
         _recruit(
