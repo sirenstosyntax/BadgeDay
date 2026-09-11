@@ -1,4 +1,4 @@
-# BD-BILL-001 — Stripe `customer.subscription.deleted` revoke scope
+# BD-BILL-001 — Stripe `customer.subscription.deleted` with no mappable price
 
 Status: locked (Geppetto + Zazu + Baymax)
 Product: BadgeDay (Promote profiles + Recruit entitlements)
@@ -35,10 +35,12 @@ Retrieving subscription items by id to recover `price_id` before (3) is optional
 
 Each item is independently verifiable.
 
-1. `customer.subscription.deleted` + known customer + Promote entitled + no `price_id` → Promote access is false after the webhook; the webhook acks success.
+1. `customer.subscription.deleted` + known customer + Promote entitled + no `price_id` → Promote access is false after the webhook; the webhook acks success. The write is `SetSubscription` canceled on profiles (same effect as pre-fail-closed `plan_changes`).
 2. The same event must **not** clear Recruit when Recruit is entitled and there is no Recruit `price_id`.
 3. `customer.subscription.deleted` + mapped Recruit `price_id` → Recruit is cleared; Promote is untouched unless that price also implicates Promote.
 4. Grant paths (`checkout.session.completed`, `customer.subscription.created` / `updated`) with a blank or unknown `price_id` remain ack-and-ignore (no Promote `plan_changes`, no Recruit entitlement write).
+
+An unknown Stripe customer on an unmapped delete acks success and writes nothing.
 
 ---
 

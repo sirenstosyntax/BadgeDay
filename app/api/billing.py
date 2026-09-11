@@ -177,7 +177,7 @@ async def webhook(
 
 
 def _clear_promote_on_unmapped_delete(event: dict, *, service, settings, now: datetime) -> None:
-    """BD-BILL-001: unmapped delete clears Promote for a known user only."""
+    """BD-BILL-001 path 3: unmapped delete clears Promote for a known user only."""
     obj = event.get("data", {}).get("object", {}) or {}
     customer_id = obj.get("customer") or ""
     subscription_id = obj.get("id") or ""
