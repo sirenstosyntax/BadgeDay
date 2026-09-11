@@ -18,9 +18,7 @@ export function SignIn() {
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(consumeAuthRedirectError)
   const [fromRedirect, setFromRedirect] = useState(() => Boolean(consumeAuthRedirectError()))
-  const [sent, setSent] = useState(
-    () => Boolean(readRememberedSignInEmail() && consumeAuthRedirectError()),
-  )
+  const [sent, setSent] = useState(false)
   const [sending, setSending] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const showCode = showSignInCodeField({ sent, email, fromRedirect })

@@ -7,6 +7,13 @@ test('a burned-link redirect shows the code field with no remembered email', () 
   assert.equal(showSignInCodeField({ sent: false, email: 'not-an-address', fromRedirect: true }), true)
 })
 
+test('a burned-link return with a remembered email is not a successful send', () => {
+  assert.equal(
+    showSignInCodeField({ sent: false, email: 'qa@example.com', fromRedirect: true }),
+    true,
+  )
+})
+
 test('verify is refused until the email looks like an email', () => {
   assert.equal(looksLikeSignInEmail(''), false)
   assert.equal(looksLikeSignInEmail('   '), false)
