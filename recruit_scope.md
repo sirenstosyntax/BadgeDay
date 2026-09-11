@@ -240,8 +240,9 @@ Promote's pipeline was CLI-testable before it had a frontend.
    session worth having, each through review. The novel-question-every-session rule makes
    **bank depth a hard requirement**, not a nice-to-have: size and rotation policy are
    **Settled 2026-09-10 by Grant** — see open question 4 and `recruit_question_bank.md`.
-   Family review of the existing 288-item draft is in progress. Nothing publishes
-   unreviewed.
+   Family review of the existing 288-item draft is **complete** (pass 1+2,
+   2026-09-10; **272 survive**). Unreviewed items still do not publish;
+   **START ORDER 2026-09-11** opens non-C2 publish of reviewed stock.
 5. **Audio capture and transcription.** Browser recording, batch ASR with word-level
    timestamps, the deterministic metrics computed in our code, opt-in retention. Verify
    disfluency preservation on our own audio first — most ASR strips "um" and "uh" by
@@ -351,10 +352,12 @@ either way.
    (36 families × 8 variants) growing toward ~500; 12-month retirement preferred; never
    repeat a prompt; no family within a rolling 8 sessions; 70/30 weighted/random
    selection; full-board draw shape as already described (one from each of A, B/C,
-   D/E/F, G/H, J). Family review of the existing 288-item draft is in progress (not a
-   second library). Nothing publishes unreviewed. **START ORDER 2026-09-11** opens
-   non-C2 publish and C1–C5 scorer wire; paid / Stripe live stay HELD. See
-   `recruit_design_decisions.md` §10 Settles 2026-09-10 and START ORDER 2026-09-11.
+   D/E/F, G/H, J). Family review of the existing 288-item draft is **complete**
+   (pass 1+2; **272 survive**; not a second library). Unreviewed items still do
+   not publish; **START ORDER 2026-09-11** opens non-C2 publish of reviewed stock.
+   **START ORDER 2026-09-11** opens non-C2 publish and C1–C5 scorer wire; paid /
+   Stripe live stay HELD. See `recruit_design_decisions.md` §10 Settles 2026-09-10
+   and START ORDER 2026-09-11.
 
    The reason a large bank turns out to be affordable: **a Recruit question is an unkeyed
    prompt** — no answer, no distractors, no citation — so per-item review is seconds rather
