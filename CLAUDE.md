@@ -63,21 +63,31 @@ documents, and requiring them would gate the product on something its users do n
 
 ## What launch means — both modules
 
-**Decided 2026-07-26: BadgeDay does not go live with real payments until Promote and
-Recruit are both built.** The brand and the marketing site address both audiences, so
-shipping one alone advertises the other to a waitlist that cannot buy it. Stripe stays in
-**test mode** until both are ready.
+**Rule of record (START ORDER 2026-09-11):** Recruit paid go-live is **approved**.
+See `badgeday_pricing.md`. Live Stripe / Play product IDs remain **ops** (blank
+placeholders expected; do not invent IDs). Recruit can take real money once ops
+wires those IDs. **Promote checkout / paid go-live remains held** until a separate
+Grant START ORDER. The brand may advertise both audiences; that no longer requires
+Promote to be paid before Recruit can charge.
 
-This supersedes the original "Promote only, do not build Recruit" scoping. Promote is
-built and deployed at app.badgeday.com; Recruit is the remaining work and is now on the
-critical path to any revenue.
+**Superseded 2026-09-11.** The 2026-07-26 / 2026-08-16 both-modules gate — Stripe
+held in test mode, and no real payments, until Promote and Recruit were both ready
+— is closed. It does not apply to Recruit.
 
-**Reaffirmed 2026-08-16, when the app-store decision was taken.** Going into the stores
-does not open the gate early. The store work runs *alongside* Recruit rather than ahead of
-it, because most of what it costs is waiting — developer-account enrolment, a D-U-N-S
-number, closed testing — and waiting is the one thing that parallelises. Nothing in
-`mobile_release_plan.md` should be read as a reason to take real money before Recruit
-ships.
+**Historical — decided 2026-07-26:** BadgeDay would not take real payments until
+Promote and Recruit were both built. The brand and the marketing site address both
+audiences, so shipping one alone would advertise the other to a waitlist that
+cannot buy it. That both-modules test-mode rule is what 2026-09-11 superseded.
+The 2026-07-26 decision also superseded the original "Promote only, do not build
+Recruit" scoping. Promote is built and deployed at app.badgeday.com.
+
+**Historical — reaffirmed 2026-08-16, when the app-store decision was taken.**
+Going into the stores was not a reason to open the both-modules payment gate
+early. The store work still runs *alongside* Recruit rather than ahead of it,
+because most of what it costs is waiting — developer-account enrolment, a D-U-N-S
+number, closed testing — and waiting is the one thing that parallelises. Nothing
+in `mobile_release_plan.md` opened Promote live pricing; Recruit paid go-live is
+the 2026-09-11 START ORDER, not the store wrappers.
 
 ### Promote — built (what shipped)
 
