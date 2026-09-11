@@ -64,9 +64,9 @@ documents, and requiring them would gate the product on something its users do n
 ## What launch means — both modules
 
 **Rule of record (START ORDER 2026-09-11):** Recruit paid go-live is **approved**.
-See `badgeday_pricing.md`. Live Stripe / Play product IDs remain **ops** (blank
-placeholders expected; do not invent IDs). Recruit can take real money once ops
-wires those IDs. **Promote checkout / paid go-live remains held** until a separate
+See `badgeday_pricing.md`. Live Stripe / Play product IDs remain **ops**
+(blank placeholders expected; do not invent IDs). Recruit can take real money
+once ops wires those IDs. **Promote checkout / paid go-live remains held** until a separate
 Grant START ORDER. The brand may advertise both audiences; that no longer requires
 Promote to be paid before Recruit can charge.
 
