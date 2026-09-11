@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { readAuthRedirectError } from './authRedirectError.ts'
+import {
+  consumeAuthRedirectError,
+  readAuthRedirectError,
+  resetAuthRedirectErrorForTests,
+  takeFreshAuthRedirectError,
+} from './authRedirectError.ts'
 
 const LIVE_HASH =
   '#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired'
@@ -39,6 +44,19 @@ test('an empty location is not an error', () => {
 test('other auth redirect errors keep the description and ask for a new link', () => {
   assert.equal(
     readAuthRedirectError('#error=access_denied&error_description=Email+link+was+already+used'),
-    'Email link was already used. Type the code from the email if the button did nothing, or request a new email.'
+    'Email link was already used. Type the code from the email if the button did nothing, or request a new email.',
   )
+})
+
+test('hashchange does not revive a stale consumed error when the URL is clean', () => {
+  resetAuthRedirectErrorForTests()
+  const expired = takeFreshAuthRedirectError(LIVE_HASH)
+  assert.equal(
+    expired,
+    'This sign-in link is invalid or has expired. Type the code from the email if the button did nothing, or request a new email.',
+  )
+  assert.equal(takeFreshAuthRedirectError(''), null)
+  assert.equal(takeFreshAuthRedirectError('#', ''), null)
+  // Mount / Strict Mode may still reuse consumed when there is no window.
+  assert.equal(consumeAuthRedirectError(), expired)
 })

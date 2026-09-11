@@ -47,11 +47,19 @@ export function readAuthRedirectError(hash: string, search = ''): string | null 
   return GENERIC_MESSAGE
 }
 
+function clearAuthRedirectParams() {
+  const params = new URLSearchParams(window.location.search)
+  params.delete('error')
+  params.delete('error_code')
+  params.delete('error_description')
+  const search = params.toString()
+  window.history.replaceState(null, '', window.location.pathname + (search ? `?${search}` : ''))
+}
+
 /**
  * Read a redirect error from the current URL, then strip it from the address
  * bar so a refresh does not keep showing a spent link. Remembered after the
- * hash is cleared because React Strict Mode remounts SignIn, and so a later
- * `#error=` hashchange (same tab, no reload) can still update SignIn.
+ * hash is cleared because React Strict Mode remounts SignIn.
  */
 export function consumeAuthRedirectError(): string | null {
   if (typeof window === 'undefined') return consumed
@@ -59,12 +67,28 @@ export function consumeAuthRedirectError(): string | null {
   const message = readAuthRedirectError(window.location.hash, window.location.search)
   if (!message) return consumed
 
-  const params = new URLSearchParams(window.location.search)
-  params.delete('error')
-  params.delete('error_code')
-  params.delete('error_description')
-  const search = params.toString()
-  window.history.replaceState(null, '', window.location.pathname + (search ? `?${search}` : ''))
+  clearAuthRedirectParams()
   consumed = message
   return message
+}
+
+/**
+ * Hashchange path: only the current URL. Never returns a previously consumed
+ * message after the hash has been cleared.
+ */
+export function takeFreshAuthRedirectError(hash: string, search = ''): string | null {
+  const message = readAuthRedirectError(hash, search)
+  if (message) consumed = message
+  return message
+}
+
+export function consumeFreshAuthRedirectError(): string | null {
+  if (typeof window === 'undefined') return null
+  const message = takeFreshAuthRedirectError(window.location.hash, window.location.search)
+  if (message) clearAuthRedirectParams()
+  return message
+}
+
+export function resetAuthRedirectErrorForTests() {
+  consumed = null
 }
