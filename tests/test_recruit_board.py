@@ -36,6 +36,7 @@ from app.recruit.copy import (
     C1_NOT_ANSWERED,
     C1_OUTSIDE,
     C1_OUTSIDE_BODY,
+    NOTES_BLOCKED,
     PER_ANSWER_NOT_ANSWERED,
     PER_ANSWER_NOT_ASSESSABLE,
     SOFT_TIMER_SECONDS,
@@ -128,6 +129,9 @@ def _client(
     get_board_record: RecruitBoardRecord | None = None,
     attempts: list[RecruitAttemptRecord] | None = None,
     draw=None,
+    notes_blocked: bool = False,
+    abandon=None,
+    get_board_fn=None,
 ) -> TestClient:
     app = FastAPI()
     app.include_router(router)
@@ -169,7 +173,9 @@ def _client(
     monkeypatch.setattr("app.api.recruit.get_open_board", lambda db: held["open"])
     monkeypatch.setattr(
         "app.api.recruit.get_board",
-        lambda db, _id: get_board_record or held["open"] or _board(id=_id),
+        get_board_fn
+        if get_board_fn is not None
+        else (lambda db, _id: get_board_record or held["open"] or _board(id=_id)),
     )
     monkeypatch.setattr("app.api.recruit.start_board", fake_start)
     monkeypatch.setattr("app.recruit.gate.recruit_entitled", lambda *a: entitled)
@@ -183,7 +189,11 @@ def _client(
     )
     monkeypatch.setattr(
         "app.api.recruit.abandon_board",
-        lambda db, board_id: None,
+        abandon if abandon is not None else (lambda db, board_id: None),
+    )
+    monkeypatch.setattr(
+        "app.api.recruit.notes_blocked_for_board",
+        lambda db, board: notes_blocked,
     )
     return TestClient(app)
 
@@ -313,6 +323,73 @@ def test_free_complete_board_paywalls_the_next_start(monkeypatch) -> None:
     assert "free oral-board session is used" in response.json()["detail"]
 
 
+def _completed_board_with_notes() -> tuple[RecruitBoardRecord, list[RecruitAttemptRecord]]:
+    notes = [
+        _attempt(
+            slot_index=i,
+            scenario_id=slot.scenario_id,
+            question_text=slot.question_text,
+            candidate_lines=[f"Note for question {i + 1}."],
+        )
+        for i, slot in enumerate(_slots())
+    ]
+    board = _board(
+        status="completed",
+        notes_released=True,
+        current_index=4,
+        current_question_text=Q5,
+        current_scenario_id="OPN-1.1",
+        c1_candidate_lines=[C1_LEAD, "", C1_HELD, "You finished each answer."],
+    )
+    return board, notes
+
+
+def test_abandon_of_completed_board_returns_the_summary(monkeypatch) -> None:
+    """Leave during holding must not rewrite a just-completed board to abandoned."""
+    board, notes = _completed_board_with_notes()
+    abandoned: list[str] = []
+    response = _client(
+        monkeypatch,
+        get_board_record=board,
+        attempts=notes,
+        abandon=lambda db, board_id: abandoned.append(board_id),
+    ).post(f"/recruit/boards/{BOARD}/abandon")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "completed"
+    assert body["framing"] == BOARD_FRAMING
+    assert [item["question_index"] for item in body["answers"]] == [1, 2, 3, 4, 5]
+    assert body["c1_lines"][0] == C1_LEAD
+    assert abandoned == []
+
+
+def test_abandon_race_returns_just_completed_summary(monkeypatch) -> None:
+    """RPC refuses a completed board; return the summary instead of empty notes."""
+    completed, notes = _completed_board_with_notes()
+    scoring = _board(status="scoring", current_index=4, current_question_text=Q5)
+    state = {"board": scoring}
+
+    def fake_get(_db, _id):
+        return state["board"]
+
+    def fake_abandon(_db, _id):
+        state["board"] = completed
+        raise RuntimeError("board cannot be abandoned")
+
+    response = _client(
+        monkeypatch,
+        attempts=notes,
+        get_board_fn=fake_get,
+        abandon=fake_abandon,
+    ).post(f"/recruit/boards/{BOARD}/abandon")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "completed"
+    assert body["framing"] == BOARD_FRAMING
+    assert body["answers"]
+    assert body["c1_lines"][0] == C1_LEAD
+
+
 def test_abandon_does_not_consume_the_free_board(monkeypatch) -> None:
     """lifetime_count is completed boards with released notes. Abandoned is 0."""
     response = _client(monkeypatch, today_count=1, delivered_count=0).post(
@@ -357,6 +434,17 @@ def test_legacy_question_wraps_the_board_and_does_not_preview(monkeypatch) -> No
     assert body["board_size"] == 5
     assert body["soft_timer_seconds"] == 120
     assert Q2 not in response.text
+
+
+def test_web_followup_helpers_are_wired() -> None:
+    recruit = (WEB / "ui" / "Recruit.tsx").read_text()
+    helper = (WEB / "lib" / "recruitBoard.ts").read_text()
+    assert "boardPromptHeading" in recruit
+    assert "leaveAfterAbandon" in recruit
+    assert "shouldShowNotesBlockedPath" in recruit
+    assert "NOTES_BLOCKED_COPY" in recruit
+    assert NOTES_BLOCKED in helper
+    assert "question || 'Loading…'" not in recruit
 
 
 def test_soft_timer_is_display_only() -> None:
@@ -507,6 +595,15 @@ def test_board_end_leak_ban() -> None:
     assert board_end_leaks(["Answer Construction"])
     assert board_end_leaks(["determination: he landed on the 3"])
     assert board_end_leaks([C1_LEAD, C1_HELD, C1_OUTSIDE_BODY]) == ()
+    # AC19: bare candidate-facing 1–5 grades, not only Delivery labels.
+    assert board_end_leaks(["You scored a 4"])
+    assert board_end_leaks(["grade: 2"])
+    assert board_end_leaks(["3 out of 5"])
+    assert board_end_leaks(["rated 5"])
+    assert board_end_leaks(["a 1"])
+    assert board_end_leaks(["4"])
+    assert board_end_leaks(["1-5 scale"])
+    assert board_end_leaks([C1_LEAD, "You finished each answer."]) == ()
 
 
 def test_draw_never_repeats_and_avoids_recent_families() -> None:
@@ -548,6 +645,36 @@ def test_draw_exhausts_when_a_slot_is_empty() -> None:
     decision = draw_board([], bank=items)
     assert isinstance(decision, ExhaustedIssue)
     assert decision.bank_size == len(items)
+
+
+def test_notes_cannot_finish_when_a_slot_has_no_transcript() -> None:
+    from app.storage.boards import notes_cannot_finish
+
+    rows = [
+        {"status": "completed", "transcript": f"answer {index}", "slot_index": index}
+        for index in range(4)
+    ] + [{"status": "critique_failed", "transcript": "", "slot_index": 4}]
+    assert notes_cannot_finish("scoring", rows) is True
+    assert notes_cannot_finish("in_progress", rows) is True
+    assert notes_cannot_finish("completed", rows) is False
+    rows[-1]["transcript"] = "enough spoken material to hear"
+    rows[-1]["status"] = "completed"
+    assert notes_cannot_finish("scoring", rows) is False
+
+
+def test_scoring_board_without_transcript_signals_notes_blocked(monkeypatch) -> None:
+    board = _board(status="scoring", current_index=4, current_question_text=Q5)
+    response = _client(
+        monkeypatch, get_board_record=board, notes_blocked=True
+    ).get(f"/recruit/boards/{BOARD}")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "scoring"
+    assert body["notes_blocked"] is True
+    assert body["notes_blocked_detail"] == NOTES_BLOCKED
+    assert body["answers"] == []
+    assert body["c1_lines"] == []
+    assert body["framing"] is None
 
 
 def test_c1_is_blocked_until_five_transcripts_exist(monkeypatch) -> None:

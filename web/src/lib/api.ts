@@ -201,4 +201,6 @@ export type RecruitBoardView = {
   framing: string | null
   answers: RecruitBoardAnswer[]
   c1_lines: string[]
+  notes_blocked?: boolean
+  notes_blocked_detail?: string | null
 }

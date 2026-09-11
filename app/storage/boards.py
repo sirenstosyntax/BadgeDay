@@ -405,5 +405,51 @@ def enqueue_c1(db: Client, board_id: str) -> None:
     db.table("jobs").insert({"kind": "recruit_c1", "board_id": board_id}).execute()
 
 
+_TERMINAL_SLOT = {"completed", "critique_failed", "abandoned"}
+
+
+def notes_cannot_finish(board_status: str, rows: list[dict]) -> bool:
+    """True when a terminal slot has no spoken material, so C1 cannot run.
+
+    Spec default (BD-R-003 §6 / §8.4): no C1 until five transcripts exist
+    or the board is abandoned. A critique_failed slot with an empty
+    transcript leaves the board in scoring forever unless the candidate
+    leaves.
+    """
+    if board_status not in ("in_progress", "scoring"):
+        return False
+    empty_failed = any(
+        (row.get("status") or "") == "critique_failed"
+        and not str(row.get("transcript") or "").strip()
+        for row in rows
+    )
+    if empty_failed:
+        return True
+    if board_status != "scoring" or len(rows) < 5:
+        return False
+    if any((row.get("status") or "") not in _TERMINAL_SLOT for row in rows):
+        return False
+    spoken = sum(1 for row in rows if str(row.get("transcript") or "").strip())
+    return spoken < 5
+
+
+def board_attempt_note_rows(db: Client, board_id: str) -> list[dict]:
+    """Status + transcript emptiness for the notes-blocked check. No prose."""
+    return (
+        db.table("recruit_attempts")
+        .select("status,transcript,error")
+        .eq("board_id", board_id)
+        .execute()
+        .data
+        or []
+    )
+
+
+def notes_blocked_for_board(db: Client, board: RecruitBoardRecord) -> bool:
+    if board.status not in ("in_progress", "scoring"):
+        return False
+    return notes_cannot_finish(board.status, board_attempt_note_rows(db, board.id))
+
+
 # Silence unused import warning if utc_day_start is only used by callers.
 _ = utc_day_start
