@@ -234,9 +234,11 @@ def test_recruit_ui_polls_after_202() -> None:
     source = Path(__file__).resolve().parents[1].joinpath("web/src/ui/Recruit.tsx").read_text()
     assert "pollRecruitAttempt" in source
     assert "api.recruit.get" in source
-    assert "api.recruit.attempt" in source
+    assert "api.recruit.answer" in source or ".answer(" in source
+    assert "startBoard" in source
     api_src = Path(__file__).resolve().parents[1].joinpath("web/src/lib/api.ts").read_text()
     assert "`/recruit/attempts/${attemptId}`" in api_src or "/recruit/attempts/" in api_src
+    assert "/recruit/boards" in api_src
 
 
 # --- Ship gate #2: delivery metrics on the live attempt → critique path ------

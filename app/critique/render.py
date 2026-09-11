@@ -295,14 +295,14 @@ def _append_point_lines(lines: list[str], points: list[Point]) -> None:
 
 # Board-end must never leak the instrument. Checked on the assembled payload.
 _BOARD_END_BANNED = re.compile(
-    r"(?ix)"
+    r"(?i)"
     r"\b(?:internal[_\s-]?score|criterion\s*[1-5]|anchor\s*[1-5]"
     r"|c[1-5]\.(?:anchor|note)\.\S+"
     r"|delivery\s+(?:clear|costly|blocking)"
-    r"|4[ab]\b|determination|deciding clause"
-    r"|answer construction|motivation & preparation"
-    r"|teamwork & interpersonal|integrity & ethics"
-    r"|judgment & composure)\b"
+    r"|4[ab]\b|determination|deciding\s+clause"
+    r"|answer\s+construction|motivation\s*&\s*preparation"
+    r"|teamwork\s*&\s*interpersonal|integrity\s*&\s*ethics"
+    r"|judgment\s*&\s*composure)\b"
 )
 
 
