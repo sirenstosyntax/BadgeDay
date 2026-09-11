@@ -8,9 +8,14 @@ import {
 } from '../lib/api'
 import {
   BOARD_FRAMING,
+  NOTES_BLOCKED_COPY,
   SOFT_TIMER_SECONDS,
   boardProgressLabel,
+  boardPromptHeading,
   formatSoftTimer,
+  leaveAfterAbandon,
+  shouldPostAbandon,
+  shouldShowNotesBlockedPath,
 } from '../lib/recruitBoard'
 import type { Account } from '../lib/types'
 import { RecruitMilestone } from './RecruitMilestone'
@@ -50,7 +55,11 @@ async function pollBoardComplete(
   const started = Date.now()
   while (!isCancelled()) {
     const board = await api.recruit.board(boardId)
-    if (board.status === 'completed' || board.status === 'abandoned') {
+    if (
+      board.status === 'completed' ||
+      board.status === 'abandoned' ||
+      board.notes_blocked
+    ) {
       return board
     }
     if (Date.now() - started > POLL_TIMEOUT_MS) {
@@ -131,6 +140,11 @@ export function Recruit({
           setPhase('summary')
           return
         }
+        if (shouldShowNotesBlockedPath({ notes_blocked: started.notes_blocked })) {
+          setError(NOTES_BLOCKED_COPY)
+          setPhase('blocked')
+          return
+        }
         if (started.status === 'scoring') {
           setPhase('holding')
           return
@@ -181,7 +195,16 @@ export function Recruit({
       .then((finished) => {
         if (left.current) return
         setBoard(finished)
-        setPhase(finished.status === 'completed' ? 'summary' : 'blocked')
+        if (finished.status === 'completed') {
+          setPhase('summary')
+          return
+        }
+        if (shouldShowNotesBlockedPath({ notes_blocked: finished.notes_blocked })) {
+          setError(NOTES_BLOCKED_COPY)
+          setPhase('blocked')
+          return
+        }
+        setPhase('blocked')
       })
       .catch((caught: unknown) => {
         if (left.current) return
@@ -196,14 +219,15 @@ export function Recruit({
   }
 
   async function leave() {
-    if (
-      board &&
-      !abandoned.current &&
-      (board.status === 'in_progress' || board.status === 'scoring')
-    ) {
+    if (board && !abandoned.current && shouldPostAbandon(board.status)) {
       abandoned.current = true
       try {
-        await api.recruit.abandon(board.board_id)
+        const ended = await api.recruit.abandon(board.board_id)
+        if (leaveAfterAbandon(ended.status) === 'summary') {
+          setBoard(ended)
+          setPhase('summary')
+          return
+        }
       } catch {
         // Leaving still leaves; the server will treat an unfinished board as abandoned
         // the next time they start, or they can reopen this one.
@@ -266,6 +290,11 @@ export function Recruit({
         setPhase('summary')
         return
       }
+      if (shouldShowNotesBlockedPath({ notes_blocked: next.notes_blocked })) {
+        setError(NOTES_BLOCKED_COPY)
+        setPhase('blocked')
+        return
+      }
       if (next.status === 'scoring' || next.question_index >= 5 && !next.question_text) {
         setPhase('holding')
         return
@@ -280,6 +309,7 @@ export function Recruit({
 
   const question = board?.question_text || ''
   const index = board?.question_index || 1
+  const heading = boardPromptHeading(phase, question)
 
   return (
     <div className="space-y-6">
@@ -317,7 +347,7 @@ export function Recruit({
               />
             ))}
           </div>
-          <h2 className="text-lg font-medium">{question || 'Loading…'}</h2>
+          {heading && <h2 className="text-lg font-medium">{heading}</h2>}
           {question && phase !== 'holding' && (
             <p className="text-sm text-stone-600 dark:text-stone-400">
               Answer out loud. Notes are held until the end of the board — same as a real

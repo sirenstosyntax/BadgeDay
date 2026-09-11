@@ -44,3 +44,9 @@ C1_INSUFFICIENT = (
 
 # Soft timer. Display only — never an auto-submit.
 SOFT_TIMER_SECONDS = 120
+
+# Terminal slot with no spoken material. C1 cannot run; Leave abandons.
+NOTES_BLOCKED = (
+    "These notes can't be finished from that recording. Leave to abandon "
+    "this board — no notes will be released."
+)

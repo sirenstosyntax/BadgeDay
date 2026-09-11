@@ -294,6 +294,9 @@ def _append_point_lines(lines: list[str], points: list[Point]) -> None:
 
 
 # Board-end must never leak the instrument. Checked on the assembled payload.
+# AC19: any 1–5 as a grade, Delivery Clear/Costly/Blocking, routes,
+# determinations, rubric vocabulary. Bare numeric grades are banned too —
+# not only the Delivery labels.
 _BOARD_END_BANNED = re.compile(
     r"(?i)"
     r"\b(?:internal[_\s-]?score|criterion\s*[1-5]|anchor\s*[1-5]"
@@ -305,12 +308,25 @@ _BOARD_END_BANNED = re.compile(
     r"|judgment\s*&\s*composure)\b"
 )
 
+_BOARD_END_GRADES = re.compile(
+    r"(?i)"
+    r"(?:"
+    r"\b(?:internal[_\s-]?score|score[ds]?|grades?|rated|rating|band|marks?)"
+    r"\s*[:.]?\s*(?:of\s+|a\s+|an\s+)?[1-5]\b"
+    r"|\b[1-5]\s*(?:/|out\s+of)\s*5\b"
+    r"|\b(?:a|an)\s+[1-5]\b"
+    r"|\blanded\s+on\s+(?:the\s+)?[1-5]\b"
+    r"|\b[1-5]\s*[-–]\s*5\b"
+    r"|^\s*[1-5]\s*$"
+    r")"
+)
+
 
 def board_end_leaks(lines: Sequence[str] | list[str]) -> tuple[str, ...]:
     """Return banned fragments found in board-end lines."""
     found: list[str] = []
     for line in lines:
-        match = _BOARD_END_BANNED.search(line)
+        match = _BOARD_END_BANNED.search(line) or _BOARD_END_GRADES.search(line)
         if match:
             found.append(match.group(0))
     return tuple(found)

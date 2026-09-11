@@ -28,7 +28,7 @@ from app.recruit.bank import (
     draw_board,
     draw_is_c2_only,
 )
-from app.recruit.copy import BOARD_FRAMING, SOFT_TIMER_SECONDS
+from app.recruit.copy import BOARD_FRAMING, NOTES_BLOCKED, SOFT_TIMER_SECONDS
 from app.recruit.gate import RecruitAccessDenied, check_recruit_access
 from app.storage.boards import (
     RecruitBoardRecord,
@@ -38,6 +38,7 @@ from app.storage.boards import (
     get_board,
     get_open_board,
     issued_scenario_ids,
+    notes_blocked_for_board,
     recent_board_families,
     start_board,
 )
@@ -99,6 +100,8 @@ class RecruitBoardView(BaseModel):
     framing: str | None = None
     answers: list[BoardAnswerNotes] = []
     c1_lines: list[str] = []
+    notes_blocked: bool = False
+    notes_blocked_detail: str | None = None
 
 
 class RecruitResult(BaseModel):
@@ -225,6 +228,7 @@ def _released_answers(db: Client, board: RecruitBoardRecord) -> list[BoardAnswer
 def _board_view(db: Client, board: RecruitBoardRecord) -> RecruitBoardView:
     released = board.status == "completed" and board.notes_released
     in_progress = board.status == "in_progress"
+    blocked = notes_blocked_for_board(db, board)
     return RecruitBoardView(
         board_id=board.id,
         status=board.status,
@@ -235,6 +239,8 @@ def _board_view(db: Client, board: RecruitBoardRecord) -> RecruitBoardView:
         framing=BOARD_FRAMING if released else None,
         answers=_released_answers(db, board) if released else [],
         c1_lines=board.c1_candidate_lines if released else [],
+        notes_blocked=blocked,
+        notes_blocked_detail=NOTES_BLOCKED if blocked else None,
     )
 
 
@@ -335,10 +341,24 @@ def abandon(board_id: str, user: CurrentUserDep, db: DbDep) -> RecruitBoardView:
     board = get_board(db, board_id)
     if board is None or board.user_id != user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such board.")
+    if board.status == "completed":
+        # Leave during holding must not wipe a board that just completed.
+        return _board_view(db, board)
     if board.status in ("in_progress", "scoring"):
-        abandon_board(db, board_id)
+        try:
+            abandon_board(db, board_id)
+        except Exception:
+            # Worker released notes between the read and the RPC.
+            board = get_board(db, board_id) or board
+            if board.status == "completed":
+                return _board_view(db, board)
+            raise
         board = get_board(db, board_id) or board
+        if board.status == "completed":
+            return _board_view(db, board)
     view = _board_view(db, board)
+    if view.status == "completed":
+        return view
     return view.model_copy(
         update={
             "status": "abandoned",
@@ -346,6 +366,8 @@ def abandon(board_id: str, user: CurrentUserDep, db: DbDep) -> RecruitBoardView:
             "answers": [],
             "c1_lines": [],
             "question_text": None,
+            "notes_blocked": False,
+            "notes_blocked_detail": None,
         }
     )
 
