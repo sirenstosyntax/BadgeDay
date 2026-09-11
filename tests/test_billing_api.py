@@ -485,25 +485,3 @@ def test_deleted_subscription_without_price_id_does_not_write_for_unknown_custom
     response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
     assert response.status_code == 200
     assert applied == []
-
-
-def test_deleted_subscription_without_price_id_does_not_write_for_unknown_customer(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """BD-BILL-001: unmapped delete clears Promote only when the customer is known."""
-    client, gateway, applied = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
-    monkeypatch.setattr("app.api.billing.user_id_for_customer", lambda *_: None)
-    gateway.event = {
-        "type": "customer.subscription.deleted",
-        "data": {
-            "object": {
-                "id": "sub_unknown",
-                "customer": "cus_unknown",
-                "status": "canceled",
-                "items": {"data": [{"price": {}}]},
-            }
-        },
-    }
-    response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
-    assert response.status_code == 200
-    assert applied == []
