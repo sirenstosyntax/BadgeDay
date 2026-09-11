@@ -13,7 +13,7 @@ from uuid import uuid4
 from pydantic import BaseModel
 from supabase import Client
 
-from app.recruit.bank import DrawnBoard, DrawnSlot
+from app.recruit.bank import DrawnBoard
 from app.storage.recruit import RecruitAttemptRecord, utc_day_start
 
 BoardStatus = Literal["in_progress", "scoring", "completed", "abandoned"]
