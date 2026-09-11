@@ -50,7 +50,7 @@ jobs:
         run: pytest -q
 
   web:
-    name: Web — oxlint + tsc build
+    name: Web — oxlint + test + tsc build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -66,6 +66,11 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      # Node 20 cannot strip TypeScript; tsx runs the same `node:test` files as
+      # a local Node 22 `node --experimental-strip-types --test`.
+      - name: Test
+        run: npm test
 
       - name: Lint
         run: npm run lint
