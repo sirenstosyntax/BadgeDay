@@ -180,10 +180,136 @@ def run_recruit_critique(db: Client, settings: Settings, job: Job) -> None:
 
     delete_audio(db, audio_path)
     logger.info("recruit attempt %s: critique stored", attempt.id)
+    _maybe_enqueue_c1(db, attempt.board_id)
+
+
+def _maybe_enqueue_c1(db: Client, board_id: str | None) -> None:
+    """When every slot is terminal, queue the whole-board C1 pass."""
+    if not board_id:
+        return
+    from app.storage.boards import enqueue_c1, worker_board_attempts
+
+    rows = worker_board_attempts(db, board_id)
+    if len(rows) < 5:
+        return
+    terminal = {"completed", "critique_failed", "abandoned"}
+    if any((row.get("status") or "") not in terminal for row in rows):
+        return
+    existing = (
+        db.table("jobs")
+        .select("id")
+        .eq("kind", "recruit_c1")
+        .eq("board_id", board_id)
+        .limit(1)
+        .execute()
+        .data
+        or []
+    )
+    if existing:
+        return
+    enqueue_c1(db, board_id)
+
+
+def _board_transcript(rows: list[dict]) -> tuple[str, str]:
+    """Five Q+A pairs as one C1 transcript. Order is slot_index."""
+    ordered = sorted(rows, key=lambda row: int(row.get("slot_index") or 0))
+    parts: list[str] = []
+    for index, row in enumerate(ordered, start=1):
+        question = (row.get("question_text") or "").strip()
+        answer = (row.get("transcript") or "").strip()
+        if not answer:
+            answer = "(no spoken material on this answer)"
+        parts.append(f"Question {index}: {question}\n\nAnswer {index}: {answer}")
+    return (
+        "Across these five answers — how they were built. Not a score on any one of them.",
+        "\n\n".join(parts),
+    )
+
+
+def run_recruit_c1(db: Client, settings: Settings, job: Job) -> None:
+    """Whole-board C1 after five slot critiques. Never invents a C1 on abandon."""
+    if not job.board_id:
+        raise RuntimeError("recruit_c1 job has no board_id")
+    from app.critique.critiquer import critique_answer
+    from app.critique.render import board_end_leaks, c1_candidate_lines
+    from app.storage.boards import (
+        complete_board_c1,
+        get_board_for_worker,
+        worker_board_attempts,
+    )
+
+    board = get_board_for_worker(db, job.board_id)
+    if board is None:
+        raise AttemptGone(job.board_id)
+    if board.status == "abandoned":
+        logger.info("recruit board %s abandoned; skipping C1", board.id)
+        return
+    if board.status == "completed" and board.notes_released:
+        return
+
+    if not settings.anthropic_api_key:
+        raise RuntimeError("ANTHROPIC_API_KEY is not set; cannot critique.")
+
+    rows = worker_board_attempts(db, board.id)
+    question, transcript = _board_transcript(rows)
+    rubric = rubric_module.load("c1")
+    outcome = critique_answer(
+        rubric=rubric,
+        question=question,
+        transcript=transcript,
+        client=Anthropic(api_key=settings.anthropic_api_key),
+        settings=settings,
+        persist=None,
+    )
+    if outcome.critique is None:
+        raise RuntimeError(outcome.failure or "The C1 critique could not be verified.")
+    if (
+        outcome.critique.outcome not in ("not_answered", "not_assessable")
+        and not outcome.critique.points
+    ):
+        raise RuntimeError(outcome.failure or "The C1 critique could not be verified.")
+
+    lines = c1_candidate_lines(outcome.critique)
+    assembled: list[str] = []
+    for row in rows:
+        held = row.get("held_candidate_lines") or []
+        if isinstance(held, list):
+            assembled.extend(str(line) for line in held)
+    assembled.extend(lines)
+    leaks = board_end_leaks(assembled)
+    if leaks:
+        raise RuntimeError(f"C1 board-end leaked instrument text: {leaks}")
+
+    points = [
+        {
+            "improvement": point.improvement,
+            "observation": point.observation,
+            "ask": point.ask,
+            "answer_quote": point.answer_quote,
+        }
+        for point in outcome.critique.points
+    ]
+    complete_board_c1(
+        db,
+        board.id,
+        outcome=outcome.critique.outcome,
+        points=points,
+        candidate_lines=lines,
+        internal_score=outcome.critique.internal_score,
+        route=outcome.critique.route,
+        determination=outcome.critique.determination,
+        deciding_clause_id=(
+            outcome.critique.deciding_clause.clause_id
+            if outcome.critique.deciding_clause
+            else None
+        ),
+    )
+    logger.info("recruit board %s: C1 stored and notes released", board.id)
 
 
 HANDLERS = {
     "ingest": run_ingest,
     "generate": run_generate,
     "recruit_critique": run_recruit_critique,
+    "recruit_c1": run_recruit_c1,
 }

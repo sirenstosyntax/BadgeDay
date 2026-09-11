@@ -17,7 +17,7 @@ from supabase import Client
 
 logger = logging.getLogger(__name__)
 
-JobKind = Literal["ingest", "generate", "recruit_critique"]
+JobKind = Literal["ingest", "generate", "recruit_critique", "recruit_c1"]
 JobStatus = Literal["queued", "running", "succeeded", "failed"]
 
 # Backoff between attempts, indexed by the attempt that just failed. Ingestion failures
@@ -36,6 +36,7 @@ class Job(BaseModel):
     kind: JobKind
     document_id: str | None = None
     attempt_id: str | None = None
+    board_id: str | None = None
     status: JobStatus
     attempts: int
     max_attempts: int
@@ -98,6 +99,7 @@ def enqueue(
     document_id: str | None = None,
     *,
     attempt_id: str | None = None,
+    board_id: str | None = None,
 ) -> None:
     """Queue follow-on work.
 
@@ -111,6 +113,8 @@ def enqueue(
         row["document_id"] = document_id
     if attempt_id is not None:
         row["attempt_id"] = attempt_id
+    if board_id is not None:
+        row["board_id"] = board_id
     db.table("jobs").insert(row).execute()
 
 
