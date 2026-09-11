@@ -130,6 +130,8 @@ export function Recruit({
   const blob = useRef<Blob | null>(null)
   const left = useRef(false)
   const abandoned = useRef(false)
+  const onNeedsAccessRef = useRef(onNeedsAccess)
+  onNeedsAccessRef.current = onNeedsAccess
 
   useEffect(() => {
     left.current = false
@@ -158,7 +160,7 @@ export function Recruit({
         if (left.current) return
         if (caught instanceof ApiError && caught.status === 402) {
           setNeedsPlan(true)
-          onNeedsAccess?.()
+          onNeedsAccessRef.current?.()
           setError(submitErrorMessage(caught, 'Your free oral-board session is used.'))
           setPhase('blocked')
           return
