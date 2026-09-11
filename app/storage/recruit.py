@@ -46,12 +46,49 @@ def utc_day_start(now: datetime | None = None) -> datetime:
 
 
 def count_attempts(db: Client, *, started_on_or_after: datetime | None = None) -> int:
-    """How many attempts this candidate already has. RLS scopes the table."""
+    """How many attempts this candidate already has. RLS scopes the table.
+
+    Used for the daily ceiling: every started row counts, including queued
+    and failed ones. The free-session grant is `count_delivered_attempts`.
+    """
     query = db.table("recruit_attempts").select("id")
     if started_on_or_after is not None:
         query = query.gte("started_at", started_on_or_after.isoformat())
     rows = query.execute().data or []
     return len(rows)
+
+
+def critique_was_delivered(status: str, candidate_lines: object) -> bool:
+    """True when the candidate actually received well/improve notes.
+
+    The UI only renders `candidate_lines` on a completed attempt. An empty
+    array — the Aug 2026 completed-but-blank shape — did not demonstrate
+    help, so it must not consume a free session.
+    """
+    if status != "completed":
+        return False
+    if not isinstance(candidate_lines, list):
+        return False
+    return any(str(line).strip() for line in candidate_lines)
+
+
+def count_delivered_attempts(db: Client, *, started_on_or_after: datetime | None = None) -> int:
+    """Attempts that showed the candidate critique. RLS scopes the table.
+
+    Completed + non-empty `candidate_lines`. Queued, running, failed,
+    abandoned, and completed-but-empty rows do not consume a free session.
+    """
+    query = db.table("recruit_attempts").select("id,status,candidate_lines").eq(
+        "status", "completed"
+    )
+    if started_on_or_after is not None:
+        query = query.gte("started_at", started_on_or_after.isoformat())
+    rows = query.execute().data or []
+    return sum(
+        1
+        for row in rows
+        if critique_was_delivered(row.get("status") or "", row.get("candidate_lines"))
+    )
 
 
 def _distinct_scenario_ids(rows: list) -> list[str]:

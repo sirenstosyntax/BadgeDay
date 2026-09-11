@@ -61,6 +61,9 @@ def _client(
     authed: bool = True,
     seen_scenario_ids: list[str] | None = None,
     completed_scenario_ids: list[str] | None = None,
+    today_count: int = 0,
+    delivered_count: int = 0,
+    entitled: bool = False,
 ) -> TestClient:
     app = FastAPI()
     app.include_router(router)
@@ -76,6 +79,15 @@ def _client(
     )
     monkeypatch.setattr("app.api.recruit.attempted_scenario_ids", lambda db: seen)
     monkeypatch.setattr("app.api.recruit.completed_scenario_ids", lambda db: completed)
+    monkeypatch.setattr(
+        "app.api.recruit.count_attempts",
+        lambda db, started_on_or_after=None: today_count,
+    )
+    monkeypatch.setattr(
+        "app.api.recruit.count_delivered_attempts",
+        lambda db, started_on_or_after=None: delivered_count,
+    )
+    monkeypatch.setattr("app.recruit.gate.recruit_entitled", lambda *a: entitled)
     return TestClient(app)
 
 
@@ -115,8 +127,6 @@ def test_submit_returns_202_and_does_not_critique(monkeypatch) -> None:
         captured["question_text"] = kwargs["question_text"]
         return _record()
 
-    monkeypatch.setattr("app.api.recruit.count_attempts", lambda *a, **k: 0)
-    monkeypatch.setattr("app.recruit.gate.recruit_entitled", lambda *a: False)
     monkeypatch.setattr("app.api.recruit.create_queued_attempt", fake_create)
 
     response = _client(_settings(), monkeypatch).post(
@@ -182,13 +192,7 @@ def test_empty_recruit_price_ids_are_placeholders() -> None:
 
 
 def test_daily_cap_is_429(monkeypatch) -> None:
-    monkeypatch.setattr(
-        "app.api.recruit.count_attempts",
-        lambda db, started_on_or_after=None: 10,
-    )
-    monkeypatch.setattr("app.recruit.gate.recruit_entitled", lambda *a: False)
-
-    response = _client(_settings(), monkeypatch).post(
+    response = _client(_settings(), monkeypatch, today_count=10).post(
         "/recruit/attempts",
         files={"audio": ("answer.webm", b"x", "audio/webm")},
     )
@@ -197,18 +201,65 @@ def test_daily_cap_is_429(monkeypatch) -> None:
 
 
 def test_used_free_session_without_entitlement_is_402(monkeypatch) -> None:
-    def counts(db, started_on_or_after=None):
-        return 1 if started_on_or_after else 1
-
-    monkeypatch.setattr("app.api.recruit.count_attempts", counts)
-    monkeypatch.setattr("app.recruit.gate.recruit_entitled", lambda *a: False)
-
-    response = _client(_settings(), monkeypatch).post(
+    response = _client(_settings(), monkeypatch, delivered_count=1).post(
         "/recruit/attempts",
         files={"audio": ("answer.webm", b"x", "audio/webm")},
     )
     assert response.status_code == 402
     assert "Recruit plan" in response.json()["detail"]
+
+
+def test_empty_lines_completed_attempt_does_not_consume_the_free_session(
+    monkeypatch,
+) -> None:
+    """A completed row with no candidate_lines never demonstrated help.
+
+    The Aug 2026 lifetime row was this shape. Counting it as the free
+    session is what made GET /question 200 and POST /attempts 402.
+    """
+    created: list[str] = []
+
+    def fake_create(db, user_id, **kwargs):
+        created.append(user_id)
+        return _record()
+
+    monkeypatch.setattr("app.api.recruit.create_queued_attempt", fake_create)
+
+    client = _client(_settings(), monkeypatch, today_count=1, delivered_count=0)
+    question = client.get("/recruit/question")
+    assert question.status_code == 200
+    assert question.json()["state"] == "available"
+
+    submit = client.post(
+        "/recruit/attempts",
+        files={"audio": ("answer.webm", b"x", "audio/webm")},
+    )
+    assert submit.status_code == 202
+    assert created == [USER_ID]
+
+
+def test_question_is_gated_like_submit_after_a_delivered_critique(monkeypatch) -> None:
+    """After notes were shown, the next start paywalls — before recording."""
+    created: list[str] = []
+
+    def fake_create(db, user_id, **kwargs):
+        created.append(user_id)
+        raise AssertionError("gated GET must not be followed by a create")
+
+    monkeypatch.setattr("app.api.recruit.create_queued_attempt", fake_create)
+
+    client = _client(_settings(), monkeypatch, today_count=1, delivered_count=1)
+    question = client.get("/recruit/question")
+    assert question.status_code == 402
+    assert "free oral-board session is used" in question.json()["detail"]
+    assert "Recruit plan" in question.json()["detail"]
+
+    submit = client.post(
+        "/recruit/attempts",
+        files={"audio": ("answer.webm", b"x", "audio/webm")},
+    )
+    assert submit.status_code == 402
+    assert created == []
 
 
 def test_recruit_entitlement_is_has_recruit_access_not_has_access() -> None:
@@ -236,14 +287,9 @@ def test_a_recruit_entitlement_row_lets_the_second_attempt_through(monkeypatch) 
         created.append(user_id)
         return _record()
 
-    def counts(db, started_on_or_after=None):
-        return 1
-
-    monkeypatch.setattr("app.api.recruit.count_attempts", counts)
-    monkeypatch.setattr("app.recruit.gate.recruit_entitled", lambda *a: True)
     monkeypatch.setattr("app.api.recruit.create_queued_attempt", fake_create)
 
-    response = _client(_settings(), monkeypatch).post(
+    response = _client(_settings(), monkeypatch, delivered_count=1, entitled=True).post(
         "/recruit/attempts",
         files={"audio": ("answer.webm", b"x", "audio/webm")},
     )

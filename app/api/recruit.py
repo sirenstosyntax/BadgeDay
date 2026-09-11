@@ -6,6 +6,11 @@ or every published item already issued). Exhaustion is not a 404. The poll
 payload is `candidate_lines` only. Score, route, determination, and clause
 ids stay on the server via 0010 / 0011; they are not in this payload.
 
+GET /question and POST /attempts share `_enforce_recruit_access`. A free
+session is consumed only after a completed attempt with non-empty
+`candidate_lines` — starting a question the submit would 402 is the
+failure mode this closes.
+
 The live worker uses Deepgram only. If the key is unset this returns 503 rather
 than enqueueing work that cannot run. `get_transcriber` stays for tests.
 
@@ -22,10 +27,12 @@ from typing import Literal
 
 from fastapi import APIRouter, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
+from supabase import Client
 
-from app.api.deps import CurrentUserDep, DbDep, SettingsDep
+from app.api.deps import CurrentUser, CurrentUserDep, DbDep, SettingsDep
 from app.audio.metrics import compute
 from app.audio.models import Transcript
+from app.config import Settings
 from app.critique.models import Metric
 from app.recruit.bank import (
     C2_SCENARIO_ID,  # noqa: F401 — re-exported for tests and the worker
@@ -38,6 +45,7 @@ from app.storage.recruit import (
     attempted_scenario_ids,
     completed_scenario_ids,
     count_attempts,
+    count_delivered_attempts,
     create_queued_attempt,
     get_attempt,
     utc_day_start,
@@ -81,6 +89,25 @@ def _question_payload(decision: AvailableIssue | ExhaustedIssue) -> RecruitQuest
     )
 
 
+def _enforce_recruit_access(user: CurrentUser, db: Client, settings: Settings) -> None:
+    """Same gate for issuing a question and submitting an attempt.
+
+    Lifetime counts delivered critiques only. Starting a session that
+    cannot be submitted (and therefore cannot show notes) is the bug
+    this exists to close.
+    """
+    try:
+        check_recruit_access(
+            db,
+            user.id,
+            settings,
+            today_count=count_attempts(db, started_on_or_after=utc_day_start()),
+            lifetime_count=count_delivered_attempts(db),
+        )
+    except RecruitAccessDenied as exc:
+        raise HTTPException(exc.status_code, exc.detail) from exc
+
+
 class RecruitResult(BaseModel):
     """What the mic screen is allowed to show. No score field on purpose.
 
@@ -113,8 +140,15 @@ def metrics_for_critique(transcript: Transcript) -> dict[str, Metric]:
 
 
 @router.get("/question")
-def issued_question(_user: CurrentUserDep, db: DbDep) -> RecruitQuestion:
-    """Next novel bank item, or the exhausted milestone. Auth required; 401 if not."""
+def issued_question(user: CurrentUserDep, db: DbDep, settings: SettingsDep) -> RecruitQuestion:
+    """Next novel bank item, or the exhausted milestone.
+
+    Auth is required. The first `recruit_free_sessions` delivered
+    critiques (default 1) need no card. Further starts need a Recruit
+    row on entitlements or this answers 402 — the same check as submit,
+    so a candidate never records into a paywall.
+    """
+    _enforce_recruit_access(user, db, settings)
     return _question_payload(
         issue(
             attempted_scenario_ids(db),
@@ -132,10 +166,11 @@ def submit_attempt(
 ) -> RecruitResult:
     """Accept a recording and return 202. The worker transcribes and critiques.
 
-    Auth is required. The first `recruit_free_sessions` attempts (default 1)
-    need no card. Further attempts need a Recruit row on entitlements or this
-    answers 402. A UTC daily ceiling (`recruit_daily_attempt_limit`, default
-    10) answers 429 even for an entitled candidate.
+    Auth is required. The first `recruit_free_sessions` delivered
+    critiques (default 1) need no card. Further attempts need a Recruit
+    row on entitlements or this answers 402. A UTC daily ceiling
+    (`recruit_daily_attempt_limit`, default 10) answers 429 even for an
+    entitled candidate. Starting a question uses this same check.
     """
     if not settings.transcription_configured:
         raise HTTPException(
@@ -157,16 +192,7 @@ def submit_attempt(
     if not data:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "That recording is empty.")
 
-    try:
-        check_recruit_access(
-            db,
-            user.id,
-            settings,
-            today_count=count_attempts(db, started_on_or_after=utc_day_start()),
-            lifetime_count=count_attempts(db),
-        )
-    except RecruitAccessDenied as exc:
-        raise HTTPException(exc.status_code, exc.detail) from exc
+    _enforce_recruit_access(user, db, settings)
 
     decision = issue(attempted_scenario_ids(db))
     if isinstance(decision, ExhaustedIssue):

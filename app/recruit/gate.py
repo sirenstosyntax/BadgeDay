@@ -45,7 +45,13 @@ def evaluate_recruit_gate(
     free_sessions: int,
     entitled: bool,
 ) -> RecruitGate:
-    """Pure decision. Counts are attempts already started, not including this one."""
+    """Pure decision. Neither count includes this start.
+
+    `today_count` is attempts already started today (the daily ceiling).
+    `lifetime_count` is delivered critiques — completed rows with
+    non-empty `candidate_lines`. A completed row that never showed notes
+    does not consume a free session.
+    """
     if daily_limit <= 0:
         raise ValueError("recruit daily attempt limit must be positive")
     if free_sessions < 0:
