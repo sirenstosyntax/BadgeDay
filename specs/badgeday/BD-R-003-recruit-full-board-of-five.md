@@ -37,12 +37,12 @@ A signed-in pre-hire Recruit candidate can run one practice session as a **full 
 - Mid-board abandon = **incomplete board**; issued prompts count as **seen**; **no fake C1** on incomplete boards (Zazu default).
 - Web UI: Q1–Q5 progress; no preview of upcoming questions; board summary only at end.
 - API: start-board → next/current Q → submit audio → poll attempt; on board complete → run C1 and release held notes.
-- Paid / Stripe live / Play Activate remain **HELD** — out of scope (Grant lock).
+- This board START ORDER does not configure Stripe products. A later START ORDER 2026-09-11 opened **Recruit paid go-live** (see `badgeday_pricing.md`); live Stripe price IDs and Play product IDs remain ops (Zazu). Promote stays held.
 - Record START ORDER 2026-09-11 in `recruit_design_decisions.md` and `recruit_scope.md`.
 
 ### Out
 
-- Enabling Stripe live, public Play SKUs, or changing Grant-held pricing.
+- Filling live Stripe price IDs or Play / App Store product IDs (ops). This board spec does not configure Stripe products. Recruit paid go-live is approved separately (START ORDER 2026-09-11 — see `badgeday_pricing.md`); Promote checkout stays held.
 - Promote quiz, DrillGround, department-specific content.
 - Showing internal 1–5 scores, route tags, determinations, clause ids, or percentiles to the candidate.
 - Re-record / retry a question inside a board.
@@ -130,7 +130,7 @@ Minimum that still honors Grant locks: board of five with real multi-criterion d
 20. **Free:** a candidate with no Recruit entitlement may complete **one** complete five-question board (Grant). `recruit_free_sessions` semantics become **free boards**, default 1. Starting or abandoning does not consume the free board; **completing** a board with released notes does.
 21. **Daily ceiling:** counts **boards started** per UTC day, default **2** (Zazu). Exceeding answers **429**. Replaces the default 10 question-attempt daily limit for Recruit practice.
 22. Paid Recruit entitlement (`has_recruit_access` / entitlements recruit) still required after free boards are used. Promote entitlement does not grant Recruit (existing gate rule).
-23. Stripe live / Play Activate / public paid offer go-live remain **out**; held pricing must not be enabled by this work.
+23. This board work does not configure Stripe products or fill live IDs. A later START ORDER 2026-09-11 opened Recruit paid go-live (see `badgeday_pricing.md`); live IDs remain ops. Promote stays held.
 
 ### UI
 
@@ -288,5 +288,5 @@ No Grant decision blocking the build. Gyro cleared on display copy (Zazu handed 
 
 1. Docs: record START ORDER 2026-09-11 locks in design_decisions + scope (PR in flight / URL to Zazu).
 2. Red: signed 2026-09-11 — board-end framing, C1 lines, hold-until-end, hard ban on scores/bands. Strings in AC17–AC19 character-for-character.
-3. Gyro: Zazu handed priority build; implement phases; emit Red-signed strings character-for-character; do not enable paid go-live.
+3. Gyro: Zazu handed priority build; implement phases; emit Red-signed strings character-for-character. Board Phase 0 does not configure Stripe products; Recruit paid go-live is a separate START ORDER 2026-09-11 (see `badgeday_pricing.md`).
 4. Baymax: verify ACs above, especially hold-until-end, signed strings, draw shape not C2-only, free/daily board units.
