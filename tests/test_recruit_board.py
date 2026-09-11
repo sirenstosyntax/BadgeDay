@@ -550,6 +550,43 @@ def test_draw_exhausts_when_a_slot_is_empty() -> None:
     assert decision.bank_size == len(items)
 
 
+def test_c1_is_blocked_until_five_transcripts_exist(monkeypatch) -> None:
+    """BD-R-003 §6 / §8.4: no fake C1 when a slot has no spoken material."""
+    from app.worker.pipeline import _maybe_enqueue_c1
+
+    queued: list[str] = []
+    rows = [
+        {"status": "completed", "transcript": f"answer {index}", "slot_index": index}
+        for index in range(4)
+    ] + [{"status": "critique_failed", "transcript": "", "slot_index": 4}]
+
+    class _Jobs:
+        def select(self, *_a):
+            return self
+
+        def eq(self, *_a):
+            return self
+
+        def limit(self, *_a):
+            return self
+
+        def execute(self):
+            return SimpleNamespace(data=[])
+
+    class _Db:
+        def table(self, name: str) -> _Jobs:
+            assert name == "jobs"
+            return _Jobs()
+
+    monkeypatch.setattr("app.storage.boards.worker_board_attempts", lambda db, _id: rows)
+    monkeypatch.setattr("app.storage.boards.enqueue_c1", lambda db, _id: queued.append(_id))
+    _maybe_enqueue_c1(_Db(), BOARD)
+    assert queued == []
+    rows[-1]["transcript"] = "enough spoken material to hear"
+    _maybe_enqueue_c1(_Db(), BOARD)
+    assert queued == [BOARD]
+
+
 def test_c1_worker_skips_an_abandoned_board(monkeypatch) -> None:
     from app.worker.jobs import Job
     from app.worker.pipeline import run_recruit_c1

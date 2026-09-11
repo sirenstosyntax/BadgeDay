@@ -183,8 +183,17 @@ def run_recruit_critique(db: Client, settings: Settings, job: Job) -> None:
     _maybe_enqueue_c1(db, attempt.board_id)
 
 
+def _has_spoken_transcript(row: dict) -> bool:
+    return bool(str(row.get("transcript") or "").strip())
+
+
 def _maybe_enqueue_c1(db: Client, board_id: str | None) -> None:
-    """When every slot is terminal, queue the whole-board C1 pass."""
+    """Queue whole-board C1 only when five spoken transcripts exist.
+
+    Spec default (BD-R-003 §6 / §8.4): no C1 — and no fake C1 — until
+    five transcripts exist, or the board is abandoned. A critique_failed
+    slot with no transcript keeps the board in scoring.
+    """
     if not board_id:
         return
     from app.storage.boards import enqueue_c1, worker_board_attempts
@@ -194,6 +203,8 @@ def _maybe_enqueue_c1(db: Client, board_id: str | None) -> None:
         return
     terminal = {"completed", "critique_failed", "abandoned"}
     if any((row.get("status") or "") not in terminal for row in rows):
+        return
+    if sum(1 for row in rows if _has_spoken_transcript(row)) < 5:
         return
     existing = (
         db.table("jobs")
