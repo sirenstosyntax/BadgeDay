@@ -388,6 +388,8 @@ issue, and live scorer wire. C2-only ~81 was the prior live bank.
 - **Paid / Stripe live / Play Activate stay HELD** — out of scope. Do not enable
   pricing go-live.
 
-Zazu defaults (also recorded): daily cap counts **boards**, ~2 boards/day (replaces
-10 question-attempts); soft timer only — no hard auto-submit; mid-board abandon =
+Zazu defaults (also recorded): daily ceiling counts **boards started** (UTC day),
+default ~2 (replaces 10 question-attempts) — not completed-only; soft timer =
+**2 minutes per answer**, display guidance only — no hard auto-submit; free
+consumes only on a **complete** board with released notes; mid-board abandon =
 incomplete, issued prompts count as seen, no fake C1 on incomplete boards.

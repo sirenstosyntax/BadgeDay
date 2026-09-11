@@ -979,9 +979,9 @@ Locked by Grant 2026-09-11 via Zazu. Spec id **BD-R-003** (Geppetto BD-R-003 ful
 
 **Zazu defaults (also recorded):**
 
-- Daily cap counts **boards**, ~2 boards/day (replaces 10 question-attempts).
-- Soft timer only — no hard auto-submit.
-- Mid-board abandon = incomplete; issued prompts count as seen; no fake C1 on incomplete boards.
+- Daily ceiling counts **boards started** (UTC day), default ~2 (replaces 10 question-attempts). Not completed-only.
+- Soft timer = **2 minutes per answer**, display guidance only — no hard auto-submit.
+- Free consumes only on a **complete** board with released notes. Mid-board abandon = incomplete; issued prompts count as seen; no fake C1 on incomplete boards.
 
 **Draw** (already in `recruit_question_bank.md` — do not rewrite the bank here): one from each A · B/C · D/E/F · G/H · J; never repeat a prompt; no family within a rolling 8 sessions; 70/30 weighted/random; 12-month retirement preferred.
 
