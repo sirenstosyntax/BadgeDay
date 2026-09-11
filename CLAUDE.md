@@ -202,8 +202,8 @@ Recruit's shape from Promote's.
   phone apps, the store's own billing** — Play Billing and StoreKit — because both stores
   require it for a digital subscription sold in-app. Promote's two products share one
   entitlement across tills; Recruit is a **separate module** on `entitlements(user,
-  module)` (migration 0012). Recruit price IDs are held blank until Grant says go live
-  — Stripe stays in test mode. The split is in `app/billing/store*` and
+  module)` (migration 0012). Recruit paid go-live wire approved 2026-09-11
+  (`badgeday_pricing.md`); live price IDs remain ops. The split is in `app/billing/store*` and
   `app/billing/module.py`; the reasoning is in `mobile_release_plan.md`.
 - **Frontend:** React + Vite, Tailwind. Keep it simple; no SSR framework unless justified.
 - **Mobile:** wrappers around that same frontend — Trusted Web Activity (Play), Capacitor
