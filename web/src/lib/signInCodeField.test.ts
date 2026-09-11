@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+import { showSignInCodeField } from './signInCodeField.ts'
+
+test('a burned-link redirect shows the code field with no remembered email', () => {
+  assert.equal(showSignInCodeField({ sent: false, email: '', fromRedirect: true }), true)
+  assert.equal(showSignInCodeField({ sent: false, email: 'not-an-address', fromRedirect: true }), true)
+})
+
+test('clean SignIn hides the code field until an email is typed or a link is sent', () => {
+  assert.equal(showSignInCodeField({ sent: false, email: '', fromRedirect: false }), false)
+  assert.equal(showSignInCodeField({ sent: false, email: 'qa', fromRedirect: false }), false)
+  assert.equal(showSignInCodeField({ sent: false, email: 'qa@example.com', fromRedirect: false }), true)
+  assert.equal(showSignInCodeField({ sent: true, email: 'qa@example.com', fromRedirect: false }), true)
+})

@@ -10,6 +10,7 @@ import {
   consumeFreshAuthRedirectError,
 } from '../lib/authRedirectError'
 import { isCompleteEmailOtp, normalizeEmailOtp } from '../lib/emailOtp'
+import { showSignInCodeField } from '../lib/signInCodeField'
 import { LegalLinks } from './LegalLinks'
 
 export function SignIn() {
@@ -22,7 +23,7 @@ export function SignIn() {
   )
   const [sending, setSending] = useState(false)
   const [verifying, setVerifying] = useState(false)
-  const showCode = sent || email.includes('@') || fromRedirect
+  const showCode = showSignInCodeField({ sent, email, fromRedirect })
 
   useEffect(() => {
     function syncRedirectError() {
