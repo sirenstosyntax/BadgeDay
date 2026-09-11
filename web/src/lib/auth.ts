@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
 import { useEffect, useState } from 'react'
-import { normalizeEmailOtp } from './emailOtp'
+import { emailOtpVerifyParams } from './emailOtp'
 import { supabase } from './supabase'
 
 const SIGNIN_EMAIL_KEY = 'badgeday.signin-email'
@@ -60,11 +60,7 @@ export async function sendMagicLink(email: string) {
  * `magiclink` / `signup` are deprecated aliases for the same verify path.
  */
 export async function verifyEmailOtp(email: string, token: string) {
-  const { error } = await supabase.auth.verifyOtp({
-    email,
-    token: normalizeEmailOtp(token),
-    type: 'email',
-  })
+  const { error } = await supabase.auth.verifyOtp(emailOtpVerifyParams(email, token))
   if (error) throw error
   forgetSignInEmail()
 }

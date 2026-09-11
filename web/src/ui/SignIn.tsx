@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   forgetSignInEmail,
   readRememberedSignInEmail,
@@ -18,6 +18,15 @@ export function SignIn() {
   )
   const [sending, setSending] = useState(false)
   const [verifying, setVerifying] = useState(false)
+
+  useEffect(() => {
+    function syncRedirectError() {
+      const message = consumeAuthRedirectError()
+      if (message) setError(message)
+    }
+    window.addEventListener('hashchange', syncRedirectError)
+    return () => window.removeEventListener('hashchange', syncRedirectError)
+  }, [])
 
   async function requestEmail() {
     setSending(true)

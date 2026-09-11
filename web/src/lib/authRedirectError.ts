@@ -48,16 +48,16 @@ export function readAuthRedirectError(hash: string, search = ''): string | null 
 }
 
 /**
- * Read a redirect error once per page load, then strip it from the address bar
- * so a refresh does not keep showing a spent link. Cached because React Strict
- * Mode remounts SignIn and the hash is already gone on the second mount.
+ * Read a redirect error from the current URL, then strip it from the address
+ * bar so a refresh does not keep showing a spent link. Remembered after the
+ * hash is cleared because React Strict Mode remounts SignIn, and so a later
+ * `#error=` hashchange (same tab, no reload) can still update SignIn.
  */
 export function consumeAuthRedirectError(): string | null {
-  if (consumed) return consumed
-  if (typeof window === 'undefined') return null
+  if (typeof window === 'undefined') return consumed
 
   const message = readAuthRedirectError(window.location.hash, window.location.search)
-  if (!message) return null
+  if (!message) return consumed
 
   const params = new URLSearchParams(window.location.search)
   params.delete('error')
