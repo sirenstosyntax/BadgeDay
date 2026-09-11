@@ -160,8 +160,8 @@ Decisions I am making by default. Change them deliberately.
 | Audio retention | Transcribe, compute, discard. Retained only on explicit opt-in for self-review. | Voice is sensitive in a way typed answers are not and several states regulate it specifically. Playback of a candidate's own answer is likely a strong feature, but it is opt-in, not a reason to keep everything. |
 | Scoring shape | Answers are **not** scored independently and summed | Real panels build a picture: a flag raised early shapes how later answers are read. A pipeline that scores each answer in isolation and adds them up will not reproduce board behavior. |
 | Model role | Applies a rubric to an answer. Never authors a rubric that reaches a candidate unreviewed. | The bounded-reviewable-asset argument only holds if the asset stays bounded. A model may *draft* rubric candidates for SME review — that is generation into the review chain, not publication. |
-| Entitlement | **Per-module.** `entitlements` keyed on (user, module) — migration 0012, ship gate #4. Recruit reads this table via `has_recruit_access`. Promote's live path still uses profiles + store_purchases / `has_access`. | Recruit is a separate plan (decided 2026-07-26), so one entitlement per account no longer expresses what a candidate has bought. A table beats adding `promote_*` / `recruit_*` column pairs: a third module would need another migration and every gate would need editing, where a row does not. Keep the service-role-only write rule from migration 0005 — a candidate must not be able to grant themselves either module. Recruit paid go-live wire is approved (START ORDER 2026-09-11 — see `badgeday_pricing.md`); live Stripe price IDs and store product IDs remain ops. Promote checkout stays held. |
-| Stripe mapping | Price ID → module, resolved server-side from config (`app/billing/module.py`) | Recruit has its own price-ID placeholders (`STRIPE_PRICE_ID_RECRUIT_*`) alongside `STRIPE_PRICE_ID_MONTHLY` / `STRIPE_PRICE_ID_INTENSIVE_90DAY`. The webhook must decide *which module* a completed checkout grants. Mapping is in place; Recruit checkout/wire may ship. Live Stripe price IDs remain ops (Zazu) — blank placeholders expected. Promote checkout stays held. |
+| Entitlement | **Per-module.** `entitlements` keyed on (user, module) — migration 0012, ship gate #4. Recruit reads this table via `has_recruit_access`. Promote's live path still uses profiles + store_purchases / `has_access`. | Recruit is a separate plan (decided 2026-07-26), so one entitlement per account no longer expresses what a candidate has bought. A table beats adding `promote_*` / `recruit_*` column pairs: a third module would need another migration and every gate would need editing, where a row does not. Keep the service-role-only write rule from migration 0005 — a candidate must not be able to grant themselves either module. Recruit paid go-live wire is approved (START ORDER 2026-09-11 — see `badgeday_pricing.md`); live Stripe price IDs and store product IDs remain ops. Promote paid go-live approved 2026-09-11 evening (see `badgeday_pricing.md`). |
+| Stripe mapping | Price ID → module, resolved server-side from config (`app/billing/module.py`) | Recruit has its own price-ID placeholders (`STRIPE_PRICE_ID_RECRUIT_*`) alongside `STRIPE_PRICE_ID_MONTHLY` / `STRIPE_PRICE_ID_INTENSIVE_90DAY`. The webhook must decide *which module* a completed checkout grants. Mapping is in place; Recruit checkout/wire may ship. Live Stripe price IDs remain ops (Zazu) — blank placeholders expected for Recruit. Promote paid go-live approved 2026-09-11 evening (see `badgeday_pricing.md`); live Stripe prices ops-filled. |
 | Testing | The critique pipeline gets real coverage first, against fixture rubrics and fixture answers | Same reasoning as Promote's chunker and citation resolver: it is the component where silent failure destroys the product. A critique that quietly stops referencing criteria still *looks* like good feedback. |
 
 ### On reusing DrillGround's review chain
@@ -191,8 +191,9 @@ Promote's pipeline was CLI-testable before it had a frontend.
      already SME-approved). **START ORDER 2026-09-11 (Grant)** opens the five-question
      board *build*, C1–C5 live scorer wire, and non-C2 bank publish so the draw shape
      is real. Recruit paid go-live is **approved** separately the same day (see
-     `badgeday_pricing.md`); live IDs remain ops. Promote stays held. See the START
-     ORDER subsection under Open questions, and `recruit_design_decisions.md` §10.
+     `badgeday_pricing.md`); live IDs remain ops. Promote paid go-live approved
+     later the same day (evening START ORDER — see `badgeday_pricing.md`). See the
+     START ORDER subsection under Open questions, and `recruit_design_decisions.md` §10.
 2. ~~**The critique pipeline, CLI-first.**~~ **Built 2026-07-28** — `app/critique/`,
    exercisable now with `badgeday-critique --rubric c3 --all-fixtures`. Rubric clauses are
    parsed out of the markdown rather than kept beside it, so a point cites `c3.anchor.2`
@@ -258,7 +259,8 @@ Promote's pipeline was CLI-testable before it had a frontend.
    module)`, `has_recruit_access` reads that table, price/SKU placeholders are blank.
    Recruit paid go-live wire is **approved** (START ORDER 2026-09-11); checkout may
    ship. Live Stripe mode and price/product IDs remain ops (Zazu) — blank
-   placeholders expected. Promote stays held.
+   placeholders expected for Recruit. Promote paid go-live approved 2026-09-11
+   evening (see `badgeday_pricing.md`).
 
 Steps 2–3 are small, cheap, and answer the question that decides whether the rest are
 worth doing.
@@ -333,9 +335,9 @@ either way.
    after the captain text pass). **START ORDER 2026-09-11 (Grant)** opens Phase 0:
    C1–C5 live scorer wire and non-C2 bank publish so the full-board draw is real, not a
    C2-only fake board. Recruit paid go-live is **approved** separately the same day
-   (see `badgeday_pricing.md`); live IDs remain ops. Promote stays held — do not
-   invent a Promote go-live. See the START ORDER subsection below and
-   `recruit_design_decisions.md` §10.
+   (see `badgeday_pricing.md`); live IDs remain ops. Promote paid go-live approved
+   later the same day (evening START ORDER — see `badgeday_pricing.md`). See the
+   START ORDER subsection below and `recruit_design_decisions.md` §10.
 
    Pillar 2 additionally becomes the free tier — see `badgeday_pricing.md`. That raises its
    quality bar (it is now the first thing a stranger sees) without changing its scope.
@@ -360,7 +362,8 @@ either way.
    (pass 1+2; **272 survive**; not a second library). Unreviewed items still do
    not publish; **START ORDER 2026-09-11** opens non-C2 publish of reviewed stock
    and C1–C5 scorer wire. Recruit paid go-live is **approved** separately (see
-   `badgeday_pricing.md`); live IDs remain ops. Promote stays held. See
+   `badgeday_pricing.md`); live IDs remain ops. Promote paid go-live approved
+   later the same day (evening START ORDER — see `badgeday_pricing.md`). See
    `recruit_design_decisions.md` §10 Settles 2026-09-10 and START ORDER 2026-09-11.
 
    The reason a large bank turns out to be affordable: **a Recruit question is an unkeyed
@@ -396,8 +399,9 @@ issue, and live scorer wire. C2-only ~81 was the prior live bank.
 - **Recruit paid go-live approved 2026-09-11** (see `badgeday_pricing.md`). Live
   Stripe price IDs and Play product IDs remain ops (Zazu); blank placeholders
   expected. Board Phase 0 does not itself configure Stripe products, but paid
-  go-live is **no longer held**. Promote remains held and is out of this Recruit
-  board START ORDER.
+  go-live is **no longer held**. Promote paid go-live was opened later the same
+  day (evening START ORDER — see `badgeday_pricing.md`) and is out of this
+  Recruit board START ORDER.
 
 Zazu defaults (also recorded): daily ceiling counts **boards started** (UTC day),
 default ~2 (replaces 10 question-attempts) — not completed-only; soft timer =

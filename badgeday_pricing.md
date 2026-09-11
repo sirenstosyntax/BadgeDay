@@ -1,9 +1,11 @@
 # BadgeDay — Pricing and Competitive Position
 
-*Recruit pricing, and what "materially better than Station Visit" has to mean concretely.
-Drafted 2026-07-29. Amounts live in Stripe / store products and are never printed in the
-app (`web/src/ui/Paywall.tsx`). Recruit paid go-live wire is approved (START ORDER
-2026-09-11); live price/product IDs are still ops. Promote remains held.*
+*Recruit and Promote pricing, and what "materially better than Station Visit" has to mean
+concretely. Drafted 2026-07-29. Amounts live in Stripe / store products and are never
+printed in the app (`web/src/ui/Paywall.tsx`). Recruit paid go-live wire is approved
+(START ORDER 2026-09-11); Recruit live price/product IDs remain ops. Promote paid
+go-live is approved (START ORDER 2026-09-11 evening); Promote live Stripe prices
+are ops-filled.*
 
 ---
 
@@ -15,8 +17,8 @@ Recruit. Live Stripe price IDs and Play / App Store product IDs remain **ops to 
 (Zazu). Env vars may still be blank placeholders until those IDs land — do not invent
 IDs in this file. Blank placeholders are expected.
 
-**Promote** has no separate go-live order. Promote checkout / Stripe live / store public
-SKUs stay held.
+**Promote** paid go-live was opened later the same day — see the Promote subsection
+below. Do not treat this Recruit order as holding Promote.
 
 | Module | Offer | Locked amount |
 |---|---|---|
@@ -34,6 +36,26 @@ naming is superseded.
 The 2026-07-29 recommendation below ($29 / $119 six-month / $179 annual, no 90-day) remains
 the reasoning record. Grant locked the six-month and annual amounts from that pairing; he
 did not adopt $29 monthly or drop the 90-day row.
+
+---
+
+## START ORDER 2026-09-11 — Promote paid go-live approved
+
+**Go-live wire approved for Promote.** Grant opened Promote paid go-live on
+2026-09-11 (evening): checkout may ship; Stripe live mode is approved for Promote.
+Live Stripe price IDs are **ops-filled** (Zazu, 2026-09-11). Azure restarted on
+commit `7f5d5a6`. Play production publish is **in flight** — do not claim Play
+production is done.
+
+Locked amounts and wired live Stripe prices:
+
+| Module | Offer | Locked amount |
+|---|---|---|
+| **Promote** | Monthly | **$29/mo** — `STRIPE_PRICE_ID_MONTHLY` (`price_1UEdll1YnX6cB4kb7fXCeMRF`) |
+| **Promote** | 90-day intensive | **$129** — `STRIPE_PRICE_ID_INTENSIVE_90DAY` (`price_1UEdlm1YnX6cB4kbfvvc6eAV`) |
+
+Recruit paid go-live remains approved (see the subsection above). Recruit amounts
+and IDs are unchanged.
 
 ---
 
@@ -123,8 +145,9 @@ conversion risk.
 If you want the safer version, **$139/yr** (~$11.58/mo) keeps a visible discount ladder and
 sits close enough to $99 that the comparison does not sting. I would still open at $179 and
 find out — it is one Stripe price ID either way. The July note that Stripe stayed in test
-mode until both modules ship is superseded for Recruit (START ORDER 2026-09-11); live IDs
-remain ops.
+mode until both modules ship is superseded for Recruit and Promote (START ORDER
+2026-09-11; Promote evening). Recruit live IDs remain ops; Promote live Stripe
+prices are ops-filled.
 
 ### Cost does not constrain any of this
 

@@ -63,16 +63,16 @@ documents, and requiring them would gate the product on something its users do n
 
 ## What launch means — both modules
 
-**Rule of record (START ORDER 2026-09-11):** Recruit paid go-live is **approved**.
-See `badgeday_pricing.md`. Live Stripe / Play product IDs remain **ops**
-(blank placeholders expected; do not invent IDs). Recruit can take real money
-once ops wires those IDs. **Promote checkout / paid go-live remains held** until a separate
-Grant START ORDER. The brand may advertise both audiences; that no longer requires
-Promote to be paid before Recruit can charge.
+**Rule of record (START ORDER 2026-09-11):** Recruit and Promote paid go-live are
+both **approved**. Recruit earlier that day; Promote later the same evening. See
+`badgeday_pricing.md`. Live Stripe / Play product IDs remain **ops** — Promote
+live Stripe prices are ops-filled; Recruit IDs may still be blank placeholders
+(do not invent IDs). Play production publish is **in flight**; do not claim Play
+production is done. The brand may advertise both audiences.
 
 **Superseded 2026-09-11.** The 2026-07-26 / 2026-08-16 both-modules gate — Stripe
 held in test mode, and no real payments, until Promote and Recruit were both ready
-— is closed. It does not apply to Recruit.
+— is closed. It does not apply to Recruit or Promote.
 
 **Historical — decided 2026-07-26:** BadgeDay would not take real payments until
 Promote and Recruit were both built. The brand and the marketing site address both
@@ -86,13 +86,14 @@ Going into the stores was not a reason to open the both-modules payment gate
 early. The store work still runs *alongside* Recruit rather than ahead of it,
 because most of what it costs is waiting — developer-account enrolment, a D-U-N-S
 number, closed testing — and waiting is the one thing that parallelises. Nothing
-in `mobile_release_plan.md` opened Promote live pricing; Recruit paid go-live is
-the 2026-09-11 START ORDER, not the store wrappers.
+in `mobile_release_plan.md` opened Promote live pricing. Recruit and Promote paid
+go-live are the 2026-09-11 START ORDERs (Recruit earlier; Promote evening), not
+the store wrappers. Play production publish is in flight.
 
 ### Promote — built (what shipped)
 
-- **Auth + billing:** email auth, Stripe subscription (monthly ~$29 and a 90-day
-  intensive ~$129 — exact pricing configurable, not hardcoded).
+- **Auth + billing:** email auth, Stripe subscription (monthly **$29** and a
+  90-day intensive **$129** — locked 2026-09-11; see `badgeday_pricing.md`).
 - **Document upload:** PDF/DOCX, per-user private storage. The candidate uploads their
   own documents; we ship zero content.
 - **Ingestion pipeline:** Azure Document Intelligence → hybrid chunking. Chunking must
@@ -211,10 +212,13 @@ Recruit's shape from Promote's.
 - **Payments:** Stripe on the web (subscriptions + one-time 90-day pass). **Inside the
   phone apps, the store's own billing** — Play Billing and StoreKit — because both stores
   require it for a digital subscription sold in-app. Promote's two products share one
-  entitlement across tills; Recruit is a **separate module** on `entitlements(user,
+  entitlement across tills (**$29/mo** and **$129 / 90-day**; paid go-live approved
+  2026-09-11 evening); Recruit is a **separate module** on `entitlements(user,
   module)` (migration 0012). Recruit paid go-live wire approved 2026-09-11
-  (`badgeday_pricing.md`); live price IDs remain ops. The split is in `app/billing/store*` and
-  `app/billing/module.py`; the reasoning is in `mobile_release_plan.md`.
+  (`badgeday_pricing.md`); live price IDs remain ops (Promote Stripe prices
+  ops-filled; Recruit still ops to fill). Play production publish is in flight.
+  The split is in `app/billing/store*` and `app/billing/module.py`; the reasoning
+  is in `mobile_release_plan.md`.
 - **Frontend:** React + Vite, Tailwind. Keep it simple; no SSR framework unless justified.
 - **Mobile:** wrappers around that same frontend — Trusted Web Activity (Play), Capacitor
   (iOS). Product code is never forked per platform.
