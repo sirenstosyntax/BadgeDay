@@ -20,6 +20,18 @@ def test_first_attempt_is_free() -> None:
     assert gate.allowed is True
 
 
+def test_undelivered_history_is_still_inside_the_free_session() -> None:
+    """lifetime_count is delivered critiques, so a blank completed row is 0."""
+    gate = evaluate_recruit_gate(
+        today_count=1,
+        lifetime_count=0,
+        daily_limit=10,
+        free_sessions=1,
+        entitled=False,
+    )
+    assert gate.allowed is True
+
+
 def test_second_attempt_without_entitlement_is_402() -> None:
     gate = evaluate_recruit_gate(
         today_count=1,

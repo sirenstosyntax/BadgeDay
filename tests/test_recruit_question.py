@@ -17,7 +17,11 @@ from app.recruit.bank import (
     issue,
     published_items,
 )
-from app.storage.recruit import completed_scenario_ids
+from app.storage.recruit import (
+    completed_scenario_ids,
+    count_delivered_attempts,
+    critique_was_delivered,
+)
 from tests.test_recruit_attempts import _client, _settings
 
 WEB = Path(__file__).resolve().parents[1] / "web" / "src"
@@ -88,6 +92,24 @@ def test_issue_skips_seen_and_does_not_need_the_full_bank() -> None:
     assert unfinished.answered_count == 1
 
 
+def test_question_and_submit_share_the_same_access_check() -> None:
+    """A later edit must not re-open GET while leaving POST gated."""
+    source = (
+        Path(__file__).resolve().parents[1] / "app" / "api" / "recruit.py"
+    ).read_text()
+    assert source.count("_enforce_recruit_access(") >= 3
+    assert "lifetime_count=count_delivered_attempts(db)" in source
+    assert "lifetime_count=count_attempts(db)" not in source
+
+
+def test_get_question_is_402_when_the_free_critique_was_delivered(monkeypatch) -> None:
+    """GET /question uses the same access check as submit. No recording into a 402."""
+    response = _client(_settings(), monkeypatch, delivered_count=1).get("/recruit/question")
+    assert response.status_code == 402
+    assert "free oral-board session is used" in response.json()["detail"]
+    assert "Recruit plan" in response.json()["detail"]
+
+
 def test_get_question_available(monkeypatch) -> None:
     response = _client(_settings(), monkeypatch).get("/recruit/question")
     assert response.status_code == 200
@@ -116,6 +138,53 @@ def test_get_question_exhausted_is_200_not_404(monkeypatch) -> None:
     assert body["next_eligible_at"] is None
     assert "scenario_id" not in body
     RecruitQuestionExhausted.model_validate(body)
+
+
+def test_critique_was_delivered_requires_completed_nonempty_lines() -> None:
+    assert critique_was_delivered("completed", ["WHAT YOU DID WELL", "You named one thing."])
+    assert critique_was_delivered("completed", []) is False
+    assert critique_was_delivered("completed", ["", "  "]) is False
+    assert critique_was_delivered("completed", None) is False
+    assert critique_was_delivered("queued", ["WHAT YOU DID WELL"]) is False
+    assert critique_was_delivered("critique_failed", ["WHAT YOU DID WELL"]) is False
+    assert critique_was_delivered("abandoned", ["WHAT YOU DID WELL"]) is False
+
+
+def test_count_delivered_attempts_ignores_empty_lines_and_unfinished() -> None:
+    recorded: list[tuple[str, object]] = []
+
+    class _Query:
+        def select(self, columns: str) -> "_Query":
+            recorded.append(("select", columns))
+            return self
+
+        def eq(self, column: str, value: object) -> "_Query":
+            recorded.append(("eq", (column, value)))
+            return self
+
+        def execute(self) -> SimpleNamespace:
+            return SimpleNamespace(
+                data=[
+                    {"id": "empty", "status": "completed", "candidate_lines": []},
+                    {
+                        "id": "shown",
+                        "status": "completed",
+                        "candidate_lines": [
+                            "WHAT YOU DID WELL",
+                            "You named one thing you have done.",
+                        ],
+                    },
+                ]
+            )
+
+    class _Db:
+        def table(self, name: str) -> _Query:
+            recorded.append(("table", name))
+            return _Query()
+
+    assert count_delivered_attempts(_Db()) == 1
+    assert ("table", "recruit_attempts") in recorded
+    assert ("eq", ("status", "completed")) in recorded
 
 
 def test_completed_scenario_ids_filters_to_completed_status() -> None:
@@ -189,8 +258,6 @@ def test_post_attempt_rejected_when_exhausted(monkeypatch) -> None:
         created.append(user_id)
         raise AssertionError("exhausted POST must not create an attempt")
 
-    monkeypatch.setattr("app.api.recruit.count_attempts", lambda *a, **k: 0)
-    monkeypatch.setattr("app.recruit.gate.recruit_entitled", lambda *a: True)
     monkeypatch.setattr("app.api.recruit.create_queued_attempt", fake_create)
 
     response = _client(_settings(), monkeypatch, seen_scenario_ids=_published_ids()).post(
@@ -205,8 +272,6 @@ def test_post_attempt_rejected_when_exhausted(monkeypatch) -> None:
 def test_post_attempt_still_202_when_available(monkeypatch) -> None:
     from tests.test_recruit_attempts import _record
 
-    monkeypatch.setattr("app.api.recruit.count_attempts", lambda *a, **k: 0)
-    monkeypatch.setattr("app.recruit.gate.recruit_entitled", lambda *a: False)
     monkeypatch.setattr("app.api.recruit.create_queued_attempt", lambda *a, **k: _record())
 
     response = _client(_settings(), monkeypatch).post(
