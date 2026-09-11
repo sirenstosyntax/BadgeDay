@@ -26,7 +26,9 @@ export const supabase = createClient(url, publishableKey, {
     autoRefreshToken: true,
     // The magic link lands back here with the session in the URL fragment; this is what
     // picks it up and exchanges it. Without it, clicking the emailed link appears to do
-    // nothing at all.
+    // nothing at all. A spent or expired link leaves `#error=…` instead of tokens —
+    // supabase-js does not clear that hash or surface it, so SignIn reads it via
+    // consumeAuthRedirectError.
     detectSessionInUrl: true,
   },
 })
