@@ -9,7 +9,7 @@ test('live otp_expired hash becomes a visible SignIn message', () => {
   const message = readAuthRedirectError(LIVE_HASH)
   assert.equal(
     message,
-    'This sign-in link is invalid or has expired. Request a new one below.',
+    'This sign-in link is invalid or has expired. Type the code from the email if the button did nothing, or request a new email.',
   )
 })
 
@@ -20,7 +20,7 @@ test('the same keys on the query string are also read', () => {
   )
   assert.equal(
     message,
-    'This sign-in link is invalid or has expired. Request a new one below.',
+    'This sign-in link is invalid or has expired. Type the code from the email if the button did nothing, or request a new email.',
   )
 })
 
@@ -39,6 +39,6 @@ test('an empty location is not an error', () => {
 test('other auth redirect errors keep the description and ask for a new link', () => {
   assert.equal(
     readAuthRedirectError('#error=access_denied&error_description=Email+link+was+already+used'),
-    'Email link was already used. Request a new link below.',
+    'Email link was already used. Type the code from the email if the button did nothing, or request a new email.'
   )
 })

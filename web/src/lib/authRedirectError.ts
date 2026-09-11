@@ -8,9 +8,13 @@
  */
 
 const EXPIRED_MESSAGE =
-  'This sign-in link is invalid or has expired. Request a new one below.'
+  'This sign-in link is invalid or has expired. Type the code from the email if the button did nothing, or request a new email.'
 
-const GENERIC_MESSAGE = 'Sign-in failed. Request a new link below.'
+const GENERIC_MESSAGE =
+  'Sign-in failed. Type the code from the email if the button did nothing, or request a new email.'
+
+const RETRY_HINT =
+  'Type the code from the email if the button did nothing, or request a new email.'
 
 let consumed: string | null = null
 
@@ -37,7 +41,7 @@ export function readAuthRedirectError(hash: string, search = ''): string | null 
 
   if (description) {
     const sentence = /[.!?]$/.test(description) ? description : `${description}.`
-    return `${sentence} Request a new link below.`
+    return `${sentence} ${RETRY_HINT}`
   }
 
   return GENERIC_MESSAGE
