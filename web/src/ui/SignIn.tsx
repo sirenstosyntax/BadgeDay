@@ -5,7 +5,10 @@ import {
   sendMagicLink,
   verifyEmailOtp,
 } from '../lib/auth'
-import { consumeAuthRedirectError } from '../lib/authRedirectError'
+import {
+  consumeAuthRedirectError,
+  consumeFreshAuthRedirectError,
+} from '../lib/authRedirectError'
 import { isCompleteEmailOtp, normalizeEmailOtp } from '../lib/emailOtp'
 import { LegalLinks } from './LegalLinks'
 
@@ -13,16 +16,20 @@ export function SignIn() {
   const [email, setEmail] = useState(readRememberedSignInEmail)
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(consumeAuthRedirectError)
+  const [fromRedirect, setFromRedirect] = useState(() => Boolean(consumeAuthRedirectError()))
   const [sent, setSent] = useState(
     () => Boolean(readRememberedSignInEmail() && consumeAuthRedirectError()),
   )
   const [sending, setSending] = useState(false)
   const [verifying, setVerifying] = useState(false)
+  const showCode = sent || email.includes('@') || fromRedirect
 
   useEffect(() => {
     function syncRedirectError() {
-      const message = consumeAuthRedirectError()
-      if (message) setError(message)
+      const message = consumeFreshAuthRedirectError()
+      if (!message) return
+      setError(message)
+      setFromRedirect(true)
     }
     window.addEventListener('hashchange', syncRedirectError)
     return () => window.removeEventListener('hashchange', syncRedirectError)
@@ -70,6 +77,7 @@ export function SignIn() {
     setCode('')
     setEmail('')
     setError(null)
+    setFromRedirect(false)
   }
 
   return (
@@ -133,7 +141,7 @@ export function SignIn() {
             </form>
           )}
 
-          {(sent || email.includes('@')) && (
+          {showCode && (
             <>
               <form onSubmit={submitCode} className="space-y-3">
                 <label htmlFor="otp" className="block text-sm font-medium text-stone-700 dark:text-stone-300">
