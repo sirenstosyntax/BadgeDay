@@ -1,20 +1,26 @@
 # BadgeDay — Pricing and Competitive Position
 
 *Recruit pricing, and what "materially better than Station Visit" has to mean concretely.
-Drafted 2026-07-29. Prices here are a recommendation for Stripe configuration, not code:
-per `web/src/ui/Paywall.tsx` the amount lives in Stripe and is never printed in the app.
-Stripe stays in test mode until both modules ship (`CLAUDE.md`).*
+Drafted 2026-07-29. Amounts live in Stripe / store products and are never printed in the
+app (`web/src/ui/Paywall.tsx`). Recruit paid go-live wire is approved (START ORDER
+2026-09-11); live price/product IDs are still ops. Promote remains held.*
 
 ---
 
-## Held — Grant, 2026-09-10 (ship gate #4)
+## START ORDER 2026-09-11 — Recruit paid go-live approved
 
-**Not live.** Checkout, Stripe live mode, and Play / App Store public SKUs stay off
-until Grant says go live. Env vars are blank placeholders.
+**Go-live wire approved for Recruit.** Grant opened Recruit paid go-live on 2026-09-11:
+checkout may ship; Stripe live mode and Play product-stub Activate are approved for
+Recruit. Live Stripe price IDs and Play / App Store product IDs remain **ops to fill**
+(Zazu). Env vars may still be blank placeholders until those IDs land — do not invent
+IDs in this file. Blank placeholders are expected.
 
-| Module | Offer | Held amount |
+**Promote** has no separate go-live order. Promote checkout / Stripe live / store public
+SKUs stay held.
+
+| Module | Offer | Locked amount |
 |---|---|---|
-| **Recruit** | First oral-board session | Free, no card (`RECRUIT_FREE_SESSIONS=1`) |
+| **Recruit** | First oral-board session | Free, no card (`RECRUIT_FREE_SESSIONS=1`) — one complete five-question board |
 | **Recruit** | Monthly | **$24.99/mo** — `STRIPE_PRICE_ID_RECRUIT_MONTHLY` / Play / App Store counterparts |
 | **Recruit** | 90-day pass | **$59** — `STRIPE_PRICE_ID_RECRUIT_INTENSIVE_90DAY` |
 | **Recruit** | 6-month | **$119** — `STRIPE_PRICE_ID_RECRUIT_6MONTH` / Play / App Store counterparts |
@@ -22,8 +28,8 @@ until Grant says go live. Env vars are blank placeholders.
 
 On 2026-09-10 Grant reconciled the $119/$179 conflict to the July competitive pairing:
 **$119 is 6-month, not annual; $179 is annual.** Monthly ($24.99) and the 90-day pass ($59)
-are unchanged pending further word. The 2026-09-09 held table had named $119 as annual and
-had no 6-month SKU; that naming is superseded. Checkout still does not open.
+are unchanged. The 2026-09-09 table had named $119 as annual and had no 6-month SKU; that
+naming is superseded.
 
 The 2026-07-29 recommendation below ($29 / $119 six-month / $179 annual, no 90-day) remains
 the reasoning record. Grant locked the six-month and annual amounts from that pairing; he
@@ -116,15 +122,16 @@ conversion risk.
 
 If you want the safer version, **$139/yr** (~$11.58/mo) keeps a visible discount ladder and
 sits close enough to $99 that the comparison does not sting. I would still open at $179 and
-find out — it is one Stripe price ID either way, and Stripe is in test mode until both
-modules ship, so this decision costs nothing to revisit before launch.
+find out — it is one Stripe price ID either way. The July note that Stripe stayed in test
+mode until both modules ship is superseded for Recruit (START ORDER 2026-09-11); live IDs
+remain ops.
 
 ### Cost does not constrain any of this
 
 Remeasured 2026-09-10 against list ASR and a live critique call. Token telemetry is still
 not persisted on attempts, so the critique figure is a remeasurement, not a running mean.
 Margin math in this section uses the July competitive pairing (**$119 six-month / $179
-annual**), which Grant locked as the held SKUs on 2026-09-10.
+annual**), which Grant locked as the Recruit SKUs on 2026-09-10.
 
 Per-answer marginal cost, **retry-adjusted** (the published basis). The whole-board
 Criterion 1 pass is one more call per board and is not in these numbers.
@@ -170,11 +177,10 @@ people and a combined plan sells each of them half a product. Structurally this 
 price-ID → module mapping resolved server-side per the architecture table
 (`app/billing/module.py`).
 
-Held naming (Grant, 2026-09-10): `STRIPE_PRICE_ID_RECRUIT_MONTHLY`,
+Locked env-var names (Grant, 2026-09-10): `STRIPE_PRICE_ID_RECRUIT_MONTHLY`,
 `..._RECRUIT_INTENSIVE_90DAY`, `..._RECRUIT_6MONTH`, `..._RECRUIT_ANNUAL` —
-monthly, a 90-day pass, a 6-month hiring-cycle term, and annual. Grant locked
-6-month at $119 and annual at $179 on 2026-09-10; 90-day and monthly are
-unchanged pending further word.
+monthly, a 90-day pass, a 6-month hiring-cycle term, and annual. Amounts locked
+as in the table above; live IDs are still ops.
 
 ---
 
