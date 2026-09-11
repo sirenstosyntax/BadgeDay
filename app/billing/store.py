@@ -31,6 +31,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from app.billing.module import Module
+
 Platform = Literal["play", "appstore"]
 
 # A subscription renews until stopped; a pass is bought once and runs out. The same two
@@ -120,6 +122,11 @@ class RecordPurchase(BaseModel):
     kind: PurchaseKind
     status: str
     expires_at: datetime | None = None
+    # Which product family this row buys. Default promote keeps existing
+    # store_purchases rows and Promote writes on the same footing as 0008.
+    # Recruit Play SKUs must set 'recruit' so has_access does not treat them
+    # as a Lieutenant plan.
+    module: Module = "promote"
 
 
 class SetPurchaseStatus(BaseModel):
@@ -185,6 +192,7 @@ def store_changes(facts: PurchaseFacts) -> list[StoreChange]:
                 # A refund cuts access off now, so the expiry the store last told us about
                 # is not carried onto the row it is being written to.
                 expires_at=None if clears else facts.expires_at,
+                module="promote",
             )
         ]
 

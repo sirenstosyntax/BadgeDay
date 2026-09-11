@@ -39,6 +39,7 @@ def test_recruit_access_defaults() -> None:
     settings = Settings()
     assert settings.recruit_free_sessions == 1
     assert settings.recruit_daily_attempt_limit == 2
+    assert settings.recruit_6month_pass_days == 183
     assert settings.stripe_price_id_recruit_monthly == ""
     assert settings.stripe_price_id_recruit_intensive_90day == ""
     assert settings.stripe_price_id_recruit_6month == ""
@@ -54,7 +55,7 @@ def test_recruit_access_defaults() -> None:
 
 
 def test_recruit_subscription_product_ids_are_included_when_named() -> None:
-    """A filled Recruit monthly/6-month/annual SKU is recurring; the 90-day pass is not."""
+    """Monthly and annual are recurring; the 90-day and 6-month offers are passes."""
     settings = Settings(
         play_product_id_recruit_monthly="badgeday.recruit.monthly",
         play_product_id_recruit_6month="badgeday.recruit.6month",
@@ -64,9 +65,9 @@ def test_recruit_subscription_product_ids_are_included_when_named() -> None:
     )
     ids = settings.subscription_product_ids
     assert "badgeday.recruit.monthly" in ids
-    assert "badgeday.recruit.6month" in ids
     assert "badgeday.recruit.annual" in ids
     assert "ios.recruit.monthly" in ids
+    assert "badgeday.recruit.6month" not in ids
     assert "badgeday.recruit.90day" not in ids
 
 

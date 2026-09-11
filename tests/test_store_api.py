@@ -106,6 +106,57 @@ def _harness(monkeypatch: pytest.MonkeyPatch, gateway: object, **settings: objec
 # --- The app reporting its own purchase --------------------------------------
 
 
+def test_a_confirmed_recruit_play_purchase_writes_recruit_entitlement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.storage.entitlements import SetModuleSubscription
+
+    entitlements: list = []
+    monkeypatch.setattr(
+        "app.api.store.apply_entitlement", lambda _db, change: entitlements.append(change)
+    )
+    client, written = _harness(
+        monkeypatch,
+        _ConfirmingGateway(),
+        play_product_id_recruit_monthly="badgeday.recruit.monthly",
+        play_product_id_monthly="badgeday.promote.monthly",
+    )
+    response = client.post(
+        "/billing/store/play/purchase",
+        json={"purchase_token": "token-r", "product_id": "badgeday.recruit.monthly"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["entitled"] is True
+    assert written[0].module == "recruit"
+    assert entitlements[0] == SetModuleSubscription(
+        user_id=USER_ID, module="recruit", status="active"
+    )
+
+
+def test_a_promote_play_purchase_does_not_write_recruit_entitlement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    entitlements: list = []
+    monkeypatch.setattr(
+        "app.api.store.apply_entitlement", lambda _db, change: entitlements.append(change)
+    )
+    client, written = _harness(
+        monkeypatch,
+        _ConfirmingGateway(),
+        play_product_id_monthly="badgeday.promote.monthly",
+        play_product_id_recruit_monthly="badgeday.recruit.monthly",
+    )
+    response = client.post(
+        "/billing/store/play/purchase",
+        json={"purchase_token": "token-abc", "product_id": "badgeday.promote.monthly"},
+    )
+
+    assert response.status_code == 200
+    assert written[0].module == "promote"
+    assert entitlements == []
+
+
 def test_a_confirmed_play_purchase_is_recorded_against_the_candidate(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

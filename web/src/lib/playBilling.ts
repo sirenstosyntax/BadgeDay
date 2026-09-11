@@ -3,9 +3,8 @@
  *
  * Mirror of DrillGround's purchase.js shape — detect the store, restore what
  * this Google account already owns, report the token to our backend so Play
- * can acknowledge it — without a product id of our own. Grant has not named
- * the BadgeDay paid offer. A SKU reaches this module only as an argument
- * from `/me` (env-configured), never as a literal here.
+ * can acknowledge it. A SKU reaches this module only as an argument from
+ * `/me` (env-configured), never as a literal here.
  *
  * An ordinary browser tab has no getDigitalGoodsService. The same deployed
  * page is then Stripe-on-the-web, which is the intended split.
@@ -21,7 +20,13 @@ export const PLAY_BILLING_METHOD = 'https://play.google.com/billing'
 export type PlayProductIds = {
   monthly?: string | null
   intensive_90day?: string | null
+  recruit_monthly?: string | null
+  recruit_intensive_90day?: string | null
+  recruit_6month?: string | null
+  recruit_annual?: string | null
 }
+
+export type PlaySkuModule = 'promote' | 'recruit'
 
 export type PlayItemDetails = {
   itemId: string
@@ -40,10 +45,20 @@ export type ReportPurchase = (
   productId: string,
 ) => Promise<{ entitled: boolean }>
 
-export function configuredSkus(products: PlayProductIds | null | undefined): string[] {
-  return [products?.monthly, products?.intensive_90day].filter(
-    (sku): sku is string => typeof sku === 'string' && sku.length > 0,
-  )
+export function configuredSkus(
+  products: PlayProductIds | null | undefined,
+  module: PlaySkuModule = 'promote',
+): string[] {
+  const ids =
+    module === 'recruit'
+      ? [
+          products?.recruit_monthly,
+          products?.recruit_intensive_90day,
+          products?.recruit_6month,
+          products?.recruit_annual,
+        ]
+      : [products?.monthly, products?.intensive_90day]
+  return ids.filter((sku): sku is string => typeof sku === 'string' && sku.length > 0)
 }
 
 export function createPlayBilling(deps: {

@@ -110,15 +110,18 @@ export function Recruit({
   onDone,
   account,
   onOpenAccount,
+  onNeedsAccess,
 }: {
   onDone: () => void
   account: Account | null
   onOpenAccount: () => void
+  onNeedsAccess?: () => void
 }) {
   const [phase, setPhase] = useState<Phase>('loading')
   const [board, setBoard] = useState<RecruitBoardView | null>(null)
   const [exhausted, setExhausted] = useState<RecruitQuestionExhausted | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [needsPlan, setNeedsPlan] = useState(false)
   const [remaining, setRemaining] = useState(SOFT_TIMER_SECONDS)
 
   const chunks = useRef<Blob[]>([])
@@ -153,6 +156,13 @@ export function Recruit({
       })
       .catch((caught: unknown) => {
         if (left.current) return
+        if (caught instanceof ApiError && caught.status === 402) {
+          setNeedsPlan(true)
+          onNeedsAccess?.()
+          setError(submitErrorMessage(caught, 'Your free oral-board session is used.'))
+          setPhase('blocked')
+          return
+        }
         if (caught instanceof ApiError && caught.status === 409) {
           void api.recruit
             .question()
@@ -450,6 +460,15 @@ export function Recruit({
       )}
 
       {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
+      {needsPlan && onNeedsAccess && (
+        <button
+          type="button"
+          onClick={onNeedsAccess}
+          className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900"
+        >
+          See plans
+        </button>
+      )}
     </div>
   )
 }

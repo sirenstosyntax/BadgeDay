@@ -52,6 +52,7 @@ def apply_store_change(db: Client, change: StoreChange) -> None:
             "kind": change.kind,
             "status": change.status,
             "expires_at": change.expires_at.isoformat() if change.expires_at else None,
+            "module": change.module,
         }
         # Upsert on the store's own identifier, because this same path runs on the client's
         # report of a purchase AND on the notification that follows it, in either order.
@@ -88,6 +89,24 @@ def apply_store_change(db: Client, change: StoreChange) -> None:
             f"set status on {change.platform} purchase {_redact(change.purchase_identifier)}",
         )
         return
+
+
+def user_id_for_purchase(
+    db: Client, platform: Platform, purchase_identifier: str
+) -> str | None:
+    """The candidate already bound to this store identifier, if any."""
+    if not purchase_identifier:
+        return None
+    rows = (
+        db.table("store_purchases")
+        .select("user_id")
+        .eq("platform", platform)
+        .eq("purchase_identifier", purchase_identifier)
+        .limit(1)
+        .execute()
+        .data
+    )
+    return rows[0]["user_id"] if rows else None
 
 
 def managed_elsewhere(db: Client, user_id: str) -> ManagedElsewhere | None:

@@ -35,6 +35,7 @@ class PaymentGateway(Protocol):
         client_reference_id: str,
         success_url: str,
         cancel_url: str,
+        metadata: dict[str, str] | None = None,
     ) -> str:
         """Create a checkout session and return the URL to send the candidate to."""
         ...
@@ -87,17 +88,24 @@ class StripeGateway:
         client_reference_id: str,
         success_url: str,
         cancel_url: str,
+        metadata: dict[str, str] | None = None,
     ) -> str:
-        session = self._client.checkout.sessions.create(
-            params={
-                "mode": mode,
-                "customer": customer_id,
-                "client_reference_id": client_reference_id,
-                "line_items": [{"price": price_id, "quantity": 1}],
-                "success_url": success_url,
-                "cancel_url": cancel_url,
-            }
-        )
+        session_metadata = {key: value for key, value in (metadata or {}).items() if value}
+        params: dict[str, object] = {
+            "mode": mode,
+            "customer": customer_id,
+            "client_reference_id": client_reference_id,
+            "line_items": [{"price": price_id, "quantity": 1}],
+            "success_url": success_url,
+            "cancel_url": cancel_url,
+        }
+        if session_metadata:
+            params["metadata"] = session_metadata
+            # Subscription events do not include the checkout session. Copy the
+            # same ids onto the subscription so later renewals still map to a module.
+            if mode == "subscription":
+                params["subscription_data"] = {"metadata": session_metadata}
+        session = self._client.checkout.sessions.create(params=params)
         if session.url is None:
             raise RuntimeError("Stripe returned a checkout session without a URL.")
         return session.url

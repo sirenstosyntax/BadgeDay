@@ -57,6 +57,21 @@ def entitlement(db: Client, user_id: str) -> Entitlement:
     )
 
 
+def user_id_for_customer(db: Client, customer_id: str) -> str | None:
+    """The candidate bound to this Stripe customer, if checkout has linked them."""
+    if not customer_id:
+        return None
+    rows = (
+        db.table("profiles")
+        .select("id")
+        .eq("stripe_customer_id", customer_id)
+        .limit(1)
+        .execute()
+        .data
+    )
+    return rows[0]["id"] if rows else None
+
+
 def customer_id_for(db: Client, user_id: str) -> str | None:
     """The candidate's Stripe customer id, if they have ever begun checkout."""
     rows = (

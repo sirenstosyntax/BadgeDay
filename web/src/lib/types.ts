@@ -39,6 +39,10 @@ export type DocumentRecord = {
 export type PlayProducts = {
   monthly: string | null
   intensive_90day: string | null
+  recruit_monthly?: string | null
+  recruit_intensive_90day?: string | null
+  recruit_6month?: string | null
+  recruit_annual?: string | null
 }
 
 export type RecruitModule = {
@@ -67,8 +71,16 @@ export type Account = {
   recruit?: RecruitModule
 }
 
-/** The two things a candidate can buy. Named, not priced — the price lives in Stripe. */
-export type Plan = 'monthly' | 'intensive_90day'
+/** Named offers. Amounts live in Stripe / Play — never hardcoded here. */
+export type Plan =
+  | 'monthly'
+  | 'intensive_90day'
+  | 'recruit_monthly'
+  | 'recruit_intensive_90day'
+  | 'recruit_6month'
+  | 'recruit_annual'
+
+export type PaywallModule = 'promote' | 'recruit'
 
 export type QuestionType = 'multiple_choice' | 'true_false' | 'short_answer'
 

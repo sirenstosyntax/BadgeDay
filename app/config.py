@@ -98,11 +98,9 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     stripe_price_id_monthly: str = ""
     stripe_price_id_intensive_90day: str = ""
-    # Recruit prices — held, blank. Grant's held offer (docs only, no checkout
-    # go-live): first session free, no card; $24.99/mo; $59 / 90-day; $119 /
-    # 6-month; $179/yr. Grant locked 6-month + $179 annual on 2026-09-10;
-    # 90-day and monthly unchanged pending further word. Do not invent live
-    # Stripe product IDs. Stripe stays in test mode until Grant says go live.
+    # Recruit prices — blank until Zazu fills live/test IDs. Checkout accepts
+    # the four Recruit plan names; a blank ID is not for sale (503). Do not
+    # invent live Stripe product IDs and do not flip sk_live in this repo.
     # Mapping from a filled ID to the recruit module is
     # `billing.module.module_for_stripe_price`.
     stripe_price_id_recruit_monthly: str = ""
@@ -112,8 +110,10 @@ class Settings(BaseSettings):
     # Length of the one-time intensive pass. The price is set in Stripe; how long the pass
     # it buys grants access is our decision, kept here so "90-day" is not welded into a
     # timedelta at the point a webhook grants it. Recruit's 90-day pass uses the same
-    # duration when checkout is later wired; it is not a second constant.
+    # duration. The 6-month hiring-cycle pass is a separate constant — half a year is
+    # not "90, times two".
     intensive_pass_days: int = 90
+    recruit_6month_pass_days: int = 183
 
     # Where the browser app lives, used to build the URLs Stripe returns the candidate to
     # after checkout or the billing portal. Not the API's own origin — the human ends up
@@ -217,10 +217,8 @@ class Settings(BaseSettings):
                 self.play_product_id_monthly,
                 self.appstore_product_id_monthly,
                 self.play_product_id_recruit_monthly,
-                self.play_product_id_recruit_6month,
                 self.play_product_id_recruit_annual,
                 self.appstore_product_id_recruit_monthly,
-                self.appstore_product_id_recruit_6month,
                 self.appstore_product_id_recruit_annual,
             )
             if p

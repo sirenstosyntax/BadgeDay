@@ -72,7 +72,14 @@ def test_me_reports_the_entitlement_verdict(monkeypatch: pytest.MonkeyPatch) -> 
     body = client.get("/me").json()
     assert body["entitled"] is True
     assert body["subscription_status"] == "active"
-    assert body["play_products"] == {"monthly": None, "intensive_90day": None}
+    assert body["play_products"] == {
+        "monthly": None,
+        "intensive_90day": None,
+        "recruit_monthly": None,
+        "recruit_intensive_90day": None,
+        "recruit_6month": None,
+        "recruit_annual": None,
+    }
 
 
 def test_me_carries_the_candidates_identity(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -202,10 +209,18 @@ def test_me_exposes_configured_play_product_ids_and_never_invents_them(
     client.app.dependency_overrides[get_settings] = lambda: Settings(
         play_product_id_monthly="named.by.grant.monthly",
         play_product_id_intensive_90day="",
+        play_product_id_recruit_monthly="named.by.grant.recruit.monthly",
+        play_product_id_recruit_intensive_90day="",
+        play_product_id_recruit_6month="named.by.grant.recruit.6month",
+        play_product_id_recruit_annual="named.by.grant.recruit.annual",
     )
     body = client.get("/me").json()
     assert body["play_products"]["monthly"] == "named.by.grant.monthly"
     assert body["play_products"]["intensive_90day"] is None
+    assert body["play_products"]["recruit_monthly"] == "named.by.grant.recruit.monthly"
+    assert body["play_products"]["recruit_intensive_90day"] is None
+    assert body["play_products"]["recruit_6month"] == "named.by.grant.recruit.6month"
+    assert body["play_products"]["recruit_annual"] == "named.by.grant.recruit.annual"
 
 
 # --- Deleting the account ----------------------------------------------------
