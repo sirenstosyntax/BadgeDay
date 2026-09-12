@@ -36,8 +36,11 @@ def test_a_402_on_the_oral_board_opens_the_recruit_paywall() -> None:
 def test_paywall_does_not_offer_checkout_when_the_module_is_already_held() -> None:
     source = PAYWALL.read_text()
     assert "alreadyEntitled" in source
+    assert "canManageBilling" in source
     assert "You already have access" in source
     assert "Manage billing" in source
+    assert "nothing to cancel" in source
+    assert "{alreadyEntitled && canManageBilling && onManageBilling && (" in source
     assert "{!alreadyEntitled && till === 'stripe' && (" in source
     assert "{!alreadyEntitled && till === 'play' && (" in source
 

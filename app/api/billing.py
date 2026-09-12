@@ -21,6 +21,8 @@ from pydantic import BaseModel
 from app.api.deps import CurrentUserDep, DbDep, GatewayDep, ServiceDbDep, SettingsDep
 from app.billing.gateway import WebhookVerificationError
 from app.billing.module import (
+    ALREADY_HELD_MESSAGE,
+    is_module_held,
     module_for_plan,
     module_for_stripe_price,
     price_id_for_plan,
@@ -95,11 +97,10 @@ def checkout(
         if buying == "recruit"
         else entitlement(db, user.id)
     )
-    if held.entitled or held.subscription_status in ("active", "past_due"):
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "You already have a plan for this. Manage billing from your account.",
-        )
+    if is_module_held(
+        entitled=held.entitled, subscription_status=held.subscription_status
+    ):
+        raise HTTPException(status.HTTP_409_CONFLICT, ALREADY_HELD_MESSAGE)
 
     # Create the Stripe customer now, and record the link before returning, so the customer
     # id is on the profile before any webhook can fire. Subscription events carry only the

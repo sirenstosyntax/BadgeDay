@@ -18,6 +18,24 @@ from app.config import Settings
 
 Module = Literal["promote", "recruit"]
 
+# Live subscription, or a pass that still grants access. Same gate Stripe
+# checkout uses (PR 76) — store purchase must refuse a second charge too.
+HELD_SUBSCRIPTION_STATUSES = frozenset({"active", "past_due"})
+ALREADY_HELD_MESSAGE = (
+    "You already have a plan for this. Manage billing from your account."
+)
+
+
+def is_module_held(*, entitled: bool, subscription_status: str) -> bool:
+    """True when this module must not start another charge.
+
+    `entitled` covers an unexpired one-time pass (status stays `none`).
+    `active` / `past_due` are a live subscription — including past_due
+    with access withheld, which still belongs in the portal, not checkout.
+    """
+    return entitled or subscription_status in HELD_SUBSCRIPTION_STATUSES
+
+
 _PLAN_PRICE_ATTR: dict[Plan, str] = {
     "monthly": "stripe_price_id_monthly",
     "intensive_90day": "stripe_price_id_intensive_90day",

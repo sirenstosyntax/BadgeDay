@@ -6,6 +6,7 @@ import {
   headerSubscribeModule,
   moduleEntitled,
   moduleHasManageableBilling,
+  moduleIsPassOnly,
   moduleManagedBy,
   modulePlanSummary,
   shouldOfferCheckout,
@@ -130,5 +131,34 @@ describe('manageable billing', () => {
     })
     assert.equal(modulePlanSummary(recruitOnly, 'recruit'), 'Active subscription.')
     assert.equal(modulePlanSummary(recruitOnly, 'promote'), 'No active plan.')
+  })
+
+  it('does not send a pass-only candidate to a cancel portal', () => {
+    const passOnly = account({
+      entitled: true,
+      subscription_status: 'none',
+      access_expires_at: '2026-12-10T00:00:00.000Z',
+    })
+    assert.equal(moduleEntitled(passOnly, 'promote'), true)
+    assert.equal(moduleIsPassOnly(passOnly, 'promote'), true)
+    assert.equal(moduleHasManageableBilling(passOnly, 'promote'), false)
+    assert.equal(anyModuleHasManageableBilling(passOnly), false)
+    assert.equal(shouldOfferCheckout(passOnly, 'promote'), false)
+    assert.match(modulePlanSummary(passOnly, 'promote'), /nothing to cancel/)
+    assert.match(modulePlanSummary(passOnly, 'promote'), /One-time pass/)
+  })
+
+  it('does not treat a Recruit pass as Manage billing', () => {
+    const recruitPass = account({
+      recruit: {
+        entitled: true,
+        subscription_status: 'none',
+        access_expires_at: '2026-12-10T00:00:00.000Z',
+      },
+    })
+    assert.equal(moduleIsPassOnly(recruitPass, 'recruit'), true)
+    assert.equal(moduleHasManageableBilling(recruitPass, 'recruit'), false)
+    assert.equal(shouldOfferCheckout(recruitPass, 'recruit'), false)
+    assert.equal(shouldOfferCheckout(recruitPass, 'promote'), true)
   })
 })

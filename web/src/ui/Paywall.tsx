@@ -61,6 +61,7 @@ export function Paywall({
   onManageBilling,
   module = 'promote',
   alreadyEntitled = false,
+  canManageBilling = false,
 }: {
   onClose: () => void
   playProducts?: PlayProductIds | null
@@ -68,6 +69,7 @@ export function Paywall({
   onManageBilling?: () => void
   module?: PaywallModule
   alreadyEntitled?: boolean
+  canManageBilling?: boolean
 }) {
   const [pending, setPending] = useState<Plan | string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -162,7 +164,9 @@ export function Paywall({
         </h2>
         {alreadyEntitled ? (
           <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-            This plan is already active. Manage or cancel billing from the billing portal.
+            {canManageBilling
+              ? 'This plan is already active. Manage or cancel billing from the billing portal.'
+              : 'This is a one-time pass. Access runs until it expires — there is nothing to cancel.'}
           </p>
         ) : till === 'play-unlisted' ? (
           <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
@@ -182,7 +186,7 @@ export function Paywall({
           </p>
         )}
 
-        {alreadyEntitled && onManageBilling && (
+        {alreadyEntitled && canManageBilling && onManageBilling && (
           <button
             onClick={onManageBilling}
             className="mt-5 w-full rounded-lg border border-stone-300 px-4 py-2 text-sm dark:border-stone-700"

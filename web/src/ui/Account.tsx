@@ -3,6 +3,7 @@ import { ApiError, api } from '../lib/api'
 import {
   moduleHasManageableBilling,
   modulePlanSummary,
+  shouldOfferCheckout,
 } from '../lib/moduleAccess'
 import type { Account as AccountState, PaywallModule } from '../lib/types'
 
@@ -18,8 +19,10 @@ const MODULES: { module: PaywallModule; name: string }[] = [
  * action carries. Billing is cancelled server-side as part of the delete; nothing here has
  * to be done first.
  *
- * Recruit and Promote are separate modules. Manage billing appears for a module they
- * already hold; See plans appears only for a module they do not.
+ * Recruit and Promote are separate modules. Manage billing appears only when
+ * there is a live subscription to cancel. A one-time pass shows the expiry
+ * and no portal CTA — the portal has nothing to cancel. See plans appears
+ * only for a module they do not hold.
  */
 export function Account({
   account,
@@ -69,6 +72,7 @@ export function Account({
       <div className="space-y-3">
         {MODULES.map(({ module, name }) => {
           const canManage = moduleHasManageableBilling(account, module)
+          const canBuy = shouldOfferCheckout(account, module)
           return (
             <div
               key={module}
@@ -78,23 +82,25 @@ export function Account({
               <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
                 {modulePlanSummary(account, module)}
               </p>
-              <div className="mt-3">
-                {canManage ? (
-                  <button
-                    onClick={() => onManageBilling(module)}
-                    className="rounded-md border border-stone-300 px-3 py-1.5 text-sm dark:border-stone-700"
-                  >
-                    Manage billing
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => onSubscribe(module)}
-                    className="rounded-md bg-stone-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900"
-                  >
-                    See plans
-                  </button>
-                )}
-              </div>
+              {(canManage || canBuy) && (
+                <div className="mt-3">
+                  {canManage ? (
+                    <button
+                      onClick={() => onManageBilling(module)}
+                      className="rounded-md border border-stone-300 px-3 py-1.5 text-sm dark:border-stone-700"
+                    >
+                      Manage billing
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onSubscribe(module)}
+                      className="rounded-md bg-stone-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900"
+                    >
+                      See plans
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )
         })}

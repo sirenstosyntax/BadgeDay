@@ -25,14 +25,21 @@ from datetime import UTC, datetime, timedelta
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel
 
-from app.api.deps import CurrentUserDep, ServiceDbDep, SettingsDep, StoreGatewayDep
-from app.billing.module import module_for_store_product, pass_days_for_store_product
+from app.api.deps import CurrentUserDep, DbDep, ServiceDbDep, SettingsDep, StoreGatewayDep
+from app.billing.module import (
+    ALREADY_HELD_MESSAGE,
+    Module,
+    is_module_held,
+    module_for_store_product,
+    pass_days_for_store_product,
+)
 from app.billing.play_gateway import persist_then_acknowledge
 from app.billing.recruit_plan import recruit_entitlement_from_store
 from app.billing.store import PurchaseFacts, store_changes
 from app.billing.store_gateway import StoreNotConfigured, StoreVerificationError
 from app.config import Settings
-from app.storage.entitlements import apply_entitlement
+from app.storage.billing import entitlement
+from app.storage.entitlements import apply_entitlement, module_entitlement
 from app.storage.store import apply_store_change, user_id_for_purchase
 
 router = APIRouter(tags=["billing"])
@@ -58,6 +65,7 @@ class Unlocked(BaseModel):
 def play_purchase(
     body: PlayPurchase,
     user: CurrentUserDep,
+    db: DbDep,
     service: ServiceDbDep,
     gateway: StoreGatewayDep,
     settings: SettingsDep,
@@ -82,6 +90,7 @@ def play_purchase(
             "Google could not confirm that purchase.",
         ) from exc
 
+    _refuse_if_module_held(db, service, user.id, facts, settings)
     granted = _persist_play_purchase(service, gateway, facts, settings)
     return Unlocked(
         entitled=granted and facts.state == "purchased", product_id=facts.product_id
@@ -92,6 +101,7 @@ def play_purchase(
 def appstore_purchase(
     body: AppStorePurchase,
     user: CurrentUserDep,
+    db: DbDep,
     service: ServiceDbDep,
     gateway: StoreGatewayDep,
     settings: SettingsDep,
@@ -111,6 +121,7 @@ def appstore_purchase(
             "Apple could not confirm that purchase.",
         ) from exc
 
+    _refuse_if_module_held(db, service, user.id, facts, settings)
     granted = _apply_store_facts(service, facts, settings)
 
     return Unlocked(
@@ -176,6 +187,35 @@ async def appstore_notifications(
 
     _apply_store_facts(service, facts, settings)
     return {"received": True}
+
+
+def _refuse_if_module_held(
+    db, service, user_id: str, facts: PurchaseFacts, settings: Settings
+) -> None:
+    """409 when this module is already held — same gate as POST /billing/checkout.
+
+    Notifications skip this: they update a purchase that already exists.
+    Re-reporting the same store identifier (restore / retry) is not a second
+    charge, so it still persists and Play can acknowledge.
+    """
+    module = module_for_store_product(settings, facts.product_id)
+    if module is None:
+        return
+    held = _held_for(db, user_id, module)
+    if not is_module_held(
+        entitled=held.entitled, subscription_status=held.subscription_status
+    ):
+        return
+    already = user_id_for_purchase(service, facts.platform, facts.purchase_identifier)
+    if already == user_id:
+        return
+    raise HTTPException(status.HTTP_409_CONFLICT, ALREADY_HELD_MESSAGE)
+
+
+def _held_for(db, user_id: str, module: Module):
+    if module == "recruit":
+        return module_entitlement(db, user_id, "recruit")
+    return entitlement(db, user_id)
 
 
 def _persist_play_purchase(

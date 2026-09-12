@@ -6,12 +6,21 @@ swapped here is how a Lieutenant subscription would open the oral board.
 """
 
 from app.billing.module import (
+    is_module_held,
     module_for_store_product,
     module_for_stripe_price,
     store_product_ids_for,
     stripe_price_ids_for,
 )
 from app.config import Settings
+
+
+def test_is_module_held_matches_checkout_409() -> None:
+    assert is_module_held(entitled=True, subscription_status="none") is True
+    assert is_module_held(entitled=False, subscription_status="active") is True
+    assert is_module_held(entitled=False, subscription_status="past_due") is True
+    assert is_module_held(entitled=False, subscription_status="none") is False
+    assert is_module_held(entitled=False, subscription_status="canceled") is False
 
 
 def test_blank_ids_map_to_no_module() -> None:

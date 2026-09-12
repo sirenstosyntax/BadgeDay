@@ -22,14 +22,17 @@ def test_header_and_account_read_per_module_helpers() -> None:
     assert "shouldOfferCheckout" in helpers
     assert "anyModuleHasManageableBilling" in helpers
     assert "moduleHasManageableBilling" in helpers
+    assert "moduleIsPassOnly" in helpers
     assert "account.recruit?.entitled" in helpers
     assert "anyModuleHasManageableBilling(account)" in app
     assert "shouldOfferCheckout" in app
     assert "headerSubscribeModule" in app
     assert "alreadyEntitled={!shouldOfferCheckout(account, paywallModule)}" in app
+    assert "canManageBilling={moduleHasManageableBilling(account, paywallModule)}" in app
     assert "onSubscribe={(module) =>" in app
     assert "onManageBilling={(module) => void manageBilling(module)}" in app
     assert "moduleHasManageableBilling(account, module)" in account
+    assert "shouldOfferCheckout(account, module)" in account
     assert "See plans" in account
     assert "Manage billing" in account
     assert "Recruit" in account
@@ -39,8 +42,11 @@ def test_header_and_account_read_per_module_helpers() -> None:
 def test_paywall_hides_plan_buttons_when_already_entitled() -> None:
     source = PAYWALL.read_text()
     assert "alreadyEntitled" in source
+    assert "canManageBilling" in source
     assert "You already have access" in source
     assert "Manage billing" in source
+    assert "nothing to cancel" in source
+    assert "alreadyEntitled && canManageBilling && onManageBilling" in source
     assert "!alreadyEntitled && till === 'stripe'" in source
     assert "!alreadyEntitled && till === 'play'" in source
     assert "chooseStripe" in source
