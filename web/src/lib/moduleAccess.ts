@@ -61,18 +61,30 @@ export function shouldOfferCheckout(
 }
 
 /**
- * Something to cancel or update on this module: current access, or a
- * subscription that is still live (including past_due). A canceled row
- * without access is not managed here — that candidate sees See plans.
+ * Something to cancel or update on this module: a subscription that is
+ * still live (including past_due). A one-time pass grants access but has
+ * nothing to cancel — sending that candidate to the Stripe portal is how
+ * they land on an empty manage page. A canceled row without access is
+ * not managed here either; that candidate sees See plans.
  */
 export function moduleHasManageableBilling(
   account: Account | null,
   module: PaywallModule,
 ): boolean {
   if (!account) return false
-  if (moduleEntitled(account, module)) return true
   const status = moduleSubscriptionStatus(account, module)
   return status === 'active' || status === 'past_due'
+}
+
+/** Entitled via a one-time pass — access, but no cancelable subscription. */
+export function moduleIsPassOnly(
+  account: Account | null,
+  module: PaywallModule,
+): boolean {
+  return (
+    moduleEntitled(account, module) &&
+    moduleSubscriptionStatus(account, module) === 'none'
+  )
 }
 
 export function anyModuleHasManageableBilling(account: Account | null): boolean {
@@ -109,10 +121,13 @@ export function modulePlanSummary(
   if (status === 'active') return 'Active subscription.'
   if (moduleEntitled(account, module)) {
     const when = moduleExpiresAt(account, module)
-    if (when) {
-      return `Access through ${new Date(when).toLocaleDateString()}.`
+    const through = when
+      ? `Access through ${new Date(when).toLocaleDateString()}.`
+      : 'Active access.'
+    if (status === 'none') {
+      return `${through} One-time pass — nothing to cancel.`
     }
-    return 'Active access.'
+    return through
   }
   if (status === 'past_due') return 'Subscription payment past due.'
   if (status === 'canceled') return 'Subscription canceled.'

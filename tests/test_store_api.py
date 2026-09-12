@@ -18,11 +18,14 @@ from app.api.deps import (
     get_settings,
     get_store_gateway,
     service_db,
+    user_db,
 )
 from app.api.store import router as store_router
 from app.billing.store import PurchaseFacts, RecordPurchase
 from app.billing.store_gateway import StoreNotConfigured, StoreVerificationError
 from app.config import Settings
+from app.storage.billing import Entitlement
+from app.storage.entitlements import ModuleEntitlement
 
 USER_ID = "66666666-6666-6666-6666-666666666666"
 PAID_THROUGH = datetime(2026, 12, 1, tzinfo=UTC)
@@ -85,11 +88,44 @@ class _AcknowledgingGateway(_ConfirmingGateway):
         self.acks.append(facts)
 
 
-def _harness(monkeypatch: pytest.MonkeyPatch, gateway: object, **settings: object):
+def _harness(
+    monkeypatch: pytest.MonkeyPatch,
+    gateway: object,
+    *,
+    entitled_promote: bool = False,
+    entitled_recruit: bool = False,
+    promote_status: str | None = None,
+    recruit_status: str | None = None,
+    known_purchase_user: str | None = None,
+    **settings: object,
+):
     """Returns a client and the list of changes that reached the database."""
     written: list = []
     monkeypatch.setattr(
         "app.api.store.apply_store_change", lambda _db, change: written.append(change)
+    )
+    monkeypatch.setattr(
+        "app.api.store.entitlement",
+        lambda *_: Entitlement(
+            entitled=entitled_promote,
+            subscription_status=promote_status
+            or ("active" if entitled_promote else "none"),
+            access_expires_at=None,
+        ),
+    )
+    monkeypatch.setattr(
+        "app.api.store.module_entitlement",
+        lambda *_: ModuleEntitlement(
+            module="recruit",
+            entitled=entitled_recruit,
+            subscription_status=recruit_status
+            or ("active" if entitled_recruit else "none"),
+            access_expires_at=None,
+        ),
+    )
+    monkeypatch.setattr(
+        "app.api.store.user_id_for_purchase",
+        lambda *_: known_purchase_user,
     )
     # Mapped Promote SKUs so a confirmed store purchase can write. Tests that
     # need a blank or Recruit mapping pass their own IDs; an unmapped product
@@ -102,6 +138,7 @@ def _harness(monkeypatch: pytest.MonkeyPatch, gateway: object, **settings: objec
     app.dependency_overrides[current_user] = lambda: CurrentUser(
         id=USER_ID, email="c@example.com", access_token="t"
     )
+    app.dependency_overrides[user_db] = lambda: object()
     app.dependency_overrides[service_db] = lambda: object()
     app.dependency_overrides[get_store_gateway] = lambda: gateway
     app.dependency_overrides[get_settings] = lambda: Settings(**settings)
@@ -280,6 +317,147 @@ def test_an_unmapped_play_product_is_refused_without_writing(
     assert written == []
     assert entitlements == []
     assert gateway.acks == []
+
+
+def test_play_purchase_refuses_a_module_the_candidate_already_holds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gateway = _AcknowledgingGateway()
+    client, written = _harness(
+        monkeypatch,
+        gateway,
+        entitled_recruit=True,
+        play_product_id_recruit_monthly="badgeday.recruit.monthly",
+    )
+    response = client.post(
+        "/billing/store/play/purchase",
+        json={"purchase_token": "token-new", "product_id": "badgeday.recruit.monthly"},
+    )
+
+    assert response.status_code == 409
+    assert "already have a plan" in response.json()["detail"]
+    assert written == []
+    assert gateway.acks == []
+
+
+def test_a_recruit_subscriber_can_still_buy_promote_on_play(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, written = _harness(
+        monkeypatch,
+        _ConfirmingGateway(),
+        entitled_recruit=True,
+        play_product_id_recruit_monthly="badgeday.recruit.monthly",
+    )
+    response = client.post(
+        "/billing/store/play/purchase",
+        json={"purchase_token": "token-p", "product_id": "badgeday.promote.monthly"},
+    )
+
+    assert response.status_code == 200
+    assert written[0].module == "promote"
+
+
+def test_play_purchase_refuses_promote_when_promote_is_already_held(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gateway = _AcknowledgingGateway()
+    client, written = _harness(monkeypatch, gateway, entitled_promote=True)
+    response = client.post(
+        "/billing/store/play/purchase",
+        json={"purchase_token": "token-p", "product_id": "badgeday.promote.monthly"},
+    )
+
+    assert response.status_code == 409
+    assert written == []
+    assert gateway.acks == []
+
+
+def test_play_purchase_refuses_past_due_instead_of_a_second_charge(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gateway = _AcknowledgingGateway()
+    client, written = _harness(
+        monkeypatch,
+        gateway,
+        entitled_recruit=False,
+        recruit_status="past_due",
+        play_product_id_recruit_monthly="badgeday.recruit.monthly",
+    )
+    response = client.post(
+        "/billing/store/play/purchase",
+        json={"purchase_token": "token-r", "product_id": "badgeday.recruit.monthly"},
+    )
+
+    assert response.status_code == 409
+    assert written == []
+    assert gateway.acks == []
+
+
+def test_re_reporting_the_same_play_purchase_is_not_a_second_charge(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Restore / retry of the same token must still persist and acknowledge."""
+    gateway = _AcknowledgingGateway()
+    client, written = _harness(
+        monkeypatch,
+        gateway,
+        entitled_promote=True,
+        known_purchase_user=USER_ID,
+    )
+    response = client.post(
+        "/billing/store/play/purchase",
+        json={"purchase_token": "token-abc", "product_id": "badgeday.promote.monthly"},
+    )
+
+    assert response.status_code == 200
+    assert len(written) == 1
+    assert len(gateway.acks) == 1
+
+
+def test_appstore_purchase_refuses_a_module_the_candidate_already_holds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, written = _harness(monkeypatch, _ConfirmingGateway(), entitled_promote=True)
+    response = client.post(
+        "/billing/store/appstore/purchase", json={"transaction_id": "2000000012345678"}
+    )
+
+    assert response.status_code == 409
+    assert "already have a plan" in response.json()["detail"]
+    assert written == []
+
+
+def test_store_notifications_still_apply_when_the_module_is_held(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A renewal must not 409 — it is not a second checkout."""
+
+    class _Renewing(_ConfirmingGateway):
+        def read_play_notification(self, *, payload: bytes, authorization: str):
+            return PurchaseFacts(
+                platform="play",
+                product_id="badgeday.promote.monthly",
+                purchase_identifier="token-live",
+                kind="subscription",
+                state="purchased",
+                expires_at=PAID_THROUGH,
+                user_id=USER_ID,
+            )
+
+    client, written = _harness(
+        monkeypatch,
+        _Renewing(),
+        entitled_promote=True,
+        play_package_name="com.badgeday.app",
+        play_service_account_json="{}",
+        play_pubsub_audience="https://api.badgeday.com",
+        play_pubsub_service_account="rtdn@badgeday.iam.gserviceaccount.com",
+    )
+    response = client.post("/billing/store/play/notifications", content=b"{}")
+
+    assert response.status_code == 200
+    assert len(written) == 1
 
 
 # --- The store reporting it ---------------------------------------------------
