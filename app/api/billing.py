@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from app.api.deps import CurrentUserDep, DbDep, GatewayDep, ServiceDbDep, SettingsDep
 from app.billing.gateway import WebhookVerificationError
 from app.billing.module import (
+    module_for_plan,
     module_for_stripe_price,
     price_id_for_plan,
 )
@@ -37,8 +38,13 @@ from app.billing.recruit_plan import (
     stripe_object_id,
     user_id_carried_on_object,
 )
-from app.storage.billing import apply_change, customer_id_for, user_id_for_customer
-from app.storage.entitlements import apply_entitlement
+from app.storage.billing import (
+    apply_change,
+    customer_id_for,
+    entitlement,
+    user_id_for_customer,
+)
+from app.storage.entitlements import apply_entitlement, module_entitlement
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +84,21 @@ def checkout(
     if not price_id:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE, "Billing is not configured yet."
+        )
+
+    # Already holding this module must not start another charge. Recruit and
+    # Promote are separate: a Recruit subscriber can still buy Promote.
+    # past_due is still a live Stripe subscription — send them to the portal.
+    buying = module_for_plan(body.plan)
+    held = (
+        module_entitlement(db, user.id, "recruit")
+        if buying == "recruit"
+        else entitlement(db, user.id)
+    )
+    if held.entitled or held.subscription_status in ("active", "past_due"):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "You already have a plan for this. Manage billing from your account.",
         )
 
     # Create the Stripe customer now, and record the link before returning, so the customer

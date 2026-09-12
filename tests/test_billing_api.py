@@ -18,6 +18,8 @@ from app.api.deps import CurrentUser, current_user, get_gateway, service_db, use
 from app.billing.gateway import WebhookVerificationError
 from app.billing.plan import GrantPass, LinkCustomer
 from app.config import Settings, get_settings
+from app.storage.billing import Entitlement
+from app.storage.entitlements import ModuleEntitlement
 
 USER_ID = "44444444-4444-4444-4444-444444444444"
 
@@ -60,6 +62,8 @@ def _harness(
     *,
     existing_customer: str | None = None,
     settings: Settings = CONFIGURED,
+    entitled_promote: bool = False,
+    entitled_recruit: bool = False,
 ) -> tuple[TestClient, FakeGateway, list]:
     gateway = FakeGateway()
     applied: list = []
@@ -72,6 +76,23 @@ def _harness(
     monkeypatch.setattr(
         "app.api.billing.user_id_for_customer",
         lambda _db, customer_id: USER_ID if customer_id else None,
+    )
+    monkeypatch.setattr(
+        "app.api.billing.entitlement",
+        lambda *_: Entitlement(
+            entitled=entitled_promote,
+            subscription_status="active" if entitled_promote else "none",
+            access_expires_at=None,
+        ),
+    )
+    monkeypatch.setattr(
+        "app.api.billing.module_entitlement",
+        lambda *_: ModuleEntitlement(
+            module="recruit",
+            entitled=entitled_recruit,
+            subscription_status="active" if entitled_recruit else "none",
+            access_expires_at=None,
+        ),
     )
 
     app = FastAPI()
@@ -189,6 +210,85 @@ def test_promote_checkout_is_unchanged_when_recruit_prices_are_also_set(
     assert response.status_code == 200
     assert gateway.checkouts[0]["mode"] == "subscription"
     assert gateway.checkouts[0]["price_id"] == "price_monthly"
+
+
+def test_checkout_refuses_a_module_the_candidate_already_holds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, gateway, _ = _harness(
+        monkeypatch,
+        existing_customer="cus_existing",
+        settings=RECRUIT_CONFIGURED,
+        entitled_recruit=True,
+    )
+    response = client.post("/billing/checkout", json={"plan": "recruit_monthly"})
+    assert response.status_code == 409
+    assert "already have a plan" in response.json()["detail"]
+    assert gateway.checkouts == []
+
+
+def test_a_recruit_subscriber_can_still_buy_promote(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, gateway, _ = _harness(
+        monkeypatch,
+        existing_customer="cus_existing",
+        settings=RECRUIT_CONFIGURED,
+        entitled_recruit=True,
+    )
+    response = client.post("/billing/checkout", json={"plan": "monthly"})
+    assert response.status_code == 200
+    assert gateway.checkouts[0]["price_id"] == "price_monthly"
+
+
+def test_checkout_refuses_promote_when_promote_is_already_held(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, gateway, _ = _harness(
+        monkeypatch,
+        existing_customer="cus_existing",
+        settings=RECRUIT_CONFIGURED,
+        entitled_promote=True,
+    )
+    response = client.post("/billing/checkout", json={"plan": "monthly"})
+    assert response.status_code == 409
+    assert gateway.checkouts == []
+
+
+def test_a_promote_subscriber_can_still_buy_recruit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, gateway, _ = _harness(
+        monkeypatch,
+        existing_customer="cus_existing",
+        settings=RECRUIT_CONFIGURED,
+        entitled_promote=True,
+    )
+    response = client.post("/billing/checkout", json={"plan": "recruit_monthly"})
+    assert response.status_code == 200
+    assert gateway.checkouts[0]["price_id"] == "price_recruit_mo"
+
+
+def test_checkout_refuses_past_due_recruit_instead_of_a_second_charge(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, gateway, _ = _harness(
+        monkeypatch,
+        existing_customer="cus_existing",
+        settings=RECRUIT_CONFIGURED,
+    )
+    monkeypatch.setattr(
+        "app.api.billing.module_entitlement",
+        lambda *_: ModuleEntitlement(
+            module="recruit",
+            entitled=False,
+            subscription_status="past_due",
+            access_expires_at=None,
+        ),
+    )
+    response = client.post("/billing/checkout", json={"plan": "recruit_monthly"})
+    assert response.status_code == 409
+    assert gateway.checkouts == []
 
 
 # --- Portal ------------------------------------------------------------------
