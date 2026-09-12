@@ -2,7 +2,15 @@ import { useEffect, useState } from 'react'
 import { ApiError, api } from './lib/api'
 import { useAccount } from './lib/account'
 import { signOut, useSession } from './lib/auth'
+import {
+  anyModuleHasManageableBilling,
+  headerManageModule,
+  headerSubscribeModule,
+  moduleManagedBy,
+  shouldOfferCheckout,
+} from './lib/moduleAccess'
 import { browserPlayBilling } from './lib/playBilling'
+import { PLAY_SUBSCRIPTIONS_URL } from './lib/recruitMilestone'
 import type { PaywallModule } from './lib/types'
 import { Account } from './ui/Account'
 import { Choose } from './ui/Choose'
@@ -117,13 +125,17 @@ export default function App() {
     }
   }
 
-  async function manageBilling() {
+  async function manageBilling(module?: PaywallModule) {
     setNotice(null)
-    if (account?.managed_by === 'play') {
-      window.location.href = 'https://play.google.com/store/account/subscriptions'
+    const which =
+      module ??
+      headerManageModule(account, view.name === 'recruit' ? 'recruit' : 'other')
+    const till = moduleManagedBy(account, which)
+    if (till === 'play') {
+      window.location.href = PLAY_SUBSCRIPTIONS_URL
       return
     }
-    if (account?.managed_by === 'appstore') {
+    if (till === 'appstore') {
       setView({ name: 'account' })
       return
     }
@@ -170,17 +182,23 @@ export default function App() {
                 Saved
               </button>
             )}
-            {entitled ? (
+            {anyModuleHasManageableBilling(account) && (
               <button
                 onClick={() => void manageBilling()}
                 className="text-stone-600 hover:underline dark:text-stone-400"
               >
                 Billing
               </button>
-            ) : (
+            )}
+            {shouldOfferCheckout(
+              account,
+              headerSubscribeModule(view.name === 'recruit' ? 'recruit' : 'other'),
+            ) && (
               <button
                 onClick={() => {
-                  setPaywallModule(view.name === 'recruit' ? 'recruit' : 'promote')
+                  setPaywallModule(
+                    headerSubscribeModule(view.name === 'recruit' ? 'recruit' : 'other'),
+                  )
                   setShowPaywall(true)
                 }}
                 className="rounded-md bg-stone-900 px-2 py-1 font-medium text-white dark:bg-stone-100 dark:text-stone-900"
@@ -190,9 +208,10 @@ export default function App() {
             )}
             <button
               onClick={() => setView({ name: 'account' })}
-              className="hidden text-stone-500 hover:underline sm:inline dark:text-stone-400"
+              className="text-stone-500 hover:underline dark:text-stone-400"
             >
-              {session.user.email}
+              <span className="sm:hidden">Account</span>
+              <span className="hidden sm:inline">{session.user.email}</span>
             </button>
             <button
               onClick={signOut}
@@ -225,9 +244,9 @@ export default function App() {
         ) : view.name === 'account' ? (
           <Account
             account={account}
-            onManageBilling={() => void manageBilling()}
-            onSubscribe={() => {
-              setPaywallModule('promote')
+            onManageBilling={(module) => void manageBilling(module)}
+            onSubscribe={(module) => {
+              setPaywallModule(module)
               setShowPaywall(true)
             }}
             onDeleted={() => void afterDeleted()}
@@ -263,6 +282,11 @@ export default function App() {
           onClose={() => setShowPaywall(false)}
           playProducts={account?.play_products}
           module={paywallModule}
+          alreadyEntitled={!shouldOfferCheckout(account, paywallModule)}
+          onManageBilling={() => {
+            setShowPaywall(false)
+            void manageBilling(paywallModule)
+          }}
           onPlayUnlocked={() => {
             void refreshAccount()
             setShowPaywall(false)

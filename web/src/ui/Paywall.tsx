@@ -58,12 +58,16 @@ export function Paywall({
   onClose,
   playProducts,
   onPlayUnlocked,
+  onManageBilling,
   module = 'promote',
+  alreadyEntitled = false,
 }: {
   onClose: () => void
   playProducts?: PlayProductIds | null
   onPlayUnlocked?: () => void
+  onManageBilling?: () => void
   module?: PaywallModule
+  alreadyEntitled?: boolean
 }) {
   const [pending, setPending] = useState<Plan | string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -150,9 +154,17 @@ export function Paywall({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 className="text-lg font-semibold">
-          {module === 'recruit' ? 'Keep practicing the oral board' : 'Drill until badge day'}
+          {alreadyEntitled
+            ? 'You already have access'
+            : module === 'recruit'
+              ? 'Keep practicing the oral board'
+              : 'Drill until badge day'}
         </h2>
-        {till === 'play-unlisted' ? (
+        {alreadyEntitled ? (
+          <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+            This plan is already active. Manage or cancel billing from the billing portal.
+          </p>
+        ) : till === 'play-unlisted' ? (
           <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
             This Play build does not sell a plan yet. The offer has not been named, so
             there is nothing to buy here and no price to show. The website still uses
@@ -170,11 +182,20 @@ export function Paywall({
           </p>
         )}
 
-        {till === 'checking' && (
+        {alreadyEntitled && onManageBilling && (
+          <button
+            onClick={onManageBilling}
+            className="mt-5 w-full rounded-lg border border-stone-300 px-4 py-2 text-sm dark:border-stone-700"
+          >
+            Manage billing
+          </button>
+        )}
+
+        {!alreadyEntitled && till === 'checking' && (
           <p className="mt-5 text-sm text-stone-500">Checking how you can pay…</p>
         )}
 
-        {till === 'stripe' && (
+        {!alreadyEntitled && till === 'stripe' && (
           <div className="mt-5 space-y-3">
             {(module === 'recruit' ? RECRUIT_PLANS : PROMOTE_PLANS).map(({ plan, name, blurb }) => (
               <button
@@ -195,7 +216,7 @@ export function Paywall({
           </div>
         )}
 
-        {till === 'play' && (
+        {!alreadyEntitled && till === 'play' && (
           <div className="mt-5 space-y-3">
             {playItems.map((item) => (
               <button
@@ -217,7 +238,7 @@ export function Paywall({
           </div>
         )}
 
-        {till === 'stripe' && (
+        {!alreadyEntitled && till === 'stripe' && (
           <p className="mt-4 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
             {module === 'recruit'
               ? 'Monthly and annual renew until you cancel; the 90-day and 6-month passes are single payments and do not renew. '
@@ -236,7 +257,7 @@ export function Paywall({
           </p>
         )}
 
-        {till === 'play' && (
+        {!alreadyEntitled && till === 'play' && (
           <p className="mt-4 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
             Purchases on this device go through Google Play. The price Play shows is the
             price you pay. Choosing a plan means you agree to the{' '}

@@ -33,6 +33,15 @@ def test_a_402_on_the_oral_board_opens_the_recruit_paywall() -> None:
     assert "See plans" in source
 
 
+def test_paywall_does_not_offer_checkout_when_the_module_is_already_held() -> None:
+    source = PAYWALL.read_text()
+    assert "alreadyEntitled" in source
+    assert "You already have access" in source
+    assert "Manage billing" in source
+    assert "{!alreadyEntitled && till === 'stripe' && (" in source
+    assert "{!alreadyEntitled && till === 'play' && (" in source
+
+
 def test_account_exposes_recruit_play_product_ids() -> None:
     source = ACCOUNT.read_text()
     assert "play_product_id_recruit_monthly" in source

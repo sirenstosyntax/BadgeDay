@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { ApiError, api } from '../lib/api'
-import type { Account as AccountState } from '../lib/types'
+import {
+  moduleHasManageableBilling,
+  modulePlanSummary,
+} from '../lib/moduleAccess'
+import type { Account as AccountState, PaywallModule } from '../lib/types'
+
+const MODULES: { module: PaywallModule; name: string }[] = [
+  { module: 'recruit', name: 'Recruit' },
+  { module: 'promote', name: 'Promote' },
+]
 
 /**
  * The account page: what the candidate has, and the way out. Deletion is irreversible and
@@ -8,18 +17,10 @@ import type { Account as AccountState } from '../lib/types'
  * button reveals a confirmation that makes the candidate type the word, the same weight the
  * action carries. Billing is cancelled server-side as part of the delete; nothing here has
  * to be done first.
+ *
+ * Recruit and Promote are separate modules. Manage billing appears for a module they
+ * already hold; See plans appears only for a module they do not.
  */
-function planSummary(account: AccountState | null): string {
-  if (!account) return 'Loading your account…'
-  if (account.subscription_status === 'active') return 'Active subscription.'
-  if (account.entitled && account.access_expires_at) {
-    const when = new Date(account.access_expires_at).toLocaleDateString()
-    return `Intensive pass, access through ${when}.`
-  }
-  if (account.subscription_status === 'past_due') return 'Subscription payment past due.'
-  return 'No active plan.'
-}
-
 export function Account({
   account,
   onManageBilling,
@@ -28,8 +29,8 @@ export function Account({
   onDone,
 }: {
   account: AccountState | null
-  onManageBilling: () => void
-  onSubscribe: () => void
+  onManageBilling: (module: PaywallModule) => void
+  onSubscribe: (module: PaywallModule) => void
   onDeleted: () => void
   onDone: () => void
 }) {
@@ -37,9 +38,6 @@ export function Account({
   const [typed, setTyped] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const entitled = account?.entitled ?? false
-  const hasBilling = !!account && account.subscription_status !== 'none'
 
   async function remove() {
     setDeleting(true)
@@ -68,25 +66,38 @@ export function Account({
         <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{account?.email}</p>
       </div>
 
-      <div className="rounded-lg border border-stone-200 p-4 dark:border-stone-800">
-        <p className="text-sm">{planSummary(account)}</p>
-        <div className="mt-3">
-          {entitled || hasBilling ? (
-            <button
-              onClick={onManageBilling}
-              className="rounded-md border border-stone-300 px-3 py-1.5 text-sm dark:border-stone-700"
+      <div className="space-y-3">
+        {MODULES.map(({ module, name }) => {
+          const canManage = moduleHasManageableBilling(account, module)
+          return (
+            <div
+              key={module}
+              className="rounded-lg border border-stone-200 p-4 dark:border-stone-800"
             >
-              Manage billing
-            </button>
-          ) : (
-            <button
-              onClick={onSubscribe}
-              className="rounded-md bg-stone-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900"
-            >
-              See plans
-            </button>
-          )}
-        </div>
+              <p className="text-sm font-medium">{name}</p>
+              <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+                {modulePlanSummary(account, module)}
+              </p>
+              <div className="mt-3">
+                {canManage ? (
+                  <button
+                    onClick={() => onManageBilling(module)}
+                    className="rounded-md border border-stone-300 px-3 py-1.5 text-sm dark:border-stone-700"
+                  >
+                    Manage billing
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onSubscribe(module)}
+                    className="rounded-md bg-stone-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900"
+                  >
+                    See plans
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       <div className="rounded-lg border border-red-200 p-4 dark:border-red-900/60">
