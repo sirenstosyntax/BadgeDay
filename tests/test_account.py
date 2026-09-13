@@ -94,6 +94,14 @@ def test_me_reports_the_entitlement_verdict(monkeypatch: pytest.MonkeyPatch) -> 
         "recruit_6month": None,
         "recruit_annual": None,
     }
+    assert body["appstore_products"] == {
+        "monthly": None,
+        "intensive_90day": None,
+        "recruit_monthly": None,
+        "recruit_intensive_90day": None,
+        "recruit_6month": None,
+        "recruit_annual": None,
+    }
 
 
 def test_me_carries_the_candidates_identity(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -240,6 +248,33 @@ def test_me_exposes_configured_play_product_ids_and_never_invents_them(
     assert body["play_products"]["recruit_intensive_90day"] is None
     assert body["play_products"]["recruit_6month"] == "named.by.grant.recruit.6month"
     assert body["play_products"]["recruit_annual"] == "named.by.grant.recruit.annual"
+    assert body["appstore_products"]["monthly"] is None
+    assert body["appstore_products"]["recruit_monthly"] is None
+
+
+def test_me_exposes_configured_appstore_product_ids_and_never_invents_them(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The iOS buy path reads these. Empty means no App Store buy button — not a fake SKU."""
+    client = _client(
+        monkeypatch,
+        Entitlement(entitled=False, subscription_status="none", access_expires_at=None),
+        settings=Settings(
+            appstore_product_id_monthly="named.by.ops.monthly",
+            appstore_product_id_intensive_90day="",
+            appstore_product_id_recruit_monthly="named.by.ops.recruit.monthly",
+            appstore_product_id_recruit_intensive_90day="",
+            appstore_product_id_recruit_6month="named.by.ops.recruit.6month",
+            appstore_product_id_recruit_annual="named.by.ops.recruit.annual",
+        ),
+    )
+    body = client.get("/me").json()
+    assert body["appstore_products"]["monthly"] == "named.by.ops.monthly"
+    assert body["appstore_products"]["intensive_90day"] is None
+    assert body["appstore_products"]["recruit_monthly"] == "named.by.ops.recruit.monthly"
+    assert body["appstore_products"]["recruit_intensive_90day"] is None
+    assert body["appstore_products"]["recruit_6month"] == "named.by.ops.recruit.6month"
+    assert body["appstore_products"]["recruit_annual"] == "named.by.ops.recruit.annual"
 
 
 def test_a_recruit_play_row_does_not_set_promote_managed_by(

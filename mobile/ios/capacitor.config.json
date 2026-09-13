@@ -16,6 +16,12 @@
       "backgroundColor": "#171E26",
       "launchAutoHide": true,
       "launchShowDuration": 800
+    },
+    "Camera": {
+      "presentationStyle": "popover"
+    },
+    "LocalNotifications": {
+      "iconColor": "#171E26"
     }
   }
 }

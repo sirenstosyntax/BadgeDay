@@ -62,6 +62,7 @@ class Account(Entitlement):
     # portal button is how a cancellation becomes a chargeback.
     managed_by: str | None = None
     play_products: PlayProducts
+    appstore_products: PlayProducts
     recruit: RecruitModule
 
 
@@ -87,6 +88,17 @@ def me(user: CurrentUserDep, db: DbDep, settings: SettingsDep) -> Account:
             or None,
             recruit_6month=settings.play_product_id_recruit_6month or None,
             recruit_annual=settings.play_product_id_recruit_annual or None,
+        ),
+        # Ops-filled App Store product ids. Empty means the iOS paywall is
+        # unlisted — never invent a SKU string here.
+        appstore_products=PlayProducts(
+            monthly=settings.appstore_product_id_monthly or None,
+            intensive_90day=settings.appstore_product_id_intensive_90day or None,
+            recruit_monthly=settings.appstore_product_id_recruit_monthly or None,
+            recruit_intensive_90day=settings.appstore_product_id_recruit_intensive_90day
+            or None,
+            recruit_6month=settings.appstore_product_id_recruit_6month or None,
+            recruit_annual=settings.appstore_product_id_recruit_annual or None,
         ),
         recruit=RecruitModule(
             entitled=recruit_state.entitled,

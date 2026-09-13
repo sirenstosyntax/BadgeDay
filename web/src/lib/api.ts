@@ -8,6 +8,7 @@ import type {
   PracticeSession,
   QuizQuestion,
   ReviewItem,
+  SessionPack,
   Verdict,
 } from './types'
 
@@ -79,6 +80,13 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ purchase_token: purchaseToken, product_id: productId }),
       }),
+    // StoreKit reports a transaction id. The server verifies it against Apple.
+    // No product id is sent — Apple's transaction is the source of truth.
+    reportAppStorePurchase: (transactionId: string) =>
+      request<{ entitled: boolean; product_id: string }>('/billing/store/appstore/purchase', {
+        method: 'POST',
+        body: JSON.stringify({ transaction_id: transactionId }),
+      }),
   },
 
   documents: {
@@ -107,6 +115,7 @@ export const api = {
     review: (sessionId: string) => request<ReviewItem[]>(`/sessions/${sessionId}/review`),
     complete: (sessionId: string) =>
       request<PracticeSession>(`/sessions/${sessionId}/complete`, { method: 'POST' }),
+    pack: (sessionId: string) => request<SessionPack>(`/sessions/${sessionId}/pack`),
   },
 
   // Five-question board. Notes stay empty on poll until the board completes.

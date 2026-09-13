@@ -65,6 +65,9 @@ export type Account = {
   // Play product ids as configured on the server. Empty until Grant names the
   // offer — the client must not invent a substitute.
   play_products?: PlayProducts
+  // App Store product ids as configured. Empty until ops fills
+  // APPSTORE_PRODUCT_ID_* — the client must not invent a substitute.
+  appstore_products?: PlayProducts
   // Recruit module entitlement. `entitled` is has_recruit_access — the same
   // signal that opens further practice. Oral-board milestone billing reads
   // this nest, never the Promote fields above.
@@ -91,6 +94,17 @@ export type QuizQuestion = {
   type: QuestionType
   stem: string
   options: string[] | null
+}
+
+/** Question plus citation, still without an answer. Offline cache payload. */
+export type OfflineQuestion = QuizQuestion & {
+  citation: string
+}
+
+export type SessionPack = {
+  session_id: string
+  document_id: string | null
+  questions: OfflineQuestion[]
 }
 
 export type NextQuestion = {

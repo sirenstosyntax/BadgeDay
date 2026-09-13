@@ -17,8 +17,11 @@ import {
   shouldPostAbandon,
   shouldShowNotesBlockedPath,
 } from '../lib/recruitBoard'
+import { isOnline } from '../lib/connectivity'
 import type { Account } from '../lib/types'
 import { RecruitMilestone } from './RecruitMilestone'
+
+const NEEDS_CONNECTION = 'Oral board needs a connection. Recording cannot start offline.'
 
 const POLL_MS = 2000
 const POLL_TIMEOUT_MS = 15 * 60 * 1000
@@ -111,11 +114,13 @@ export function Recruit({
   account,
   onOpenAccount,
   onNeedsAccess,
+  onBoardStarted,
 }: {
   onDone: () => void
   account: Account | null
   onOpenAccount: () => void
   onNeedsAccess?: () => void
+  onBoardStarted?: () => void
 }) {
   const [phase, setPhase] = useState<Phase>('loading')
   const [board, setBoard] = useState<RecruitBoardView | null>(null)
@@ -132,15 +137,26 @@ export function Recruit({
   const abandoned = useRef(false)
   const onNeedsAccessRef = useRef(onNeedsAccess)
   onNeedsAccessRef.current = onNeedsAccess
+  const onBoardStartedRef = useRef(onBoardStarted)
+  onBoardStartedRef.current = onBoardStarted
 
   useEffect(() => {
     left.current = false
+    if (!isOnline()) {
+      setError(NEEDS_CONNECTION)
+      setPhase('blocked')
+      return () => {
+        left.current = true
+        stopTracks()
+      }
+    }
     void api.recruit
       .startBoard()
       .then((started) => {
         if (left.current) return
         setBoard(started)
         setRemaining(started.soft_timer_seconds || SOFT_TIMER_SECONDS)
+        onBoardStartedRef.current?.()
         if (started.status === 'completed') {
           setPhase('summary')
           return
@@ -250,6 +266,10 @@ export function Recruit({
 
   async function startRecording() {
     if (!board?.question_text || phase !== 'ready') return
+    if (!isOnline()) {
+      setError(NEEDS_CONNECTION)
+      return
+    }
     setError(null)
     blob.current = null
     chunks.current = []

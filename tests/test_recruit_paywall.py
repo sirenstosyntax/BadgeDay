@@ -51,3 +51,7 @@ def test_account_exposes_recruit_play_product_ids() -> None:
     assert "play_product_id_recruit_intensive_90day" in source
     assert "play_product_id_recruit_6month" in source
     assert "play_product_id_recruit_annual" in source
+    assert "appstore_product_id_recruit_monthly" in source
+    assert "appstore_product_id_recruit_intensive_90day" in source
+    assert "appstore_product_id_recruit_6month" in source
+    assert "appstore_product_id_recruit_annual" in source

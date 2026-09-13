@@ -14,6 +14,7 @@ from app.api.deps import CurrentUserDep, DbDep
 from app.storage.billing import SubscriptionRequired, as_subscription_required
 from app.storage.practice import (
     AlreadyAnswered,
+    OfflineQuestion,
     PracticeSession,
     QuestionNotFound,
     QuizQuestion,
@@ -28,6 +29,7 @@ from app.storage.practice import (
     reviewable,
     save_question,
     saved_questions,
+    session_questions,
     start_session,
     submit,
     unsave_question,
@@ -52,6 +54,14 @@ class Answer(BaseModel):
 class NextQuestion(BaseModel):
     question: QuizQuestion | None
     remaining: int
+
+
+class SessionPack(BaseModel):
+    """Questions + citations for one session. No answers. Used to cache offline."""
+
+    session_id: str
+    document_id: str | None = None
+    questions: list[OfflineQuestion]
 
 
 class CoverageReport(BaseModel):
@@ -95,6 +105,21 @@ def ask(db: DbDep, session_id: str) -> NextQuestion:
     """The next unanswered question, or null when the session has run out."""
     session = _session(db, session_id)
     return NextQuestion(question=next_question(db, session), remaining=remaining(db, session))
+
+
+@router.get("/sessions/{session_id}/pack")
+def pack(db: DbDep, session_id: str) -> SessionPack:
+    """Every question this session would present, plus citations, and no answers.
+
+    The iOS shell caches this while online so a candidate can drill without
+    signal. Grading still happens through `/responses` once the device is back.
+    """
+    session = _session(db, session_id)
+    return SessionPack(
+        session_id=session.id,
+        document_id=session.document_id,
+        questions=session_questions(db, session),
+    )
 
 
 @router.post("/sessions/{session_id}/responses")

@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react'
 import { ApiError, api } from '../lib/api'
+import { detectIosCapacitorShell } from '../lib/platform'
+import { selectPaywallTill, type PaywallTill } from '../lib/paywallTill'
 import {
   browserPlayBilling,
   configuredSkus,
   type PlayItemDetails,
   type PlayProductIds,
 } from '../lib/playBilling'
+import {
+  appStoreConfiguredSkus,
+  browserStoreKitBilling,
+  type AppStoreProductIds,
+  type StoreKitItemDetails,
+} from '../lib/storeKitBilling'
 import type { PaywallModule, Plan } from '../lib/types'
 
 /**
@@ -52,11 +60,10 @@ const RECRUIT_PLANS: { plan: Plan; name: string; blurb: string }[] = [
   },
 ]
 
-type Till = 'checking' | 'stripe' | 'play' | 'play-unlisted'
-
 export function Paywall({
   onClose,
   playProducts,
+  appstoreProducts,
   onPlayUnlocked,
   onManageBilling,
   module = 'promote',
@@ -65,6 +72,7 @@ export function Paywall({
 }: {
   onClose: () => void
   playProducts?: PlayProductIds | null
+  appstoreProducts?: AppStoreProductIds | null
   onPlayUnlocked?: () => void
   onManageBilling?: () => void
   module?: PaywallModule
@@ -73,38 +81,67 @@ export function Paywall({
 }) {
   const [pending, setPending] = useState<Plan | string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [till, setTill] = useState<Till>('checking')
+  const [till, setTill] = useState<PaywallTill>('checking')
   const [playItems, setPlayItems] = useState<PlayItemDetails[]>([])
+  const [storeItems, setStoreItems] = useState<StoreKitItemDetails[]>([])
 
   useEffect(() => {
     let cancelled = false
-    const purchases = browserPlayBilling(api.billing.reportPlayPurchase)
-    void purchases.available().then(async (store) => {
+    void (async () => {
+      const iosShell = detectIosCapacitorShell()
+      if (iosShell) {
+        const store = browserStoreKitBilling(api.billing.reportAppStorePurchase)
+        const skus = appStoreConfiguredSkus(appstoreProducts, module)
+        const items = skus.length > 0 ? await store.detailsFor(skus, appstoreProducts) : []
+        if (cancelled) return
+        const next = selectPaywallTill({
+          iosShell: true,
+          playAvailable: false,
+          storeSkus: skus,
+          storeRecognised: items.length,
+          playSkus: [],
+          playRecognised: 0,
+        })
+        setStoreItems(items)
+        setTill(next)
+        return
+      }
+      const purchases = browserPlayBilling(api.billing.reportPlayPurchase)
+      const store = await purchases.available()
       if (cancelled) return
       if (!store) {
-        setTill('stripe')
+        setTill(
+          selectPaywallTill({
+            iosShell: false,
+            playAvailable: false,
+            storeSkus: [],
+            storeRecognised: 0,
+            playSkus: [],
+            playRecognised: 0,
+          }),
+        )
         return
       }
       const skus = configuredSkus(playProducts, module)
-      if (skus.length === 0) {
-        setTill('play-unlisted')
-        return
-      }
-      const items = await purchases.detailsFor(skus)
+      const items = skus.length > 0 ? await purchases.detailsFor(skus) : []
       if (cancelled) return
       // Play has to recognise the id. A configured env var that is not a Console
       // product must not become a buy button — that would be a fake offer.
-      if (items.length === 0) {
-        setTill('play-unlisted')
-        return
-      }
+      const next = selectPaywallTill({
+        iosShell: false,
+        playAvailable: true,
+        storeSkus: [],
+        storeRecognised: 0,
+        playSkus: skus,
+        playRecognised: items.length,
+      })
       setPlayItems(items)
-      setTill('play')
-    })
+      setTill(next)
+    })()
     return () => {
       cancelled = true
     }
-  }, [playProducts, module])
+  }, [playProducts, appstoreProducts, module])
 
   async function chooseStripe(plan: Plan) {
     setPending(plan)
@@ -119,6 +156,61 @@ export function Paywall({
         caught instanceof ApiError
           ? caught.message
           : 'Could not reach checkout. Try again in a moment.',
+      )
+      setPending(null)
+    }
+  }
+
+  async function chooseAppStore(item: StoreKitItemDetails) {
+    setPending(item.productId)
+    setError(null)
+    try {
+      const purchases = browserStoreKitBilling(api.billing.reportAppStorePurchase)
+      const result = await purchases.buy(item.productId, appstoreProducts)
+      if (result.ok === false && result.reason === 'cancelled') {
+        setPending(null)
+        return
+      }
+      if (!result.ok) {
+        setError(
+          'error' in result && result.error
+            ? result.error
+            : 'The App Store did not complete that purchase.',
+        )
+        setPending(null)
+        return
+      }
+      if (!result.entitled) {
+        setError('Apple confirmed the purchase, but access is not unlocked yet.')
+        setPending(null)
+        return
+      }
+      onPlayUnlocked?.()
+    } catch (caught) {
+      setError(
+        caught instanceof ApiError
+          ? caught.message
+          : 'Could not complete the App Store purchase.',
+      )
+      setPending(null)
+    }
+  }
+
+  async function restoreAppStore() {
+    setPending('restore')
+    setError(null)
+    try {
+      const purchases = browserStoreKitBilling(api.billing.reportAppStorePurchase)
+      const ids = await purchases.restore()
+      if (ids.length === 0) {
+        setError('No App Store purchases to restore on this Apple ID yet.')
+        setPending(null)
+        return
+      }
+      onPlayUnlocked?.()
+    } catch (caught) {
+      setError(
+        caught instanceof ApiError ? caught.message : 'Could not restore App Store purchases.',
       )
       setPending(null)
     }
@@ -174,6 +266,11 @@ export function Paywall({
             there is nothing to buy here and no price to show. The website still uses
             Stripe test checkout until then.
           </p>
+        ) : till === 'appstore-unlisted' ? (
+          <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+            This iOS build does not sell a plan yet. App Store product ids are not
+            configured, so there is nothing to buy here and no price to show.
+          </p>
         ) : module === 'recruit' ? (
           <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
             Your free board is used. A Recruit plan unlocks more oral-board practice.
@@ -197,6 +294,17 @@ export function Paywall({
 
         {!alreadyEntitled && till === 'checking' && (
           <p className="mt-5 text-sm text-stone-500">Checking how you can pay…</p>
+        )}
+
+        {!alreadyEntitled && till === 'appstore-unlisted' && (
+          <button
+            type="button"
+            onClick={() => void restoreAppStore()}
+            disabled={pending !== null}
+            className="mt-5 w-full text-sm text-stone-500 hover:underline disabled:opacity-60 dark:text-stone-400"
+          >
+            {pending === 'restore' ? 'Restoring…' : 'Restore purchases'}
+          </button>
         )}
 
         {!alreadyEntitled && till === 'stripe' && (
@@ -242,6 +350,34 @@ export function Paywall({
           </div>
         )}
 
+        {!alreadyEntitled && till === 'appstore' && (
+          <div className="mt-5 space-y-3">
+            {storeItems.map((item) => (
+              <button
+                key={item.productId}
+                onClick={() => void chooseAppStore(item)}
+                disabled={pending !== null}
+                className="w-full rounded-lg border border-stone-300 p-4 text-left transition hover:border-stone-900 disabled:opacity-60 dark:border-stone-700 dark:hover:border-stone-100"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{item.title}</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400">
+                    {pending === item.productId ? 'Purchasing…' : item.priceString || 'Choose →'}
+                  </span>
+                </div>
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => void restoreAppStore()}
+              disabled={pending !== null}
+              className="w-full text-sm text-stone-500 hover:underline disabled:opacity-60 dark:text-stone-400"
+            >
+              {pending === 'restore' ? 'Restoring…' : 'Restore purchases'}
+            </button>
+          </div>
+        )}
+
         {!alreadyEntitled && till === 'stripe' && (
           <p className="mt-4 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
             {module === 'recruit'
@@ -250,6 +386,21 @@ export function Paywall({
             Payments are non-refundable — cancelling keeps your access to the end of
             the period you have paid for. Choosing a plan takes you to Stripe, and means you
             agree to the{' '}
+            <a href="/terms" className="underline">
+              Terms of Service
+            </a>{' '}
+            and{' '}
+            <a href="/privacy" className="underline">
+              Privacy Policy
+            </a>
+            .
+          </p>
+        )}
+
+        {!alreadyEntitled && till === 'appstore' && (
+          <p className="mt-4 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+            Purchases on this device go through the App Store. The price the App Store
+            shows is the price you pay. Choosing a plan means you agree to the{' '}
             <a href="/terms" className="underline">
               Terms of Service
             </a>{' '}

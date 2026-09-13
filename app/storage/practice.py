@@ -58,6 +58,20 @@ class QuizQuestion(BaseModel):
     options: list[str] | None = None
 
 
+class OfflineQuestion(QuizQuestion):
+    """A question plus the already-rendered citation, still without an answer.
+
+    Used to cache one Promote session on-device. Citation is a location, not a
+    grade — `_citation` is the same helper the verdict and review list use.
+    """
+
+    citation: str
+
+
+# Location fields on chunks. Never `body` — that is the source text.
+CHUNK_LOCATION_COLUMNS = "id,section_path,section_title,page_start,page_end"
+
+
 class Verdict(BaseModel):
     """What comes back once an answer has been committed.
 
@@ -166,6 +180,47 @@ def next_question(db: Client, session: PracticeSession) -> QuizQuestion | None:
 
     rows = query.order("created_at").limit(1).execute().data
     return QuizQuestion.model_validate(rows[0]) if rows else None
+
+
+def session_questions(db: Client, session: PracticeSession) -> list[OfflineQuestion]:
+    """Every question in this session's pool, with a citation and no answers.
+
+    The candidate role can read questions (QUESTION_COLUMNS) and their own
+    chunks' location fields. Body text is not selected. Citations are rendered
+    here so the browser does not invent a second formatter.
+    """
+    query = db.table("questions").select(QUESTION_COLUMNS)
+    if session.document_id:
+        query = query.eq("document_id", session.document_id)
+    rows = query.order("created_at").execute().data or []
+    if not rows:
+        return []
+
+    chunk_ids = list({row["chunk_id"] for row in rows})
+    chunks = (
+        db.table("chunks")
+        .select(CHUNK_LOCATION_COLUMNS)
+        .in_("id", chunk_ids)
+        .execute()
+        .data
+        or []
+    )
+    by_id = {row["id"]: row for row in chunks}
+    packed: list[OfflineQuestion] = []
+    for row in rows:
+        chunk = by_id.get(row["chunk_id"]) or {
+            "section_path": [],
+            "section_title": None,
+            "page_start": 1,
+            "page_end": 1,
+        }
+        packed.append(
+            OfflineQuestion(
+                **QuizQuestion.model_validate(row).model_dump(),
+                citation=_citation(chunk),
+            )
+        )
+    return packed
 
 
 def remaining(db: Client, session: PracticeSession) -> int:
