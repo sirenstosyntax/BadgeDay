@@ -2,8 +2,9 @@
 
 The CI job **TWA / Play TWA AAB (billing on)** builds an AAB with package
 `com.badgeday.app`, start URL `https://app.badgeday.com/`, and the Play Billing
-permission. It does **not** create an in-app product or print a price. Do not
-enable Stripe live.
+permission. It does **not** create an in-app product or print a price. Stripe
+live is approved for Recruit and Promote on the web; Play uses Play Billing.
+Do not invent product ids.
 
 Developer account (organisation, already exists): Sirens to Syntax LLC,
 `7304930268481203834`, owner `grant@sirenstosyntax.com`.
@@ -104,16 +105,27 @@ Play's statement list for the same host:
 https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://app.badgeday.com&relation=delegate_permission/common.handle_all_urls
 ```
 
-## 6. Do not create a paid SKU yet
+## 6. Play SKUs (match locked amounts)
 
-Grant has not named the BadgeDay paid offer. Do not invent a product id or a
-price in Play Console, in env, or in the UI.
+Promote and Recruit paid offers are named and locked (`badgeday_pricing.md`).
+Live Stripe price IDs are ops-filled. Play SKUs should match those amounts.
+Do not invent product ids in the repo, in env, or in the UI.
 
-When the offer is named:
+| Module | Offer | Locked amount |
+| --- | --- | --- |
+| Promote | Monthly | $29/mo |
+| Promote | 90-day intensive | $129 |
+| Recruit | Monthly | $24.99/mo |
+| Recruit | 90-day pass | $59 |
+| Recruit | 6-month | $119 |
+| Recruit | Annual | $179/yr |
 
-1. Play Console → Monetise → create the subscription / one-time product.
+To wire Play Billing:
+
+1. Play Console → Monetise → create the subscription / one-time products at
+   those amounts. Product ids must match Console exactly.
 2. Set `PLAY_PACKAGE_NAME=com.badgeday.app` and `PLAY_PRODUCT_ID_*` on the
-   Azure app (names only in `.env.example`). They must match Console exactly.
+   Azure app (names only in `.env.example`).
 3. Wire Play Developer API + RTDN as in `mobile_release_plan.md` before taking
    a real purchase. Until those credentials exist, `/billing/store/play/*`
    correctly answers 503.
@@ -143,9 +155,15 @@ already exist (Supabase admin generate_link). Grant entitlements separately
 if the reviewer must see paid surfaces; reaching the signed-in home screen
 does not require a plan.
 
-## 8. Still not this release
+## 8. Still needed for Play production
 
-- Stripe stays in **test mode**. Do not flip it live.
-- Store listing screenshots, feature graphic, Data safety form — needed before
-  production, not before internal testing.
-- Recruit remains on the critical path to any real money (`CLAUDE.md`).
+Web Stripe go-live is done for both Recruit and Promote (START ORDER
+2026-09-11; see `badgeday_pricing.md` and `CLAUDE.md`). That is not a hold
+on Play.
+
+Play Production 1.1.0 was rejected for MFA/OTP. Resubmit stays blocked on
+reviewer Sign-in details until that path is configured and pasted into Play
+Console (see §7). That is a reviewer-access hold, not a Stripe-test hold.
+
+Store listing screenshots, feature graphic, and the Data safety form are
+still needed before production, as appropriate — not before internal testing.
