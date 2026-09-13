@@ -22,11 +22,14 @@ import {
 } from './lib/notifications'
 import {
   cacheMatchesScope,
+  dropPendingAnswer,
   emptyCacheMessage,
-  OFFLINE_SCHEMA_VERSION,
+  offlineCacheFromPack,
   pendingSyncBodies,
+  pendingSyncFailure,
   readOfflineCache,
   recordLastPractice,
+  resolveOfflinePack,
   writeOfflineCache,
 } from './lib/offlinePractice'
 import { detectIosCapacitorShell } from './lib/platform'
@@ -143,21 +146,25 @@ export default function App() {
     let cancelled = false
     void (async () => {
       const pending = pendingSyncBodies(cache)
-      const kept = [...cache.answers_local]
+      let kept = [...cache.answers_local]
       for (const body of pending) {
         try {
           await api.practice.answer(cache.session_id, body)
-          const index = kept.findIndex((row) => row.question_id === body.question_id)
-          if (index >= 0) kept.splice(index, 1)
+          kept = dropPendingAnswer(kept, body.question_id)
         } catch (caught) {
-          if (caught instanceof ApiError && caught.status === 404) {
+          const status = caught instanceof ApiError ? caught.status : 0
+          const failure = pendingSyncFailure(status)
+          if (failure === 'already_answered') {
+            kept = dropPendingAnswer(kept, body.question_id)
+            continue
+          }
+          if (failure === 'unknown_question') {
             if (!cancelled) {
               setNotice(
                 'A saved answer could not be submitted — that question is no longer on the server. Re-cache a session while online.',
               )
             }
-            const index = kept.findIndex((row) => row.question_id === body.question_id)
-            if (index >= 0) kept.splice(index, 1)
+            kept = dropPendingAnswer(kept, body.question_id)
             continue
           }
           if (!cancelled) {
@@ -232,22 +239,28 @@ export default function App() {
     setCachingOffline(true)
     setNotice(null)
     try {
-      const started = await api.practice.start(documentId)
-      const pack = await api.practice.pack(started.id)
       if (!userId) throw new Error('Not signed in.')
-      if (pack.questions.length === 0) {
+      const existing = readOfflineCache(localStorage, userId)
+      const resolved = await resolveOfflinePack({
+        existing,
+        documentId,
+        start: (id) => api.practice.start(id),
+        pack: (id) => api.practice.pack(id),
+        isMissingSession: (caught) => caught instanceof ApiError && caught.status === 404,
+      })
+      if (resolved.questions.length === 0) {
         throw new Error('That session has no questions to cache yet.')
       }
-      writeOfflineCache(localStorage, {
-        schema_version: OFFLINE_SCHEMA_VERSION,
-        user_id: userId,
-        cached_at: new Date().toISOString(),
-        session_id: pack.session_id,
-        session_scope: documentId ? 'document' : 'whole_list',
-        document_id: documentId,
-        questions: pack.questions,
-        answers_local: [],
-      })
+      writeOfflineCache(
+        localStorage,
+        offlineCacheFromPack({
+          userId,
+          sessionId: resolved.sessionId,
+          documentId,
+          questions: resolved.questions,
+          previous: existing,
+        }),
+      )
       setOfflineReady(true)
       setNotice('That session is saved on this device for offline practice.')
     } catch (caught) {

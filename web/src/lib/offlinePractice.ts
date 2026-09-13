@@ -201,3 +201,78 @@ export function pendingSyncBodies(cache: OfflinePracticeCache): AnswerBody[] {
     answered_text: row.answered_text,
   }))
 }
+
+/**
+ * A 409 AlreadyAnswered means the server already has this answer — treat it
+ * as sync success and drop the pending row. A 404 unknown question is dropped
+ * after a notice. Anything else stays queued for a later pass.
+ */
+export type PendingSyncFailure = 'already_answered' | 'unknown_question' | 'keep'
+
+export function pendingSyncFailure(status: number): PendingSyncFailure {
+  if (status === 409) return 'already_answered'
+  if (status === 404) return 'unknown_question'
+  return 'keep'
+}
+
+export function dropPendingAnswer(
+  answers: OfflineAnswer[],
+  questionId: string,
+): OfflineAnswer[] {
+  return answers.filter((row) => row.question_id !== questionId)
+}
+
+/** Re-cache the same scope against the existing session so start() does not orphan it. */
+export function reusableOfflineSessionId(
+  cache: OfflinePracticeCache | null,
+  documentId: string | null,
+): string | null {
+  if (!cache || !cacheMatchesScope(cache, documentId)) return null
+  return cache.session_id
+}
+
+export async function resolveOfflinePack<TQuestion extends OfflineQuestion>(options: {
+  existing: OfflinePracticeCache | null
+  documentId: string | null
+  start: (documentId: string | null) => Promise<{ id: string }>
+  pack: (sessionId: string) => Promise<{ session_id: string; questions: TQuestion[] }>
+  isMissingSession: (caught: unknown) => boolean
+}): Promise<{ sessionId: string; questions: TQuestion[]; reused: boolean }> {
+  const reuseId = reusableOfflineSessionId(options.existing, options.documentId)
+  if (reuseId) {
+    try {
+      const packed = await options.pack(reuseId)
+      return { sessionId: packed.session_id, questions: packed.questions, reused: true }
+    } catch (caught) {
+      if (!options.isMissingSession(caught)) throw caught
+    }
+  }
+  const started = await options.start(options.documentId)
+  const packed = await options.pack(started.id)
+  return { sessionId: packed.session_id, questions: packed.questions, reused: false }
+}
+
+export function offlineCacheFromPack(options: {
+  userId: string
+  sessionId: string
+  documentId: string | null
+  questions: OfflineQuestion[]
+  previous?: OfflinePracticeCache | null
+  now?: Date
+}): OfflinePracticeCache {
+  const sameSession = options.previous?.session_id === options.sessionId
+  const questionIds = new Set(options.questions.map((question) => question.id))
+  const answers_local = sameSession
+    ? (options.previous?.answers_local ?? []).filter((row) => questionIds.has(row.question_id))
+    : []
+  return {
+    schema_version: OFFLINE_SCHEMA_VERSION,
+    user_id: options.userId,
+    cached_at: (options.now ?? new Date()).toISOString(),
+    session_id: options.sessionId,
+    session_scope: options.documentId ? 'document' : 'whole_list',
+    document_id: options.documentId,
+    questions: options.questions,
+    answers_local,
+  }
+}

@@ -102,10 +102,15 @@ configuration setting. A WebView around a website is the textbook 4.2 rejection.
 
 ```bash
 cd mobile/ios
-npm install
+npm ci               # uses the committed package-lock.json
 npx cap add ios
 npx cap open ios     # needs Xcode, on a Mac
 ```
+
+`package-lock.json` is committed so Mac `npm ci` pins the BD-iOS-4.2 plugins
+(`@capacitor/camera`, `@capacitor/filesystem`, `@capacitor/local-notifications`,
+`@capawesome/capacitor-file-picker`, `@capgo/native-purchases`). Do not invent
+a second product lockfile.
 
 `capacitor.config.json` points `server.url` at app.badgeday.com, so the app loads the
 deployed site rather than a bundled copy. That keeps the wrapper thin and means a web

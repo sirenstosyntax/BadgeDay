@@ -5,6 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 IOS_PKG = ROOT / "mobile/ios/package.json"
+IOS_LOCK = ROOT / "mobile/ios/package-lock.json"
 IOS_CONFIG = ROOT / "mobile/ios/capacitor.config.json"
 README = ROOT / "mobile/README.md"
 PLAN = ROOT / "mobile_release_plan.md"
@@ -22,6 +23,8 @@ def test_capacitor_shell_is_still_the_remote_web_app() -> None:
     assert config["appId"] == "com.badgeday.app"
     assert config["server"]["url"] == "https://app.badgeday.com"
     pkg = json.loads(IOS_PKG.read_text())
+    lock = json.loads(IOS_LOCK.read_text())
+    packages = lock.get("packages", {})
     for plugin in (
         "@capacitor/camera",
         "@capacitor/filesystem",
@@ -30,6 +33,7 @@ def test_capacitor_shell_is_still_the_remote_web_app() -> None:
         "@capgo/native-purchases",
     ):
         assert plugin in pkg["dependencies"]
+        assert f"node_modules/{plugin}" in packages
 
 
 def test_native_entry_points_are_gated_on_the_ios_shell() -> None:
@@ -71,11 +75,27 @@ def test_recruit_blocks_offline_without_a_spinner_forever() -> None:
 
 def test_privacy_strings_are_documented_for_mac_sync() -> None:
     text = PERMISSIONS.read_text()
+    documents = DOCUMENTS.read_text()
     assert "NSCameraUsageDescription" in text
     assert "NSPhotoLibraryUsageDescription" in text
     assert "NSMicrophoneUsageDescription" in text
     assert "reading list" in text.lower()
     assert "oral-board" in text.lower() or "oral board" in text.lower()
+    assert "does not read your photo library" in text.lower()
+    assert "camera only" in text.lower()
+    assert "Scan page" in documents
+    assert "source: 'CAMERA'" in (ROOT / "web/src/lib/nativeUpload.ts").read_text()
+    assert "source: 'PHOTOS'" not in (ROOT / "web/src/lib/nativeUpload.ts").read_text()
+    assert "reads a photo you choose" not in text.lower()
+
+
+def test_offline_sync_and_recache_avoid_orphans() -> None:
+    app = APP.read_text()
+    practice = (ROOT / "web/src/lib/offlinePractice.ts").read_text()
+    assert "pendingSyncFailure" in app
+    assert "already_answered" in practice
+    assert "resolveOfflinePack" in app
+    assert "reusableOfflineSessionId" in practice
 
 
 def test_docs_mark_capabilities_landed_without_claiming_testflight() -> None:
@@ -88,3 +108,5 @@ def test_docs_mark_capabilities_landed_without_claiming_testflight() -> None:
     assert "BD-iOS-4.2" in plan
     assert "Code-landed" in plan
     assert "Still needs a Mac" in plan
+    assert "package-lock.json" in readme
+    assert "npm ci" in readme
