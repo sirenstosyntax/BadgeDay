@@ -4,10 +4,15 @@ The Xcode project is not in git. After `npx cap add ios` / `npx cap sync ios`
 on a Mac, set these keys. They describe what BadgeDay actually does — Promote
 reading-list upload and Recruit spoken answers. Do not invent department names.
 
+The Promote upload UI is **Files / iCloud** plus **Scan page** (camera only).
+There is no Photo Library picker. Photo Library keys are documented only
+because `@capacitor/camera` may inject them; the strings must not claim a
+Photos path the UI does not offer.
+
 | Key | String |
 |---|---|
 | `NSCameraUsageDescription` | BadgeDay uses the camera so you can photograph a page from your promotional reading list and upload it for cited practice questions. |
-| `NSPhotoLibraryUsageDescription` | BadgeDay reads a photo you choose so you can upload a page from your promotional reading list. |
+| `NSPhotoLibraryUsageDescription` | BadgeDay does not read your photo library. Scan page uses the camera only. This string exists only if the camera plugin requires the key. |
 | `NSPhotoLibraryAddUsageDescription` | BadgeDay does not save photos to your library. This string exists only if a plugin requires the key. |
 | `NSMicrophoneUsageDescription` | BadgeDay records your spoken oral-board answer so it can be transcribed and critiqued. Recordings are discarded unless you keep them for self-review. |
 
