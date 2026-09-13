@@ -11,6 +11,9 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import threading
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from app.config import Settings
@@ -18,10 +21,116 @@ from app.config import Settings
 GENERIC_DENIED = "That email and password did not match."
 UNAVAILABLE = "Sign-in is unavailable right now."
 NOT_CONFIGURED = "Not found."
+TOO_MANY_ATTEMPTS = "Too many sign-in attempts. Try again later."
+
+# Shared allowlist password on a public origin. Five misses lock the IP and
+# the attempted email for fifteen minutes so a known reviewer mailbox is not
+# an unbounded online oracle. Process-local is enough: there is no Redis, and
+# the allowlist is tiny. Each replica enforces its own window.
+REVIEWER_MAX_FAILURES = 5
+REVIEWER_LOCKOUT_SECONDS = 15 * 60
 
 
 class ReviewerSessionError(RuntimeError):
     """Supabase did not hand back a usable session. Callers map this to 503."""
+
+
+@dataclass
+class _AttemptBucket:
+    count: int = 0
+    locked_until: float = 0.0
+
+
+class ReviewerAttemptGuard:
+    """Per-IP and per-email failure lock for ``POST /auth/play-reviewer``."""
+
+    def __init__(
+        self,
+        *,
+        max_failures: int = REVIEWER_MAX_FAILURES,
+        lockout_seconds: float = REVIEWER_LOCKOUT_SECONDS,
+        now: Callable[[], float] | None = None,
+    ) -> None:
+        if max_failures < 1:
+            raise ValueError("reviewer max failures must be at least 1")
+        if lockout_seconds <= 0:
+            raise ValueError("reviewer lockout seconds must be positive")
+        self.max_failures = max_failures
+        self.lockout_seconds = lockout_seconds
+        self._now = now or time.monotonic
+        self._lock = threading.Lock()
+        self._buckets: dict[str, _AttemptBucket] = {}
+
+    def reset(self) -> None:
+        with self._lock:
+            self._buckets.clear()
+
+    def retry_after(self, *keys: str) -> int | None:
+        """Seconds left on the longest live lock, or None if none are locked."""
+        now = self._now()
+        remaining = 0.0
+        with self._lock:
+            for key in keys:
+                bucket = self._buckets.get(key)
+                if bucket is None:
+                    continue
+                left = bucket.locked_until - now
+                if left > remaining:
+                    remaining = left
+        if remaining <= 0:
+            return None
+        return max(1, int(remaining))
+
+    def record_failure(self, *keys: str) -> bool:
+        """Count a miss on each key. True when any key is now locked."""
+        now = self._now()
+        locked = False
+        with self._lock:
+            for key in keys:
+                bucket = self._buckets.setdefault(key, _AttemptBucket())
+                if bucket.locked_until and bucket.locked_until <= now:
+                    bucket.count = 0
+                    bucket.locked_until = 0.0
+                bucket.count += 1
+                if bucket.count >= self.max_failures:
+                    bucket.locked_until = now + self.lockout_seconds
+                    locked = True
+                elif bucket.locked_until > now:
+                    locked = True
+        return locked
+
+    def record_success(self, *keys: str) -> None:
+        with self._lock:
+            for key in keys:
+                self._buckets.pop(key, None)
+
+
+_ATTEMPTS = ReviewerAttemptGuard()
+
+
+def reviewer_attempt_guard() -> ReviewerAttemptGuard:
+    return _ATTEMPTS
+
+
+def reviewer_client_ip(*, forwarded_for: str | None, client_host: str | None) -> str:
+    """Leftmost ``X-Forwarded-For`` hop, then the socket peer.
+
+    Azure Container Apps sits in front; the leftmost hop is the browser. A
+    spoofed header still hits the per-email lock once the allowlisted mailbox
+    is the target.
+    """
+    if forwarded_for:
+        first = forwarded_for.split(",")[0].strip()
+        if first:
+            return first
+    if client_host:
+        return client_host
+    return "unknown"
+
+
+def reviewer_attempt_keys(email: str, ip: str) -> tuple[str, str]:
+    digest = hashlib.sha256(normalize_email(email).encode("utf-8")).hexdigest()
+    return (f"ip:{ip}", f"email:{digest}")
 
 
 @dataclass(frozen=True)
