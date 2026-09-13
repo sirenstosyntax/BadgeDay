@@ -11,11 +11,17 @@ from app.api.play_reviewer import router
 from app.auth.play_reviewer import (
     GENERIC_DENIED,
     NOT_CONFIGURED,
+    REVIEWER_MAX_FAILURES,
+    TOO_MANY_ATTEMPTS,
+    ReviewerAttemptGuard,
     ReviewerSessionError,
     hashed_token_from_link,
     is_allowlisted_reviewer,
     mint_reviewer_session,
     normalize_email,
+    reviewer_attempt_guard,
+    reviewer_attempt_keys,
+    reviewer_client_ip,
     reviewer_credentials_accepted,
     reviewer_email_allowlist,
     reviewer_password_matches,
@@ -45,6 +51,11 @@ def _client(settings: Settings) -> TestClient:
     app.include_router(router)
     app.dependency_overrides[get_settings] = lambda: settings
     return TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _reset_reviewer_attempts() -> None:
+    reviewer_attempt_guard().reset()
 
 
 def test_allowlist_is_comma_separated_and_case_insensitive() -> None:
@@ -273,3 +284,151 @@ def test_the_mounted_app_exposes_the_reviewer_status() -> None:
     response = TestClient(app).get("/auth/play-reviewer")
     assert response.status_code == 200
     assert response.json() == {"configured": False}
+
+
+def test_forwarded_for_prefers_the_leftmost_hop() -> None:
+    assert (
+        reviewer_client_ip(forwarded_for=" 203.0.113.9 , 10.0.0.1", client_host="127.0.0.1")
+        == "203.0.113.9"
+    )
+    assert reviewer_client_ip(forwarded_for=None, client_host="127.0.0.1") == "127.0.0.1"
+    assert reviewer_client_ip(forwarded_for="  ", client_host=None) == "unknown"
+
+
+def test_attempt_keys_hash_the_email_and_keep_the_ip() -> None:
+    ip_key, email_key = reviewer_attempt_keys(f"  {REVIEWER.upper()}  ", "203.0.113.9")
+    again_ip, again_email = reviewer_attempt_keys(REVIEWER, "203.0.113.9")
+    other_ip, other_email = reviewer_attempt_keys("other@example.com", "203.0.113.9")
+    assert ip_key == "ip:203.0.113.9"
+    assert ip_key == again_ip
+    assert other_ip == ip_key
+    assert email_key.startswith("email:")
+    assert again_email == email_key
+    assert REVIEWER not in email_key
+    assert other_email != email_key
+
+
+def test_guard_locks_after_n_failures_and_clears_on_success() -> None:
+    clock = [0.0]
+    guard = ReviewerAttemptGuard(max_failures=3, lockout_seconds=60, now=lambda: clock[0])
+    keys = ("ip:1", "email:a")
+    assert guard.record_failure(*keys) is False
+    assert guard.record_failure(*keys) is False
+    assert guard.retry_after(*keys) is None
+    assert guard.record_failure(*keys) is True
+    assert guard.retry_after(*keys) == 60
+    clock[0] = 30.0
+    assert guard.retry_after(*keys) == 30
+    guard.record_success(*keys)
+    assert guard.retry_after(*keys) is None
+
+
+def test_guard_lock_expires_and_allows_a_fresh_window() -> None:
+    clock = [0.0]
+    guard = ReviewerAttemptGuard(max_failures=2, lockout_seconds=10, now=lambda: clock[0])
+    assert guard.record_failure("ip:2") is False
+    assert guard.record_failure("ip:2") is True
+    clock[0] = 10.0
+    assert guard.retry_after("ip:2") is None
+    assert guard.record_failure("ip:2") is False
+    assert guard.retry_after("ip:2") is None
+
+
+def test_repeated_failures_are_429_and_do_not_mint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    minted: list[str] = []
+    monkeypatch.setattr(
+        "app.api.play_reviewer.mint_reviewer_session",
+        lambda email, **_: minted.append(email) or None,
+    )
+    client = _client(_settings())
+    for _ in range(REVIEWER_MAX_FAILURES - 1):
+        denied = client.post(
+            "/auth/play-reviewer",
+            json={"email": REVIEWER, "password": "nope"},
+        )
+        assert denied.status_code == 401
+        assert denied.json()["detail"] == GENERIC_DENIED
+
+    locked = client.post(
+        "/auth/play-reviewer",
+        json={"email": REVIEWER, "password": "nope"},
+    )
+    assert locked.status_code == 429
+    assert locked.json()["detail"] == TOO_MANY_ATTEMPTS
+    assert locked.headers.get("retry-after") is not None
+    assert minted == []
+
+    still_locked = client.post(
+        "/auth/play-reviewer",
+        json={"email": REVIEWER, "password": PASSWORD},
+    )
+    assert still_locked.status_code == 429
+    assert "access_token" not in still_locked.json()
+    assert minted == []
+
+
+def test_per_email_lock_survives_an_ip_change(monkeypatch: pytest.MonkeyPatch) -> None:
+    minted: list[str] = []
+    monkeypatch.setattr(
+        "app.api.play_reviewer.mint_reviewer_session",
+        lambda email, **_: minted.append(email) or None,
+    )
+    client = _client(_settings())
+    for _ in range(REVIEWER_MAX_FAILURES):
+        client.post(
+            "/auth/play-reviewer",
+            headers={"X-Forwarded-For": "203.0.113.10"},
+            json={"email": REVIEWER, "password": "nope"},
+        )
+    rotated = client.post(
+        "/auth/play-reviewer",
+        headers={"X-Forwarded-For": "198.51.100.20"},
+        json={"email": REVIEWER, "password": PASSWORD},
+    )
+    assert rotated.status_code == 429
+    assert minted == []
+
+
+def test_success_after_a_few_misses_still_mints(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_mint(email: str, *, admin: object, anon: object):
+        return SimpleNamespace(
+            access_token="access-token",
+            refresh_token="refresh-token",
+            expires_in=3600,
+            token_type="bearer",
+        )
+
+    monkeypatch.setattr("app.api.play_reviewer.mint_reviewer_session", fake_mint)
+    monkeypatch.setattr("app.api.play_reviewer.service_client", lambda settings: object())
+    monkeypatch.setattr("app.api.play_reviewer.create_client", lambda *a, **k: object())
+
+    client = _client(_settings())
+    for _ in range(2):
+        assert (
+            client.post(
+                "/auth/play-reviewer",
+                json={"email": REVIEWER, "password": "nope"},
+            ).status_code
+            == 401
+        )
+    response = client.post(
+        "/auth/play-reviewer",
+        json={"email": REVIEWER, "password": PASSWORD},
+    )
+    assert response.status_code == 200
+    assert response.json()["access_token"] == "access-token"
+
+
+def test_post_stays_404_when_off_even_after_repeated_attempts() -> None:
+    client = _client(_settings(play_reviewer_emails="", play_reviewer_password=""))
+    for _ in range(REVIEWER_MAX_FAILURES + 2):
+        response = client.post(
+            "/auth/play-reviewer",
+            json={"email": REVIEWER, "password": PASSWORD},
+        )
+        assert response.status_code == 404
+        assert response.json()["detail"] == NOT_CONFIGURED

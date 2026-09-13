@@ -3,10 +3,11 @@
 GET reports only whether the path is wired — never the allowlist or the
 password — so the sign-in screen can show a password field without baking
 secrets into the SPA. POST mints a session only for an allowlisted email
-that presents the configured password.
+that presents the configured password. Repeated misses lock the client IP
+and the attempted email so the shared password is not an online oracle.
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from supabase import create_client
 
@@ -14,10 +15,14 @@ from app.api.deps import SettingsDep
 from app.auth.play_reviewer import (
     GENERIC_DENIED,
     NOT_CONFIGURED,
+    TOO_MANY_ATTEMPTS,
     UNAVAILABLE,
     ReviewerSessionError,
     mint_reviewer_session,
     normalize_email,
+    reviewer_attempt_guard,
+    reviewer_attempt_keys,
+    reviewer_client_ip,
     reviewer_credentials_accepted,
     reviewer_path_ready,
 )
@@ -47,21 +52,43 @@ def play_reviewer_status(settings: SettingsDep) -> PlayReviewerStatus:
     return PlayReviewerStatus(configured=reviewer_path_ready(settings))
 
 
+def _locked_out(keys: tuple[str, str]) -> HTTPException:
+    retry_after = reviewer_attempt_guard().retry_after(*keys)
+    headers = {"Retry-After": str(retry_after)} if retry_after is not None else None
+    return HTTPException(
+        status.HTTP_429_TOO_MANY_REQUESTS,
+        TOO_MANY_ATTEMPTS,
+        headers=headers,
+    )
+
+
 @router.post("/auth/play-reviewer")
 def play_reviewer_sign_in(
-    body: PlayReviewerSignIn, settings: SettingsDep
+    body: PlayReviewerSignIn, request: Request, settings: SettingsDep
 ) -> PlayReviewerSession:
     if not reviewer_path_ready(settings):
         raise HTTPException(status.HTTP_404_NOT_FOUND, NOT_CONFIGURED)
 
     email = normalize_email(body.email)
+    ip = reviewer_client_ip(
+        forwarded_for=request.headers.get("x-forwarded-for"),
+        client_host=request.client.host if request.client else None,
+    )
+    keys = reviewer_attempt_keys(email, ip)
+    if reviewer_attempt_guard().retry_after(*keys) is not None:
+        raise _locked_out(keys)
+
     if not reviewer_credentials_accepted(
         email,
         body.password,
         emails=settings.play_reviewer_emails,
         expected_password=settings.play_reviewer_password,
     ):
+        if reviewer_attempt_guard().record_failure(*keys):
+            raise _locked_out(keys)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, GENERIC_DENIED)
+
+    reviewer_attempt_guard().record_success(*keys)
 
     if not (
         settings.supabase_url
