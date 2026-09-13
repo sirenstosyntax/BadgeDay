@@ -1,4 +1,9 @@
 import { supabase } from './supabase'
+import {
+  playReviewerConfigured,
+  playReviewerSignInBody,
+  type PlayReviewerSession,
+} from './playReviewer'
 import type {
   Account,
   Coverage,
@@ -54,7 +59,44 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return body as T
 }
 
+/**
+ * Unauthenticated JSON. The Play reviewer password path has to work before a
+ * session exists — `request` would refuse that as "Not signed in."
+ */
+async function publicJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const headers = new Headers(init.headers)
+  if (init.body && !(init.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json')
+  }
+  const response = await fetch(`${BASE}${path}`, { ...init, headers })
+  const body = await response.json().catch(() => null)
+  if (!response.ok) {
+    const detail = body?.detail
+    throw new ApiError(
+      response.status,
+      typeof detail === 'string' && detail.trim() ? detail : response.statusText,
+    )
+  }
+  return body as T
+}
+
 export const api = {
+  auth: {
+    playReviewerConfigured: async () => {
+      try {
+        const body = await publicJson<unknown>('/auth/play-reviewer')
+        return playReviewerConfigured(body)
+      } catch {
+        return false
+      }
+    },
+    playReviewerSignIn: (email: string, password: string) =>
+      publicJson<PlayReviewerSession>('/auth/play-reviewer', {
+        method: 'POST',
+        body: JSON.stringify(playReviewerSignInBody(email, password)),
+      }),
+  },
+
   account: {
     me: () => request<Account>('/me'),
     // Hard-deletes the candidate and everything of theirs, and cancels billing. The token

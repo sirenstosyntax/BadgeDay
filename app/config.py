@@ -154,6 +154,12 @@ class Settings(BaseSettings):
     # notification URL would be believed.
     play_pubsub_audience: str = ""
     play_pubsub_service_account: str = ""
+    # Play Console reviewer sign-in. Empty means the path is off — no public
+    # password backdoor. Both must be set for GET /auth/play-reviewer to report
+    # configured. Comma-separated emails; one shared password. Ops fills;
+    # never commit the real values. See mobile/android/PLAY_CONSOLE.md.
+    play_reviewer_emails: str = ""
+    play_reviewer_password: str = ""
 
     appstore_bundle_id: str = ""
     appstore_product_id_monthly: str = ""

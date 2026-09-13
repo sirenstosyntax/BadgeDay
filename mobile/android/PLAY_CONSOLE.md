@@ -120,7 +120,30 @@ When the offer is named:
 4. The TWA paywall shows a Play buy path only after `/me` returns those ids
    **and** Digital Goods `getDetails` recognises them. No id, no buy button.
 
-## 7. Still not this release
+## 7. Play reviewer sign-in (Production)
+
+Google rejects magic-link / emailed OTP as MFA. Production has an env-gated
+password path for allowlisted reviewer emails only. Normal candidates stay on
+OTP. This is not a public password product.
+
+Set both on the Azure web app (`.env` → `./deploy/azure-deploy.sh`). Leave
+them blank and the path stays off (`GET /auth/play-reviewer` →
+`{"configured":false}`; `POST` is 404).
+
+```text
+PLAY_REVIEWER_EMAILS=REVIEWER_EMAIL
+PLAY_REVIEWER_PASSWORD=REVIEWER_PASSWORD
+```
+
+Do not commit the live values. After deploy, paste the Sign-in details from
+the PR that added this path into Play Console → App content → App access.
+
+The first successful password sign-in creates the auth user if it does not
+already exist (Supabase admin generate_link). Grant entitlements separately
+if the reviewer must see paid surfaces; reaching the signed-in home screen
+does not require a plan.
+
+## 8. Still not this release
 
 - Stripe stays in **test mode**. Do not flip it live.
 - Store listing screenshots, feature graphic, Data safety form — needed before
