@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { api } from '../lib/api'
 import {
   forgetSignInEmail,
   readRememberedSignInEmail,
   sendMagicLink,
+  signInWithReviewerPassword,
   verifyEmailOtp,
 } from '../lib/auth'
 import {
@@ -10,17 +12,25 @@ import {
   consumeFreshAuthRedirectError,
 } from '../lib/authRedirectError'
 import { isCompleteEmailOtp, normalizeEmailOtp } from '../lib/emailOtp'
+import {
+  PLAY_REVIEWER_DENIED,
+  looksLikeReviewerPassword,
+  showPlayReviewerPassword,
+} from '../lib/playReviewer'
 import { looksLikeSignInEmail, showSignInCodeField } from '../lib/signInCodeField'
 import { LegalLinks } from './LegalLinks'
 
 export function SignIn() {
   const [email, setEmail] = useState(readRememberedSignInEmail)
+  const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(consumeAuthRedirectError)
   const [fromRedirect, setFromRedirect] = useState(() => Boolean(consumeAuthRedirectError()))
   const [sent, setSent] = useState(false)
   const [sending, setSending] = useState(false)
   const [verifying, setVerifying] = useState(false)
+  const [reviewerConfigured, setReviewerConfigured] = useState(false)
+  const showPassword = showPlayReviewerPassword(reviewerConfigured)
   const showCode = showSignInCodeField({ sent, email, fromRedirect })
 
   useEffect(() => {
@@ -34,6 +44,16 @@ export function SignIn() {
     return () => window.removeEventListener('hashchange', syncRedirectError)
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    void api.auth.playReviewerConfigured().then((configured) => {
+      if (!cancelled) setReviewerConfigured(configured)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   async function requestEmail() {
     setSending(true)
     setError(null)
@@ -45,6 +65,27 @@ export function SignIn() {
       setError(caught instanceof Error ? caught.message : 'Could not send the email.')
     } finally {
       setSending(false)
+    }
+  }
+
+  async function submitPassword(event: React.FormEvent) {
+    event.preventDefault()
+    if (!looksLikeSignInEmail(email)) {
+      setError('Enter the email for this account.')
+      return
+    }
+    if (!looksLikeReviewerPassword(password)) {
+      setError('Enter the password for this account.')
+      return
+    }
+    setVerifying(true)
+    setError(null)
+    try {
+      await signInWithReviewerPassword(email, password)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : PLAY_REVIEWER_DENIED)
+    } finally {
+      setVerifying(false)
     }
   }
 
@@ -78,6 +119,7 @@ export function SignIn() {
     forgetSignInEmail()
     setSent(false)
     setCode('')
+    setPassword('')
     setEmail('')
     setError(null)
     setFromRedirect(false)
@@ -110,11 +152,15 @@ export function SignIn() {
             </p>
           )}
 
-          {!sent && (
+          {(!sent || showPassword) && (
             <form
               onSubmit={(event) => {
                 event.preventDefault()
-                void requestEmail()
+                if (showPassword && looksLikeReviewerPassword(password)) {
+                  void submitPassword(event)
+                  return
+                }
+                if (!sent) void requestEmail()
               }}
               className="space-y-3"
             >
@@ -125,22 +171,58 @@ export function SignIn() {
                 id="email"
                 type="email"
                 required
+                autoComplete="username"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@department.gov"
                 className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-stone-900 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:focus:border-stone-400"
               />
-              <button
-                type="submit"
-                disabled={sending}
-                className="w-full rounded-lg bg-stone-900 px-3 py-2 font-medium text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
-              >
-                {sending ? 'Sending…' : 'Email me a sign-in link'}
-              </button>
-              <p className="text-xs text-stone-500 dark:text-stone-500">
-                No password to forget. If the button in the email does nothing, type
-                the code from that email below.
-              </p>
+              {showPassword && (
+                <>
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-stone-700 dark:text-stone-300"
+                  >
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    type="password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-stone-900 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:focus:border-stone-400"
+                  />
+                  <button
+                    type="submit"
+                    disabled={verifying || !looksLikeSignInEmail(email) || !looksLikeReviewerPassword(password)}
+                    className="w-full rounded-lg bg-stone-900 px-3 py-2 font-medium text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+                  >
+                    {verifying ? 'Signing in…' : 'Sign in'}
+                  </button>
+                </>
+              )}
+              {!sent && (
+                <button
+                  type={showPassword ? 'button' : 'submit'}
+                  disabled={sending}
+                  onClick={showPassword ? () => void requestEmail() : undefined}
+                  className={
+                    showPassword
+                      ? 'w-full rounded-lg border border-stone-300 px-3 py-2 font-medium text-stone-800 disabled:opacity-50 dark:border-stone-700 dark:text-stone-100'
+                      : 'w-full rounded-lg bg-stone-900 px-3 py-2 font-medium text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900'
+                  }
+                >
+                  {sending ? 'Sending…' : 'Email me a sign-in link'}
+                </button>
+              )}
+              {!sent && (
+                <p className="text-xs text-stone-500 dark:text-stone-500">
+                  {showPassword
+                    ? 'If you have a password, sign in with it. Otherwise email yourself a sign-in link. If the button in the email does nothing, type the code from that email below.'
+                    : 'No password to forget. If the button in the email does nothing, type the code from that email below.'}
+                </p>
+              )}
             </form>
           )}
 

@@ -9,6 +9,7 @@ from app.api.account import router as account_router
 from app.api.billing import router as billing_router
 from app.api.documents import router as documents_router
 from app.api.health import router as health_router
+from app.api.play_reviewer import router as play_reviewer_router
 from app.api.practice import router as practice_router
 from app.api.recruit import router as recruit_router
 from app.api.reports import router as reports_router
@@ -43,6 +44,7 @@ app.add_middleware(
 add_canonical_redirect(app, settings)
 
 app.include_router(health_router)
+app.include_router(play_reviewer_router)
 app.include_router(documents_router)
 app.include_router(practice_router)
 app.include_router(account_router)

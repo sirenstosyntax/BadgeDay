@@ -1,5 +1,6 @@
 import type { Session } from '@supabase/supabase-js'
 import { useEffect, useState } from 'react'
+import { api } from './api'
 import { clearAuthRedirectError } from './authRedirectError'
 import { emailOtpVerifyParams } from './emailOtp'
 import { supabase } from './supabase'
@@ -63,6 +64,20 @@ export async function sendMagicLink(email: string) {
  */
 export async function verifyEmailOtp(email: string, token: string) {
   const { error } = await supabase.auth.verifyOtp(emailOtpVerifyParams(email, token))
+  if (error) throw error
+  forgetSignInEmail()
+}
+
+/**
+ * Play reviewer path: reusable email+password, no inbox. The API allowlists
+ * the email and mints a session; this only installs those tokens locally.
+ */
+export async function signInWithReviewerPassword(email: string, password: string) {
+  const tokens = await api.auth.playReviewerSignIn(email, password)
+  const { error } = await supabase.auth.setSession({
+    access_token: tokens.access_token,
+    refresh_token: tokens.refresh_token,
+  })
   if (error) throw error
   forgetSignInEmail()
 }
