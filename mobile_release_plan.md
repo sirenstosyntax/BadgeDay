@@ -90,11 +90,15 @@ appear to weigh it:
 
 - **Document upload from the device** — Files, iCloud Drive, and the camera as a scanner.
   This is the app's central action and it is genuinely better native than in mobile Safari.
+  **Code-landed** (BD-iOS-4.2); Mac archive still required to prove on a device.
 - **Offline practice.** Questions and their citations already exist as data; caching a
   session so a candidate can drill on an engine with no signal is a real capability the
-  website cannot offer.
-- **Local notifications** for a practice streak and an exam-date countdown.
+  website cannot offer. Promote only in V1; Recruit stays online. **Code-landed.**
+- **Local notifications** for a practice streak and an exam-date countdown. **Code-landed**
+  with Red-route placeholder copy.
 - **Native StoreKit purchase**, which is itself evidence of an app rather than a shortcut.
+  **Code-landed** against `POST /billing/store/appstore/purchase`; live IAP product create
+  is still held / ops-filled.
 
 Apple-specific requirements BadgeDay already meets, worth noting so nobody rebuilds them:
 in-app account deletion (5.1.1(v)) exists as `DELETE /me`; privacy policy and terms are
@@ -249,8 +253,12 @@ every test written here.
    is still written, never compiled; there is no Xcode in this container.
 3. ~~The two gateway implementations.~~ **Written, never run against a store.** Now blocked
    only on the credentials in Grant's step 2.
-4. The iOS capability set that clears 4.2 — upload from Files and camera, offline practice,
-   local notifications. **This is the largest remaining piece of code**, and it is the one
-   that decides whether the iOS submission is accepted at all.
+4. The iOS capability set that clears 4.2 — upload from Files and camera, offline
+   Promote practice, local notifications, StoreKit wiring. **Code-landed** against
+   `specs/badgeday/BD-iOS-4.2-capacitor-native-capabilities.md` (web + Capacitor
+   plugin declares). Still needs a Mac `npx cap sync ios` / Xcode archive before a
+   device proving run; TestFlight and ASC submit are not part of that code slice.
+   Live `APPSTORE_PRODUCT_ID_*` stay ops-filled. Account deletion while an App
+   Store subscription is live remains an open product call — do not invent it.
 5. Sandbox purchase runs on a real device, both stores — the five-step sequence above.
 6. Closed testing, then submission — **after** Recruit ships, per the launch gate.

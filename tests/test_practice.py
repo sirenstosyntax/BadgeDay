@@ -219,3 +219,70 @@ def test_the_selected_columns_match_the_grant() -> None:
     from app.storage.practice import QUESTION_COLUMNS, QuizQuestion
 
     assert set(QUESTION_COLUMNS.split(",")) == set(QuizQuestion.model_fields)
+
+
+def test_the_pack_endpoint_returns_questions_and_citations_without_answers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.storage.practice import OfflineQuestion, PracticeSession
+
+    app = FastAPI()
+    app.include_router(router)
+    app.dependency_overrides[current_user] = lambda: CurrentUser(
+        id=USER_ID, email="c@example.com", access_token="t"
+    )
+    app.dependency_overrides[user_db] = _Db
+    monkeypatch.setattr(
+        "app.api.practice.get_session",
+        lambda *_: PracticeSession(
+            id="s1",
+            user_id=USER_ID,
+            document_id=None,
+            created_at="2026-09-12T12:00:00Z",
+        ),
+    )
+    monkeypatch.setattr(
+        "app.api.practice.session_questions",
+        lambda *_: [
+            OfflineQuestion(
+                id="q1",
+                document_id="d1",
+                chunk_id="c1",
+                type="multiple_choice",
+                stem="S",
+                options=["A"],
+                citation="304.2.1 Water Supply, p. 3",
+            )
+        ],
+    )
+    body = TestClient(app).get("/sessions/s1/pack").json()
+    assert body["session_id"] == "s1"
+    assert body["questions"][0]["citation"] == "304.2.1 Water Supply, p. 3"
+    assert "correct_index" not in body["questions"][0]
+
+
+def test_an_offline_pack_question_adds_citation_and_still_has_no_answer() -> None:
+    from app.storage.practice import CHUNK_LOCATION_COLUMNS, OfflineQuestion
+
+    assert "citation" in OfflineQuestion.model_fields
+    assert "correct_index" not in OfflineQuestion.model_fields
+    assert "correct_answer" not in OfflineQuestion.model_fields
+    assert "model_answer" not in OfflineQuestion.model_fields
+    assert "explanation" not in OfflineQuestion.model_fields
+    assert "body" not in CHUNK_LOCATION_COLUMNS
+    chunk = {
+        "section_path": ["304.2.1"],
+        "section_title": "Water Supply",
+        "page_start": 3,
+        "page_end": 3,
+    }
+    packed = OfflineQuestion(
+        id="q1",
+        document_id="d1",
+        chunk_id="c1",
+        type="multiple_choice",
+        stem="S",
+        options=["A", "B"],
+        citation=_citation(chunk),
+    )
+    assert packed.citation == "304.2.1 Water Supply, p. 3"

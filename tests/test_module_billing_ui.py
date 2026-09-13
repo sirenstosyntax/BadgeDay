@@ -49,4 +49,8 @@ def test_paywall_hides_plan_buttons_when_already_entitled() -> None:
     assert "alreadyEntitled && canManageBilling && onManageBilling" in source
     assert "!alreadyEntitled && till === 'stripe'" in source
     assert "!alreadyEntitled && till === 'play'" in source
+    assert "!alreadyEntitled && till === 'appstore'" in source
     assert "chooseStripe" in source
+    assert "chooseAppStore" in source
+    assert "Restore purchases" in source
+    assert "reportAppStorePurchase" in source

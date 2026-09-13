@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import { localReviewItems, readOfflineCache } from '../lib/offlinePractice'
 import type { ReviewItem } from '../lib/types'
 
 function Mark({ item }: { item: ReviewItem }) {
@@ -65,11 +66,30 @@ function GivenAnswer({ item }: { item: ReviewItem }) {
   )
 }
 
-export function Review({ sessionId, onDone }: { sessionId: string; onDone: () => void }) {
+export function Review({
+  sessionId,
+  onDone,
+  offline = false,
+  userId,
+}: {
+  sessionId: string
+  onDone: () => void
+  offline?: boolean
+  userId?: string
+}) {
   const [items, setItems] = useState<ReviewItem[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (offline) {
+      const cache = readOfflineCache(localStorage, userId)
+      if (!cache || cache.session_id !== sessionId) {
+        setError('That offline session is no longer on this device.')
+        return
+      }
+      setItems(localReviewItems(cache))
+      return
+    }
     api
       .practice
       .review(sessionId)
@@ -77,7 +97,7 @@ export function Review({ sessionId, onDone }: { sessionId: string; onDone: () =>
       .catch((caught: unknown) =>
         setError(caught instanceof Error ? caught.message : 'Could not load the review.'),
       )
-  }, [sessionId])
+  }, [offline, sessionId, userId])
 
   if (error) return <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
   if (!items) return <p className="text-sm text-stone-500">Loading…</p>

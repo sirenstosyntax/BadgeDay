@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, api } from '../lib/api'
+import { isOnline } from '../lib/connectivity'
+import { IOS_SETTINGS_ACCESS, pickPromoteDocument, scanPromotePage } from '../lib/nativeUpload'
+import { emptyCacheMessage } from '../lib/offlinePractice'
 import type { Coverage, DocumentRecord, DocumentStatus } from '../lib/types'
 
 /** Statuses that mean a job is still outstanding, so the list must keep refreshing. */
@@ -28,9 +31,25 @@ type DocumentsProps = {
   entitled: boolean
   onNeedsAccess: () => void
   onPractise: (documentId: string | null) => void
+  iosShell?: boolean
+  online?: boolean
+  hasOfflineCache?: boolean
+  onCacheOffline?: (documentId: string | null) => Promise<void>
+  onOpenOffline?: () => void
+  cachingOffline?: boolean
 }
 
-export function Documents({ entitled, onNeedsAccess, onPractise }: DocumentsProps) {
+export function Documents({
+  entitled,
+  onNeedsAccess,
+  onPractise,
+  iosShell = false,
+  online = true,
+  hasOfflineCache = false,
+  onCacheOffline,
+  onOpenOffline,
+  cachingOffline = false,
+}: DocumentsProps) {
   const [documents, setDocuments] = useState<DocumentRecord[]>([])
   const [coverage, setCoverage] = useState<Record<string, Coverage>>({})
   const [error, setError] = useState<string | null>(null)
@@ -60,9 +79,7 @@ export function Documents({ entitled, onNeedsAccess, onPractise }: DocumentsProp
     return () => clearInterval(timer)
   }, [documents, refresh])
 
-  async function upload(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    if (!file) return
+  async function sendFile(file: File) {
     setUploading(true)
     setError(null)
     try {
@@ -81,6 +98,35 @@ export function Documents({ entitled, onNeedsAccess, onPractise }: DocumentsProp
     } finally {
       setUploading(false)
       if (fileInput.current) fileInput.current.value = ''
+    }
+  }
+
+  async function upload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    await sendFile(file)
+  }
+
+  async function uploadFromIos(kind: 'files' | 'camera') {
+    if (!entitled) {
+      onNeedsAccess()
+      return
+    }
+    if (!isOnline()) {
+      setError('Adding a document needs a connection.')
+      return
+    }
+    setError(null)
+    try {
+      const picked = kind === 'camera' ? await scanPromotePage() : await pickPromoteDocument()
+      if (!picked) return
+      await sendFile(picked.file)
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.status === 402) {
+        onNeedsAccess()
+        return
+      }
+      setError(caught instanceof Error ? caught.message : IOS_SETTINGS_ACCESS)
     }
   }
 
@@ -106,7 +152,26 @@ export function Documents({ entitled, onNeedsAccess, onPractise }: DocumentsProp
             documents and cite them.
           </p>
         </div>
-        {entitled ? (
+        {entitled && iosShell ? (
+          <div className="flex shrink-0 flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => void uploadFromIos('files')}
+              className="rounded-lg bg-stone-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-stone-100 dark:text-stone-900"
+            >
+              {uploading ? 'Uploading…' : 'Files / iCloud'}
+            </button>
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => void uploadFromIos('camera')}
+              className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium dark:border-stone-700"
+            >
+              Scan page
+            </button>
+          </div>
+        ) : entitled ? (
           <label className="shrink-0 cursor-pointer rounded-lg bg-stone-900 px-3 py-2 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900">
             {uploading ? 'Uploading…' : 'Add document'}
             <input
@@ -143,6 +208,14 @@ export function Documents({ entitled, onNeedsAccess, onPractise }: DocumentsProp
             See plans
           </button>
         </div>
+      )}
+
+      {iosShell && !online && (
+        <p className="rounded-lg bg-stone-100 p-3 text-sm text-stone-700 dark:bg-stone-900 dark:text-stone-300">
+          {hasOfflineCache
+            ? 'No connection. You can still open the session saved on this device.'
+            : emptyCacheMessage()}
+        </p>
       )}
 
       {error && (
@@ -184,6 +257,16 @@ export function Documents({ entitled, onNeedsAccess, onPractise }: DocumentsProp
                     Practise
                   </button>
                 )}
+                {iosShell && entitled && document.status === 'ready' && onCacheOffline && (
+                  <button
+                    type="button"
+                    disabled={cachingOffline || !online}
+                    onClick={() => void onCacheOffline(document.id)}
+                    className="rounded-md border border-stone-300 px-2 py-1 text-sm disabled:opacity-60 dark:border-stone-700"
+                  >
+                    Save offline
+                  </button>
+                )}
                 <button
                   onClick={() => void remove(document)}
                   className="text-sm text-stone-500 hover:text-red-700 dark:hover:text-red-400"
@@ -202,6 +285,27 @@ export function Documents({ entitled, onNeedsAccess, onPractise }: DocumentsProp
           className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium dark:border-stone-700"
         >
           Practise the whole list
+        </button>
+      )}
+
+      {iosShell && entitled && anyReady && onCacheOffline && (
+        <button
+          type="button"
+          disabled={cachingOffline || !online}
+          onClick={() => void onCacheOffline(null)}
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium disabled:opacity-60 dark:border-stone-700"
+        >
+          {cachingOffline ? 'Saving for offline…' : 'Save a session for offline'}
+        </button>
+      )}
+
+      {iosShell && hasOfflineCache && onOpenOffline && (
+        <button
+          type="button"
+          onClick={onOpenOffline}
+          className="w-full rounded-lg bg-stone-900 px-3 py-2 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900"
+        >
+          Open offline session
         </button>
       )}
     </div>

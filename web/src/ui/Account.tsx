@@ -30,12 +30,18 @@ export function Account({
   onSubscribe,
   onDeleted,
   onDone,
+  iosShell = false,
+  examDate = null,
+  onExamDateChange,
 }: {
   account: AccountState | null
   onManageBilling: (module: PaywallModule) => void
   onSubscribe: (module: PaywallModule) => void
   onDeleted: () => void
   onDone: () => void
+  iosShell?: boolean
+  examDate?: string | null
+  onExamDateChange?: (date: string | null) => void
 }) {
   const [confirming, setConfirming] = useState(false)
   const [typed, setTyped] = useState('')
@@ -105,6 +111,33 @@ export function Account({
           )
         })}
       </div>
+
+      {iosShell && onExamDateChange && (
+        <div className="rounded-lg border border-stone-200 p-4 dark:border-stone-800">
+          <p className="text-sm font-medium">Exam date</p>
+          <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+            Optional. Stored on this device. When set, BadgeDay can remind you the week
+            before and on the morning of the day.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <input
+              type="date"
+              value={examDate ?? ''}
+              onChange={(event) => onExamDateChange(event.target.value || null)}
+              className="rounded-md border border-stone-300 bg-transparent px-2 py-1 text-sm dark:border-stone-700"
+            />
+            {examDate && (
+              <button
+                type="button"
+                onClick={() => onExamDateChange(null)}
+                className="text-sm text-stone-500 hover:underline dark:text-stone-400"
+              >
+                Clear date
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-lg border border-red-200 p-4 dark:border-red-900/60">
         <h3 className="text-sm font-semibold text-red-900 dark:text-red-200">Delete account</h3>

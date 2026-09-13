@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import type { AnswerBody } from '../lib/api'
+import {
+  emptyCacheMessage,
+  localVerdict,
+  readOfflineCache,
+  recordLocalAnswer,
+  unansweredQuestions,
+  writeOfflineCache,
+  type OfflineQuestion,
+} from '../lib/offlinePractice'
 import type { QuizQuestion, Verdict } from '../lib/types'
 
 /**
@@ -16,10 +25,16 @@ export function Quiz({
   sessionId,
   onDone,
   onReview,
+  offline = false,
+  userId,
+  onPracticed,
 }: {
   sessionId: string
   onDone: () => void
   onReview: () => void
+  offline?: boolean
+  userId?: string
+  onPracticed?: () => void
 }) {
   const [question, setQuestion] = useState<QuizQuestion | null>(null)
   const [remaining, setRemaining] = useState(0)
@@ -35,6 +50,26 @@ export function Quiz({
     setBusy(true)
     setError(null)
     try {
+      if (offline) {
+        const cache = readOfflineCache(localStorage, userId)
+        if (!cache || cache.session_id !== sessionId) {
+          setQuestion(null)
+          setRemaining(0)
+          setFinished(false)
+          setError(emptyCacheMessage())
+          return
+        }
+        const left = unansweredQuestions(cache)
+        const next = left[0] as OfflineQuestion | undefined
+        setQuestion(next ?? null)
+        setRemaining(left.length)
+        setFinished(!next)
+        setVerdict(null)
+        setChoice(null)
+        setText('')
+        setSaved(false)
+        return
+      }
       const next = await api.practice.next(sessionId)
       setQuestion(next.question)
       setRemaining(next.remaining)
@@ -48,7 +83,7 @@ export function Quiz({
     } finally {
       setBusy(false)
     }
-  }, [sessionId])
+  }, [offline, sessionId, userId])
 
   useEffect(() => {
     void load()
@@ -59,7 +94,24 @@ export function Quiz({
     setBusy(true)
     setError(null)
     try {
-      setVerdict(await api.practice.answer(sessionId, { question_id: question.id, ...body }))
+      if (offline) {
+        const cache = readOfflineCache(localStorage, userId)
+        if (!cache || cache.session_id !== sessionId) {
+          throw new Error('That offline session is no longer on this device.')
+        }
+        const cached = cache.questions.find((item) => item.id === question.id)
+        if (!cached) {
+          throw new Error('That question is not in the session saved on this device.')
+        }
+        writeOfflineCache(
+          localStorage,
+          recordLocalAnswer(cache, { question_id: question.id, ...body }),
+        )
+        setVerdict(localVerdict(cached))
+      } else {
+        setVerdict(await api.practice.answer(sessionId, { question_id: question.id, ...body }))
+      }
+      onPracticed?.()
       // Decrement here rather than waiting for the next load. The count is read once per
       // question, so without this the candidate reads the verdict for the first of three
       // under a heading that still says three left.
@@ -88,6 +140,9 @@ export function Quiz({
         <h2 className="text-lg font-semibold">Session complete</h2>
         <p className="text-sm text-stone-600 dark:text-stone-400">
           Every question in this set has been answered.
+          {offline
+            ? ' Answers are on this device and will submit when you have a connection.'
+            : ''}
         </p>
         <div className="flex justify-center gap-2">
           {/* Review first, and it leads: getting the answer right is not the same as
@@ -116,7 +171,18 @@ export function Quiz({
   }
 
   if (!question) {
-    return <p className="text-sm text-stone-500">Loading…</p>
+    return (
+      <div className="space-y-3">
+        {error ? (
+          <p className="text-sm text-stone-600 dark:text-stone-400">{error}</p>
+        ) : (
+          <p className="text-sm text-stone-500">Loading…</p>
+        )}
+        <button onClick={onDone} className="text-sm text-stone-500 hover:underline">
+          ← Back
+        </button>
+      </div>
+    )
   }
 
   return (

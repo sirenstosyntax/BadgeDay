@@ -113,15 +113,15 @@ deploy updates the iOS app without a submission — but note that Apple has been
 question apps that are *purely* remote, which is the same 4.2 conversation. The planned
 native capabilities are what answer it:
 
-| Capability | Plugin | Why it counts |
+| Capability | Plugin | Status |
 |---|---|---|
-| Upload from Files / iCloud | `@capacitor/filesystem` | The app's central action, and genuinely better than mobile Safari's picker. |
-| Camera as a document scanner | `@capacitor/camera` | A candidate photographs an SOG packet instead of finding a scanner. |
-| Offline practice | app-side caching | Drilling on an engine with no signal. The website cannot do this. |
-| Local notifications | `@capacitor/local-notifications` | Practice streak, exam-date countdown. |
-| StoreKit purchase | a Play/StoreKit billing plugin | Required by 3.1.1 anyway, and evidence of an app rather than a shortcut. |
+| Upload from Files / iCloud | `@capawesome/capacitor-file-picker` (+ `@capacitor/filesystem`) | Landed in web + plugins. Feeds the existing `/documents` upload. |
+| Camera as a document scanner | `@capacitor/camera` | Landed. JPEG capture is wrapped as a one-page PDF so the existing PDF/DOCX ingestion path accepts it. |
+| Offline Promote practice | app-side cache (`web/src/lib/offlinePractice.ts`) | Landed. One session, per signed-in user. Recruit stays online-only. |
+| Local notifications | `@capacitor/local-notifications` | Landed. Streak + exam-date countdown. Copy is a Red-route placeholder. |
+| StoreKit purchase | `@capgo/native-purchases` | Landed in web + plugin declare. Reports `transaction_id` to `POST /billing/store/appstore/purchase`. Live `APPSTORE_PRODUCT_ID_*` remain ops-filled; IAP create in App Store Connect is still held. |
 
-None of these are implemented yet. They are step 4 in `mobile_release_plan.md`.
+These capabilities are **implemented in the web app and declared on the Capacitor shell**. They still need a Mac `npx cap sync ios` / archive before a device can prove them. This repo does not claim TestFlight or App Store Connect submit. Spec: `specs/badgeday/BD-iOS-4.2-capacitor-native-capabilities.md`. Usage strings to paste into Info.plist: `mobile/ios/INFO_PLIST_PERMISSIONS.md`.
 
 ### Universal links
 
