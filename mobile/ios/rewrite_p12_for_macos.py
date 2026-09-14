@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Re-export a distribution P12 so macOS `security import` can read it.
 
-OpenSSL 3's default `pkcs12 -export` uses AES-256-CBC + PBKDF2. GitHub's
-macos-latest `security import` (SecKeychainItemImport) rejects that bag
-with "MAC verification failed during PKCS12 import (wrong password?)" even
-when the password is correct. Re-export with OpenSSL 3 `-legacy` (or
-LibreSSL's older default) before Fastlane imports into the setup_ci
-keychain.
+OpenSSL 3's default `pkcs12 -export` uses AES-256-CBC + PBKDF2. Apple
+`security` (SecKeychainItemImport) often rejects that bag with
+"MAC verification failed during PKCS12 import (wrong password?)" even
+when the password is correct. Re-export with
+`-keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg SHA1` before
+Fastlane imports into the setup_ci keychain.
 
 Does not invent secrets. Reads IOS_DISTRIBUTION_CERTIFICATE_PASSWORD from
 the environment. Never prints the password.
@@ -68,13 +68,23 @@ def decrypt_p12(openssl: str, src: Path, pem: Path, env: dict[str, str]) -> Proc
     )
 
 
+APPLE_P12_PBE = (
+    "-keypbe",
+    "PBE-SHA1-3DES",
+    "-certpbe",
+    "PBE-SHA1-3DES",
+    "-macalg",
+    "SHA1",
+)
+
+
 def export_p12(
     openssl: str,
     pem: Path,
     dest: Path,
     env: dict[str, str],
     *,
-    legacy: bool,
+    compatible: bool,
 ) -> Proc:
     args = [
         "pkcs12",
@@ -86,8 +96,8 @@ def export_p12(
         "-passout",
         "env:IOS_DISTRIBUTION_CERTIFICATE_PASSWORD",
     ]
-    if legacy:
-        args.append("-legacy")
+    if compatible:
+        args.extend(APPLE_P12_PBE)
     return _run(openssl, args, env)
 
 
@@ -120,9 +130,9 @@ def rewrite(src: Path, dest: Path, password: str) -> str:
                 last_err = last_err.strip()
                 continue
             out = Path(tmp) / "macos.p12"
-            exported = export_p12(openssl, pem, out, env, legacy=True)
+            exported = export_p12(openssl, pem, out, env, compatible=True)
             if exported.returncode != 0:
-                exported = export_p12(openssl, pem, out, env, legacy=False)
+                exported = export_p12(openssl, pem, out, env, compatible=False)
             too_small = not out.is_file() or out.stat().st_size < 32
             if exported.returncode != 0 or too_small:
                 last_err = exported.stderr or exported.stdout
@@ -137,7 +147,8 @@ def rewrite(src: Path, dest: Path, password: str) -> str:
         "error: cannot decrypt IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64 "
         f"with IOS_DISTRIBUTION_CERTIFICATE_PASSWORD ({last_err or 'openssl pkcs12 failed'}). "
         "Wrong password, or macOS `security import` will report MAC verification "
-        "failed. If this file was made with OpenSSL 3, re-export with -legacy — "
+        "failed. If this file was made with OpenSSL 3, re-export with "
+        "-keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg SHA1 — "
         "see mobile/ios/TESTFLIGHT_CI.md."
     )
 

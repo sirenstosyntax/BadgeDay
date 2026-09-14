@@ -173,8 +173,9 @@ def assert_codesigning_identity!
     "No Apple Distribution identity after importing the P12 into the " \
     "setup_ci keychain. sigh/xcodebuild will not see a signing identity. " \
     "Check IOS_DISTRIBUTION_CERTIFICATE_PASSWORD, and if the .p12 was " \
-    "made with OpenSSL 3 on Linux, re-export with -legacy (macOS " \
-    "`security import` reports that as MAC verification failed). " \
+    "made with OpenSSL 3, re-export with -keypbe PBE-SHA1-3DES " \
+    "-certpbe PBE-SHA1-3DES -macalg SHA1 (Apple security rejects the " \
+    "default bag as MAC verification failed). " \
     "See mobile/ios/TESTFLIGHT_CI.md. This lane will not call " \
     "get_certificates."
   )

@@ -275,13 +275,15 @@ def test_docs_name_every_secret_and_refuse_a_fake_green_upload() -> None:
     assert "There is **no** `get_certificates` bootstrap" in doc
     assert "@capgo/native-purchases" in doc
     assert "MATCH_KEYCHAIN_NAME" in doc
-    assert "-legacy" in doc
+    assert "PBE-SHA1-3DES" in doc
+    assert "-macalg SHA1" in doc
     assert "MAC verification" in doc
     assert "setup_ci" in doc
     assert "primary" in doc.lower()
     assert "follow-on" in doc.lower()
     assert "SecKeychainItemImport" in doc
     assert "does **not** continue to `get_provisioning_profile`" in doc
+    assert "Apple `security`" in doc or "Apple security" in doc
 
 
 def test_build_script_rewrites_p12_for_macos() -> None:
@@ -290,7 +292,8 @@ def test_build_script_rewrites_p12_for_macos() -> None:
     assert "distribution-macos.p12" in script
     assert REWRITE_P12.is_file()
     text = REWRITE_P12.read_text()
-    assert "-legacy" in text
+    assert "PBE-SHA1-3DES" in text
+    assert "SHA1" in text
     assert "IOS_DISTRIBUTION_CERTIFICATE_PASSWORD" in text
     assert "get_certificates" not in text
 
