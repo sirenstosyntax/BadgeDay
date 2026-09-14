@@ -121,6 +121,100 @@ def test_build_script_fails_upload_without_secrets() -> None:
     assert "15.0" in script
     assert "cap add ios" in script
     assert "TWA_KEYSTORE" not in script
+    assert "signed archive/upload fail closed" in script
+    assert "Will not mint a distribution cert" in script
+
+
+def test_fastfile_fails_closed_without_p12() -> None:
+    fastfile = FASTFILE.read_text()
+    code = _without_comments(fastfile)
+    assert "require_p12!" in fastfile
+    assert "fail closed" in fastfile.lower()
+    assert "import_certificate" in fastfile
+    # Must not mint a cert on an ephemeral runner. The name may appear in
+    # the fail-closed error string; a call site must not.
+    assert "get_certificates(" not in code
+    assert "get_certificates(" not in fastfile
+
+
+def test_cap_add_failure_is_gated_on_deployment_target_refusal() -> None:
+    script = BUILD_SCRIPT.read_text()
+    assert "cap_add_failure_is_expected_pod_refusal" in script
+    assert "CapgoNativePurchases" in script
+    assert "higher minimum deployment target" in script
+    assert "Not treating pbxproj presence as success" in script
+    assert "grep -qiE 'CapgoNativePurchases'" in script
+    assert "higher minimum deployment target|deployment.target" in script
+
+
+def test_cap_add_gate_accepts_only_capgo_deployment_target_refusal(
+    tmp_path: Path,
+) -> None:
+    import subprocess
+
+    script = BUILD_SCRIPT.read_text()
+    start = script.index("cap_add_failure_is_expected_pod_refusal()")
+    end = script.index("\nadd_native_project()")
+    helper = tmp_path / "gate.sh"
+    helper.write_text(
+        "#!/usr/bin/env bash\nset -euo pipefail\n"
+        + script[start:end]
+        + 'cap_add_failure_is_expected_pod_refusal "$1"\n',
+        encoding="utf-8",
+    )
+    helper.chmod(0o700)
+
+    def classify(text: str) -> bool:
+        log = tmp_path / "cap-add.log"
+        log.write_text(text, encoding="utf-8")
+        result = subprocess.run(
+            ["bash", str(helper), str(log)],
+            check=False,
+        )
+        return result.returncode == 0
+
+    expected = (
+        "[!] CocoaPods could not find compatible versions for pod "
+        '"CapgoNativePurchases":\n'
+        "Specs satisfying the dependency were found, but they required "
+        "a higher minimum deployment target.\n"
+    )
+    assert classify(expected)
+    assert not classify("error: network timeout while fetching pods\n")
+    assert not classify("CapgoNativePurchases built successfully\n")
+    assert not classify("required a higher minimum deployment target\n")
+    assert not classify("project.pbxproj written\n")
+
+
+def test_cocoapods_cache_key_includes_deployment_target() -> None:
+    text = WORKFLOW.read_text()
+    patcher = _patcher()
+    token = f"ios{patcher.IOS_DEPLOYMENT_TARGET}"
+    assert token == "ios15.0"
+    assert token in text
+    assert "hashFiles('mobile/ios/package-lock.json')" in text
+    assert "Podfile.lock is created after generate-in-CI" in text
+    # Must not key CocoaPods on package-lock alone.
+    assert (
+        "cocoapods-${{ runner.os }}-${{ hashFiles('mobile/ios/package-lock.json') }}"
+        not in text
+    )
+    doc = CI_DOC.read_text()
+    assert token in doc
+    assert "IOS_DEPLOYMENT_TARGET" in doc
+
+
+def test_fastlane_gemfile_lock_is_committed() -> None:
+    gemfile = (IOS_DIR / "Gemfile").read_text()
+    lock = IOS_DIR / "Gemfile.lock"
+    assert 'gem "fastlane", "~> 2.228"' in gemfile
+    assert lock.is_file()
+    lock_text = lock.read_text()
+    assert "fastlane (2." in lock_text
+    assert "fastlane (~> 2.228)" in lock_text
+    assert "BUNDLED WITH" in lock_text
+    assert "ruby" in lock_text
+    assert "arm64-darwin" in lock_text
 
 
 def test_native_project_stays_gitignored() -> None:
@@ -139,6 +233,9 @@ def test_docs_name_every_secret_and_refuse_a_fake_green_upload() -> None:
     assert "do not create iap" in doc.lower() or "iap product create stays held" in doc.lower()
     assert BUNDLE_ID in doc
     assert TEAM_ID in doc
+    assert "fail closed" in doc.lower()
+    assert "There is **no** `get_certificates` bootstrap" in doc
+    assert "Geppetto owns the spec rewrite" in doc
 
 
 def test_usage_strings_match_permissions_doc() -> None:

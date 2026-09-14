@@ -35,17 +35,24 @@ not a generated `project.pbxproj`.
 
 `npx cap add ios` copies Capacitor's iOS 14.0 template and immediately runs
 `pod install`. `@capgo/native-purchases` requires iOS 15.0, so that first
-install fails. The Xcode project is already on disk. The script patches the
-deployment target, then `npx cap sync ios` succeeds. That failure is
-expected and is not an IAP product create.
+install fails with a CocoaPods **deployment-target / CapgoNativePurchases**
+refusal. The Xcode project is already on disk. `build-ios.sh` treats **only**
+that refusal as expected (stderr must name CapgoNativePurchases and a higher
+deployment target). A different `cap add` failure is fatal even if
+`project.pbxproj` exists. The script then patches the target to 15.0 and
+`npx cap sync ios` succeeds. That expected refusal is not an IAP product
+create.
+
+The BD-iOS-4.2 spec's "Explicitly out" still lists "Compiling the iOS
+project in CI" — that line is stale after #84; Geppetto owns the spec rewrite.
 
 ## What each run does
 
 | Event | Mode | Secrets missing | Secrets present |
 | --- | --- | --- | --- |
 | Pull request touching iOS CI paths | `compile` | Simulator build. `BUILD_NOTES.txt` says `testflightUpload=blocked-until-secrets`. Job is green. | Same. PRs never upload. |
-| `workflow_dispatch` with Upload on | `upload` | **Fails.** Does not fake a green upload. | Signed archive + TestFlight upload. |
-| `workflow_dispatch` with Upload off | `archive` | Simulator fallback + blocked notes (green). | Signed IPA artifact, no upload. |
+| `workflow_dispatch` with Upload on | `upload` | **Fails** if the API key **or** the P12 secrets are missing. Does not fake a green upload. Does not call `get_certificates`. | Signed archive + TestFlight upload. |
+| `workflow_dispatch` with Upload off | `archive` | No API key: simulator fallback + blocked notes (green). API key without P12: **fails closed**. | Signed IPA artifact, no upload. |
 
 `BUILD_NOTES.txt` always lands in the `badgeday-ios` workflow artifact.
 
@@ -54,6 +61,10 @@ expected and is not an IAP product create.
 Names only. Values stay in GitHub Settings → Secrets and variables → Actions.
 
 ### Required for the first TestFlight upload
+
+The API key **and** the distribution P12 are required before any signed
+`upload` / `archive`. There is no one-shot `get_certificates` bootstrap —
+that would mint a cert whose private key dies with the ephemeral runner.
 
 | Secret | What it is |
 | --- | --- |
@@ -67,13 +78,14 @@ not need a Mac.
 
 Do **not** use this key to create IAP products.
 
-### Required for durable re-runs (automatic signing via API key is not enough)
+### Required for every signed run (automatic signing via API key is not enough)
 
 GitHub's `macos-latest` runner is ephemeral. A distribution certificate's
-**private key** cannot be downloaded back from Apple. Fastlane can mint a
-cert on the first upload, then that private key dies with the runner. The
-next run will try to mint another, and Apple caps the team at three
-distribution certificates.
+**private key** cannot be downloaded back from Apple. Fastlane `archive` /
+`upload` **fail closed** until these two secrets exist. The Fastfile will
+**not** call `get_certificates` to mint a cert on the runner — that private
+key would die with the job, and Apple caps the team at three distribution
+certificates.
 
 | Secret | What it is |
 | --- | --- |
@@ -124,23 +136,23 @@ Do not create IAP products while doing any of this.
 ## Will the first run succeed once the secrets exist?
 
 **Upload can succeed on the first `workflow_dispatch` after the three API key
-secrets are set**, provided:
+secrets *and* the two P12 secrets are set**, provided:
 
 - the API key role is App Manager or Admin
 - paid-app / free-app agreements in App Store Connect are accepted
 - the App ID has Associated Domains (see above)
-- no one has already filled the team's three distribution-certificate slots
-  with certs whose private keys you do not have
+- the P12 is an Apple Distribution cert for team `G86W79K99V` whose private
+  key you still have (create it with OpenSSL on Linux — steps above)
 
-That first signed run uses Fastlane `get_certificates` + `get_provisioning_profile`
-when the P12 secrets are still missing. Treat it as a one-shot bootstrap.
-Add the two P12 secrets before the second upload or later runs will mint
-extra certificates and then fail.
+There is **no** `get_certificates` bootstrap. A signed `upload` or `archive`
+without the P12 **fails closed**. `get_provisioning_profile` (`sigh`) still
+runs when `IOS_PROVISIONING_PROFILE_BASE64` is omitted — that fetches or
+creates the **profile**, not a distribution cert and not an IAP product.
 
 A pull request **compile** is designed to go green **without** any of these
 secrets. That is not an upload.
 
-A `workflow_dispatch` upload **without** the three API key secrets **fails on
+A `workflow_dispatch` upload **without** the API key or P12 secrets **fails on
 purpose** (`testflightUpload=blocked-until-secrets`). The workflow will not
 report a successful TestFlight upload it did not do.
 
@@ -165,6 +177,16 @@ Things this CI cannot prove, even after a green upload:
   `@capgo/native-purchases`. This is not an IAP product create.
 
 It does not add IAP product identifiers to the binary.
+
+## CocoaPods cache key
+
+`Podfile.lock` is created only after generate-in-CI (`mobile/ios/ios/` is
+gitignored), so it cannot be the cache key. The TestFlight workflow keys
+CocoaPods as `cocoapods-${{ runner.os }}-ios15.0-${{ hashFiles('mobile/ios/package-lock.json') }}`:
+plugin pod versions come from the committed `package-lock.json`, and `ios15.0`
+is the patcher's `IOS_DEPLOYMENT_TARGET`. Bump that token if the constant
+changes. `mobile/ios/Gemfile.lock` is committed so Fastlane resolves the same
+on every signed run.
 
 ## Local command (only useful on a Mac)
 

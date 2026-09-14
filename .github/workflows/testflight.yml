@@ -73,7 +73,11 @@ jobs:
           path: |
             ~/Library/Caches/CocoaPods
             mobile/ios/ios/App/Pods
-          key: cocoapods-${{ runner.os }}-${{ hashFiles('mobile/ios/package-lock.json') }}
+          # Podfile.lock is created after generate-in-CI (ios/ is gitignored).
+          # Key uses committed inputs that determine the Podfile: plugin
+          # versions (package-lock.json) + the patcher's IOS_DEPLOYMENT_TARGET
+          # (15.0). Bump the ios15.0 token if that constant changes.
+          key: cocoapods-${{ runner.os }}-ios15.0-${{ hashFiles('mobile/ios/package-lock.json') }}
 
       - name: Generate, patch, compile / archive / upload
         env:
