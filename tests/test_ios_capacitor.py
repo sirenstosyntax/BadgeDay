@@ -101,6 +101,8 @@ def test_offline_sync_and_recache_avoid_orphans() -> None:
 def test_bd_ios_42_spec_declares_landed_storekit_plugin() -> None:
     spec = (ROOT / "specs/badgeday/BD-iOS-4.2-capacitor-native-capabilities.md").read_text()
     assert "@capgo/native-purchases" in spec
+    assert "StoreKit bridge **is declared** as `@capgo/native-purchases` (PR 79)" in spec
+    assert "Still wire purchases → `POST /billing/store/appstore/purchase`" in spec
     assert "StoreKit bridge dependency is **not** yet declared" not in spec
     assert "add whatever Gyro chooses" not in spec
     assert "StoreKit Capacitor plugin (or equivalent)" not in spec

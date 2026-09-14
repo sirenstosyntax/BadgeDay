@@ -183,11 +183,15 @@ It does not add IAP product identifiers to the binary.
 
 `Podfile.lock` is created only after generate-in-CI (`mobile/ios/ios/` is
 gitignored), so it cannot be the cache key. The TestFlight workflow keys
-CocoaPods as `cocoapods-${{ runner.os }}-ios15.0-${{ hashFiles('mobile/ios/package-lock.json') }}`:
+the CocoaPods **spec cache** as
+`cocoapods-specs-${{ runner.os }}-ios15.0-${{ hashFiles('mobile/ios/package-lock.json') }}`:
 plugin pod versions come from the committed `package-lock.json`, and `ios15.0`
-is the patcher's `IOS_DEPLOYMENT_TARGET`. Bump that token if the constant
-changes. `mobile/ios/Gemfile.lock` is committed so Fastlane resolves the same
-on every signed run.
+is the patcher's `IOS_DEPLOYMENT_TARGET`. Only `~/Library/Caches/CocoaPods`
+is cached — not `mobile/ios/ios/App/Pods`. Restoring a Pods-only `ios/` tree
+makes `cap add` refuse (`ios platform already exists`) without a pbxproj.
+`build-ios.sh` also removes a stale `ios/` that has no `project.pbxproj`.
+Bump the `ios15.0` token if the constant changes. `mobile/ios/Gemfile.lock`
+is committed so Fastlane resolves the same on every signed run.
 
 ## Local command (only useful on a Mac)
 

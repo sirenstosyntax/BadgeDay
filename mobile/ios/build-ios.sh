@@ -172,6 +172,14 @@ add_native_project() {
     if [ -f ios/App/App.xcodeproj/project.pbxproj ]; then
       exit 0
     fi
+    # A CocoaPods cache of ios/App/Pods (or any leftover generate-in-CI
+    # tree) can create ./ios without a pbxproj. Capacitor then refuses
+    # `cap add` with "ios platform already exists." That is not the
+    # CapgoNativePurchases refusal and is not success.
+    if [ -e ios ]; then
+      echo "Removing stale ios/ (no project.pbxproj — leftover or partial CocoaPods cache)."
+      rm -rf ios
+    fi
     echo "Generating native iOS project (npx cap add ios --packagemanager Cocoapods)…"
     # Capacitor 7 defaults to CocoaPods; Capacitor 8 defaults to SPM.
     # Pin CocoaPods so a lockfile bump cannot silently change the project

@@ -192,8 +192,10 @@ def test_cocoapods_cache_key_includes_deployment_target() -> None:
     token = f"ios{patcher.IOS_DEPLOYMENT_TARGET}"
     assert token == "ios15.0"
     assert token in text
+    assert "cocoapods-specs-" in text
     assert "hashFiles('mobile/ios/package-lock.json')" in text
     assert "Podfile.lock is created after generate-in-CI" in text
+    assert "path: ~/Library/Caches/CocoaPods" in text
     # Must not key CocoaPods on package-lock alone.
     assert (
         "cocoapods-${{ runner.os }}-${{ hashFiles('mobile/ios/package-lock.json') }}"
@@ -202,6 +204,14 @@ def test_cocoapods_cache_key_includes_deployment_target() -> None:
     doc = CI_DOC.read_text()
     assert token in doc
     assert "IOS_DEPLOYMENT_TARGET" in doc
+    assert "ios platform already exists" in doc
+
+
+def test_build_script_removes_stale_ios_without_pbxproj() -> None:
+    script = BUILD_SCRIPT.read_text()
+    assert "Removing stale ios/" in script
+    assert "rm -rf ios" in script
+    assert "no project.pbxproj" in script
 
 
 def test_fastlane_gemfile_lock_is_committed() -> None:
