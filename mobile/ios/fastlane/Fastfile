@@ -186,12 +186,28 @@ def profile_present?
   !path.empty? && File.file?(path)
 end
 
-def xcode_input
-  if File.exist?("ios/App/App.xcworkspace/contents.xcworkspacedata")
-    { workspace: WORKSPACE }
-  else
-    { project: PROJECT }
+# Capacitor is a CocoaPods module after generate-in-CI. Compile already
+# uses ios/App/App.xcworkspace (12 targets). Run 34906234215 archived
+# App.xcodeproj instead (1 target) because a relative contents.xcworkspacedata
+# check missed and fell back to the project — import Capacitor then failed.
+# Resolve the workspace from this Fastfile, not Dir.pwd, and never fall back.
+def cocoapods_workspace_path
+  File.expand_path("../#{WORKSPACE}", __dir__)
+end
+
+def require_cocoapods_workspace!
+  marker = File.join(cocoapods_workspace_path, "contents.xcworkspacedata")
+  unless File.file?(marker)
+    UI.user_error!(
+      "CocoaPods workspace missing at #{cocoapods_workspace_path}. " \
+      "build_app must archive App.xcworkspace so Capacitor resolves from " \
+      "Pods. Archiving App.xcodeproj leaves import Capacitor unresolved " \
+      "(run 34906234215). Do not fall back to the xcodeproj. Re-run " \
+      "generate-in-CI (npx cap add/sync + pod install)."
+    )
   end
+  UI.message("Archiving CocoaPods workspace #{cocoapods_workspace_path} (Capacitor via Pods)")
+  cocoapods_workspace_path
 end
 
 def set_build_number!(build_number)
@@ -276,7 +292,7 @@ platform :ios do
     apply_manual_signing!
 
     build_app(
-      **xcode_input,
+      workspace: require_cocoapods_workspace!,
       scheme: SCHEME,
       configuration: "Release",
       export_method: "app-store",
