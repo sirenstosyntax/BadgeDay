@@ -227,8 +227,25 @@ sync_native_project() {
     export LANG="${LANG:-en_US.UTF-8}"
     export LC_ALL="${LC_ALL:-en_US.UTF-8}"
     echo "Syncing Capacitor iOS plugins…"
-    npx cap sync ios
+    # Same CocoaPods pin as cap add. Capacitor 8 defaults to SPM; a lockfile
+    # bump must not silently drop the workspace archive needs for Capacitor.
+    npx cap sync ios --packagemanager Cocoapods
   )
+}
+
+cocoapods_workspace_ready() {
+  local workspace="$1"
+  [ -f "$workspace/contents.xcworkspacedata" ]
+}
+
+require_cocoapods_workspace() {
+  local workspace="${1:-$IOS_DIR/ios/App/App.xcworkspace}"
+  if cocoapods_workspace_ready "$workspace"; then
+    echo "CocoaPods workspace ready: $workspace (Capacitor via Pods)"
+    return 0
+  fi
+  echo "error: CocoaPods workspace missing at $workspace. Capacitor is a pod; compiling or archiving App.xcodeproj leaves import Capacitor unresolved (run 34906234215)." >&2
+  exit 1
 }
 
 patch_native_project() {
@@ -244,18 +261,12 @@ patch_native_project() {
 compile_simulator() {
   require_cmd xcodebuild
   local workspace="$IOS_DIR/ios/App/App.xcworkspace"
-  local project="$IOS_DIR/ios/App/App.xcodeproj"
-  local -a xcode_src
-  if [ -f "$workspace/contents.xcworkspacedata" ]; then
-    xcode_src=(-workspace "$workspace")
-  else
-    xcode_src=(-project "$project")
-  fi
+  require_cocoapods_workspace "$workspace"
   echo "Compiling for iOS Simulator (unsigned; proves cap add + patch)…"
   (
     cd "$IOS_DIR"
     xcodebuild \
-      "${xcode_src[@]}" \
+      -workspace "$workspace" \
       -scheme App \
       -configuration Debug \
       -destination 'generic/platform=iOS Simulator' \
@@ -326,7 +337,11 @@ main() {
   if [ -f "$IOS_DIR/ios/App/Podfile" ]; then
     echo "Reconciling CocoaPods after the iOS 15.0 patch…"
     (cd "$IOS_DIR/ios/App" && pod install)
+  else
+    echo "error: Podfile missing after cap add/sync. Archive needs CocoaPods so Capacitor resolves from App.xcworkspace, not App.xcodeproj." >&2
+    exit 1
   fi
+  require_cocoapods_workspace
   python3 "$PATCHER" assert "$IOS_DIR" --build-number "${IOS_BUILD_NUMBER:-${GITHUB_RUN_NUMBER:-1}}" \
     ${IOS_MARKETING_VERSION:+--marketing-version "$IOS_MARKETING_VERSION"}
 

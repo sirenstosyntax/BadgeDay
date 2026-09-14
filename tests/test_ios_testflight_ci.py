@@ -126,6 +126,82 @@ def test_build_script_fails_upload_without_secrets() -> None:
     assert "Will not mint a distribution cert" in script
 
 
+def test_fastfile_archives_cocoapods_workspace_not_xcodeproj() -> None:
+    fastfile = FASTFILE.read_text()
+    code = _without_comments(fastfile)
+    assert 'WORKSPACE = "ios/App/App.xcworkspace"' in fastfile
+    assert "require_cocoapods_workspace!" in fastfile
+    assert "cocoapods_workspace_path" in fastfile
+    assert "File.expand_path" in fastfile
+    assert "__dir__" in fastfile
+    assert "workspace: require_cocoapods_workspace!" in code
+    assert "import Capacitor" in fastfile
+    assert "34906234215" in fastfile
+    # Relative Dir.pwd check + project fallback archived 1 target (no Pods).
+    assert "xcode_input" not in code
+    assert "**xcode_input" not in code
+    assert '{ project: PROJECT }' not in code
+    assert "Do not fall back to the xcodeproj" in fastfile
+    # Signing still edits the app project; gym must not archive it.
+    assert "increment_build_number(xcodeproj: PROJECT" in code
+    assert "path: PROJECT" in code
+
+
+def test_build_script_requires_cocoapods_workspace() -> None:
+    script = BUILD_SCRIPT.read_text()
+    assert "require_cocoapods_workspace" in script
+    assert "cocoapods_workspace_ready" in script
+    assert "npx cap sync ios --packagemanager Cocoapods" in script
+    assert "-workspace \"$workspace\"" in script
+    assert "run 34906234215" in script
+    assert "Podfile missing after cap add/sync" in script
+    # Compile and archive must not silently use App.xcodeproj.
+    assert 'xcode_src=(-project "$project")' not in script
+    assert 'else\n    xcode_src=(-project' not in script
+
+
+def test_cocoapods_workspace_gate_rejects_xcodeproj_only(tmp_path: Path) -> None:
+    import subprocess
+
+    script = BUILD_SCRIPT.read_text()
+    start = script.index("cocoapods_workspace_ready()")
+    end = script.index("\ncompile_simulator()")
+    helper = tmp_path / "workspace-gate.sh"
+    helper.write_text(
+        "#!/usr/bin/env bash\nset -euo pipefail\n"
+        + script[start:end]
+        + 'require_cocoapods_workspace "$1"\n',
+        encoding="utf-8",
+    )
+    helper.chmod(0o700)
+
+    def check(path: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["bash", str(helper), str(path)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    missing = tmp_path / "App.xcworkspace"
+    missing.mkdir()
+    (missing / "App.xcodeproj").mkdir()
+    rejected = check(missing)
+    assert rejected.returncode == 1
+    assert "import Capacitor unresolved" in rejected.stderr
+    assert "34906234215" in rejected.stderr
+
+    ready = tmp_path / "ready" / "App.xcworkspace"
+    ready.mkdir(parents=True)
+    (ready / "contents.xcworkspacedata").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n',
+        encoding="utf-8",
+    )
+    accepted = check(ready)
+    assert accepted.returncode == 0, accepted.stderr
+    assert "Capacitor via Pods" in accepted.stdout
+
+
 def test_fastfile_fails_closed_without_p12() -> None:
     fastfile = FASTFILE.read_text()
     code = _without_comments(fastfile)
@@ -274,6 +350,9 @@ def test_docs_name_every_secret_and_refuse_a_fake_green_upload() -> None:
     assert "fail closed" in doc.lower()
     assert "There is **no** `get_certificates` bootstrap" in doc
     assert "@capgo/native-purchases" in doc
+    assert "App.xcworkspace" in doc
+    assert "34906234215" in doc
+    assert "import Capacitor" in doc
     assert "MATCH_KEYCHAIN_NAME" in doc
     assert "PBE-SHA1-3DES" in doc
     assert "-macalg SHA1" in doc
