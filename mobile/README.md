@@ -7,7 +7,15 @@ all three surfaces by being deployed, not by being ported.
 The Play TWA is compiled by `mobile/android/build-twa.sh` and by the **TWA** GitHub
 Actions workflow, which uploads an AAB. Signing uses CI secrets when present; without
 them the AAB is unsigned (Play will not accept it until Grant adds an upload keystore).
-See `mobile/android/PLAY_CONSOLE.md`. iOS is still uncompiled here.
+See `mobile/android/PLAY_CONSOLE.md`.
+
+iOS is generated and compiled by `mobile/ios/build-ios.sh` and the **TestFlight**
+workflow on `macos-latest`. The native Xcode tree is not committed — CI runs
+`npx cap add ios` / `npx cap sync ios` and `patch_native_ios.py`. A pull request
+compiles for the simulator without secrets. `workflow_dispatch` archives and
+uploads to TestFlight only when App Store Connect API key secrets exist; without
+them that dispatch **fails** rather than faking a green upload. See
+`mobile/ios/TESTFLIGHT_CI.md`. IAP product create stays held.
 
 ## Before either wrapper builds
 
@@ -126,7 +134,7 @@ native capabilities are what answer it:
 | Local notifications | `@capacitor/local-notifications` | Landed. Streak + exam-date countdown. Copy is a Red-route placeholder. |
 | StoreKit purchase | `@capgo/native-purchases` | Landed in web + plugin declare. Reports `transaction_id` to `POST /billing/store/appstore/purchase`. Live `APPSTORE_PRODUCT_ID_*` remain ops-filled; IAP create in App Store Connect is still held. |
 
-These capabilities are **implemented in the web app and declared on the Capacitor shell**. They still need a Mac `npx cap sync ios` / archive before a device can prove them. This repo does not claim TestFlight or App Store Connect submit. Spec: `specs/badgeday/BD-iOS-4.2-capacitor-native-capabilities.md`. Usage strings to paste into Info.plist: `mobile/ios/INFO_PLIST_PERMISSIONS.md`.
+These capabilities are **implemented in the web app and declared on the Capacitor shell**. The TestFlight workflow generates the native project and can archive on `macos-latest`; a physical device is still required to prove Files / camera / offline / StoreKit. This repo does not claim a successful TestFlight upload until the secrets in `mobile/ios/TESTFLIGHT_CI.md` exist, and it does not submit for App Review. Spec: `specs/badgeday/BD-iOS-4.2-capacitor-native-capabilities.md`. Usage strings: `mobile/ios/INFO_PLIST_PERMISSIONS.md` (applied by `patch_native_ios.py` in CI).
 
 ### Universal links
 

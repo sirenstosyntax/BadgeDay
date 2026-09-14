@@ -98,15 +98,19 @@ def test_offline_sync_and_recache_avoid_orphans() -> None:
     assert "reusableOfflineSessionId" in practice
 
 
-def test_docs_mark_capabilities_landed_without_claiming_testflight() -> None:
+def test_docs_mark_capabilities_landed_and_testflight_ci_ready() -> None:
     readme = README.read_text()
     plan = PLAN.read_text()
+    ci_doc = ROOT / "mobile/ios/TESTFLIGHT_CI.md"
+    assert ci_doc.is_file()
     assert "None of these are implemented yet" not in readme
     assert "Landed" in readme
     assert "TestFlight" in readme
-    assert "does not claim TestFlight" in readme or "not claim TestFlight" in readme
+    assert "TESTFLIGHT_CI.md" in readme
+    assert "does not claim a successful TestFlight upload" in readme
     assert "BD-iOS-4.2" in plan
     assert "Code-landed" in plan
-    assert "Still needs a Mac" in plan
+    assert "macos-latest" in plan
+    assert "TESTFLIGHT_CI.md" in plan
     assert "package-lock.json" in readme
     assert "npm ci" in readme

@@ -1,8 +1,9 @@
-# iOS usage strings (copy into Info.plist on Mac `npx cap sync`)
+# iOS usage strings
 
-The Xcode project is not in git. After `npx cap add ios` / `npx cap sync ios`
-on a Mac, set these keys. They describe what BadgeDay actually does — Promote
-reading-list upload and Recruit spoken answers. Do not invent department names.
+The Xcode project is not in git. `mobile/ios/patch_native_ios.py` writes these
+keys after CI (or a Mac) runs `npx cap add ios` / `npx cap sync ios`. They
+describe what BadgeDay actually does — Promote reading-list upload and Recruit
+spoken answers. Do not invent department names.
 
 The Promote upload UI is **Files / iCloud** plus **Scan page** (camera only).
 There is no Photo Library picker. Photo Library keys are documented only
@@ -21,5 +22,8 @@ and does not need a separate usage string.
 
 Local notifications are requested at runtime. There is no remote push.
 
-After sync, add the **In-App Purchase** capability on the app target (StoreKit).
-Do not archive or submit TestFlight from this repo slice.
+After sync, the App ID needs the **In-App Purchase** capability (StoreKit) so
+the already-declared `@capgo/native-purchases` plugin can talk to StoreKit.
+That is an App ID switch, not an IAP product. Product create in App Store
+Connect stays HELD. Archive / TestFlight upload is the **TestFlight** workflow;
+see `TESTFLIGHT_CI.md`.

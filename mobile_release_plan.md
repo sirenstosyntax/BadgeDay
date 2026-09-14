@@ -250,14 +250,20 @@ every test written here.
 1. ~~Store entitlement path — schema, mapping, endpoints, tests.~~ **Done.**
 2. ~~Wrapper configs — TWA and Capacitor.~~ The Android TWA wrapper has been compiled —
    Play Billing on, AAB produced, TWA CI green on PR 35 (run 34300563670). Capacitor/iOS
-   is still written, never compiled; there is no Xcode in this container.
+   is generated and compiled by the **TestFlight** `macos-latest` workflow
+   (`mobile/ios/TESTFLIGHT_CI.md`); this Linux container still has no Xcode, and
+   no IPA has been uploaded from this repo yet. IAP product create stays held.
 3. ~~The two gateway implementations.~~ **Written, never run against a store.** Now blocked
    only on the credentials in Grant's step 2.
 4. The iOS capability set that clears 4.2 — upload from Files and camera, offline
    Promote practice, local notifications, StoreKit wiring. **Code-landed** against
    `specs/badgeday/BD-iOS-4.2-capacitor-native-capabilities.md` (web + Capacitor
-   plugin declares). Still needs a Mac `npx cap sync ios` / Xcode archive before a
-   device proving run; TestFlight and ASC submit are not part of that code slice.
+   plugin declares). The **TestFlight** GitHub Actions workflow on `macos-latest`
+   now generates the native project (`npx cap add ios` / `npx cap sync ios`),
+   archives, and can upload to TestFlight once App Store Connect API key secrets
+   exist — see `mobile/ios/TESTFLIGHT_CI.md`. A physical device is still required
+   for the sandbox proving run. ASC App Review submit is not part of that
+   workflow. IAP product create stays held.
    Live `APPSTORE_PRODUCT_ID_*` stay ops-filled. Account deletion while an App
    Store subscription is live remains an open product call — do not invent it.
 5. Sandbox purchase runs on a real device, both stores — the five-step sequence above.

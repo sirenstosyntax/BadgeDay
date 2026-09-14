@@ -1,0 +1,3 @@
+# Public identifiers. Not secrets.
+app_identifier("com.badgeday.app")
+team_id("G86W79K99V")
