@@ -117,14 +117,30 @@ Then in the Apple Developer website (not App Store Connect IAP):
 
 ```bash
 openssl x509 -in ios_distribution.cer -inform DER -out ios_distribution.pem
+# OpenSSL 3 defaults (AES-256 + PBKDF2) make a bag that macOS
+# `security import` rejects as "MAC verification failed (wrong password?)".
+# `-legacy` is the encoding macos-latest still accepts.
 openssl pkcs12 -export -inkey ios_distribution.key -in ios_distribution.pem \
-  -out ios_distribution.p12
+  -out ios_distribution.p12 \
+  -legacy
 base64 -w0 ios_distribution.p12
+```
+
+If your `openssl pkcs12 -export` has no `-legacy` flag:
+
+```bash
+openssl pkcs12 -export -inkey ios_distribution.key -in ios_distribution.pem \
+  -certpbe PBE-SHA1-3DES -keypbe PBE-SHA1-3DES -macalg sha1 \
+  -out ios_distribution.p12
 ```
 
 Put the base64 in `IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64` and the export
 password in `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD`. Keep the `.key` / `.p12`
 in a password manager. Never commit them.
+
+`build-ios.sh` also re-exports the uploaded P12 with `-legacy` on the runner
+before Fastlane imports it, so an existing OpenSSL 3 secret can still sign.
+That rewrite fail-closes if the password cannot decrypt the bag.
 
 The App ID `com.badgeday.app` must already exist (it does — the app record
 is in App Store Connect). Enable **Associated Domains** on that App ID if it
@@ -149,6 +165,21 @@ There is **no** `get_certificates` bootstrap. A signed `upload` or `archive`
 without the P12 **fails closed**. `get_provisioning_profile` (`sigh`) still
 runs when `IOS_PROVISIONING_PROFILE_BASE64` is omitted — that fetches or
 creates the **profile**, not a distribution cert and not an IAP product.
+
+## How signing uses the CI keychain
+
+`setup_ci` creates an ephemeral keychain (`fastlane_tmp_keychain`) and sets
+`MATCH_KEYCHAIN_NAME` / `MATCH_KEYCHAIN_PASSWORD`. The Fastfile imports the
+distribution P12 into **that** keychain (not login), unlocks it, and sets it
+as the default. `import_certificate`'s own env name is `KEYCHAIN_NAME` — not
+`MATCH_KEYCHAIN_NAME` — so the lane passes the setup_ci name and the resolved
+on-disk path (`fastlane_tmp_keychain-db` on modern macOS) explicitly.
+
+Fastlane 2.240 logs a failed `security import` (wrong password, or an
+OpenSSL 3 P12 macOS cannot read) and **continues**. The lane therefore
+refuses to call `get_provisioning_profile` until
+`security find-identity -v -p codesigning` shows an Apple Distribution
+identity. That is what fail-closes a silent import.
 
 A pull request **compile** is designed to go green **without** any of these
 secrets. That is not an upload.
