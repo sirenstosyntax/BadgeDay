@@ -43,8 +43,21 @@ mobile/android/*.keystore.json
 mobile/ios/ios/
 mobile/ios/App/
 
-# Local TWA compile output (AAB/APK, signed or not). Not a store submit.
+# Fastlane / signing leftovers from a local or CI iOS run. Never commit
+# key material; the .p8 / .p12 belong in GitHub secrets, not here.
+mobile/ios/vendor/
+mobile/ios/.bundle/
+mobile/ios/fastlane/report.xml
+mobile/ios/fastlane/Preview.html
+mobile/ios/*.ipa
+mobile/ios/*.dSYM.zip
+mobile/ios/AuthKey_*.p8
+mobile/ios/*.p12
+mobile/ios/*.mobileprovision
+
+# Local TWA / iOS compile output. Not a store submit by itself.
 artifacts/twa/
+artifacts/ios/
 
 # Editor / OS
 .DS_Store

@@ -1,0 +1,107 @@
+# Generate the Capacitor iOS project and compile it. Not part of the default
+# CI job: this needs a macOS runner and Xcode.
+#
+# Archive + TestFlight upload uses repository secrets when present
+# (App Store Connect API key). Without them the PR path still compiles
+# for the simulator — never a fake green upload, never an IAP product
+# create. The application id stays com.badgeday.app.
+
+name: TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: "Upload the IPA to TestFlight (requires API key secrets)"
+        type: boolean
+        default: true
+      marketing_version:
+        description: "CFBundleShortVersionString (blank = package.json version)"
+        type: string
+        required: false
+        default: ""
+  pull_request:
+    paths:
+      - "mobile/ios/**"
+      - "tests/test_ios_capacitor.py"
+      - "tests/test_ios_testflight_ci.py"
+      - ".github/workflows/testflight.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testflight-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    name: iOS archive (TestFlight)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Guardrails — bundle id + IAP create held
+        run: |
+          pip install pytest
+          # The test only reads committed files. Skip tests/conftest.py — that
+          # file imports the FastAPI app and would pull in pydantic and the rest
+          # of the backend just to check JSON, Fastfile, and workflow text.
+          python -m pytest --noconftest tests/test_ios_testflight_ci.py tests/test_ios_capacitor.py -q
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: mobile/ios/package-lock.json
+
+      - uses: ruby/setup-ruby@v1
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          ruby-version: "3.3"
+          bundler-cache: false
+          working-directory: mobile/ios
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            mobile/ios/ios/App/Pods
+          key: cocoapods-${{ runner.os }}-${{ hashFiles('mobile/ios/package-lock.json') }}
+
+      - name: Generate, patch, compile / archive / upload
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64 }}
+          IOS_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_MARKETING_VERSION: ${{ github.event.inputs.marketing_version }}
+          IOS_ARTIFACT_DIR: ${{ runner.temp }}/ios-artifacts
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ github.event.inputs.upload }}" = "true" ]; then
+              mobile/ios/build-ios.sh upload
+            else
+              mobile/ios/build-ios.sh archive
+            fi
+          else
+            mobile/ios/build-ios.sh compile
+          fi
+
+      - name: Upload iOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: badgeday-ios
+          path: ${{ runner.temp }}/ios-artifacts/*
+          if-no-files-found: error
+          retention-days: 14

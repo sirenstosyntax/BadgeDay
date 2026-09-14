@@ -1,0 +1,193 @@
+# frozen_string_literal: true
+
+# Archive the Capacitor iOS shell and upload the IPA to TestFlight.
+#
+# IAP product create stays HELD. This Fastfile must never call produce,
+# deliver, upload_to_app_store, or any Spaceship In-App Purchase API.
+# StoreKit is already declared on the Capacitor shell; live product ids
+# stay ops-filled.
+
+opt_out_usage
+skip_docs
+
+default_platform(:ios)
+
+BUNDLE_ID = "com.badgeday.app"
+TEAM_ID = "G86W79K99V"
+SCHEME = "App"
+WORKSPACE = "ios/App/App.xcworkspace"
+PROJECT = "ios/App/App.xcodeproj"
+
+def require_env!(name)
+  value = ENV[name].to_s.strip
+  UI.user_error!("missing #{name} — see mobile/ios/TESTFLIGHT_CI.md") if value.empty?
+  value
+end
+
+def artifact_dir
+  dir = ENV["IOS_ARTIFACT_DIR"].to_s.strip
+  dir = File.expand_path("../../artifacts/ios", __dir__) if dir.empty?
+  FileUtils.mkdir_p(dir)
+  dir
+end
+
+def api_key_from_env
+  raw = require_env!("APP_STORE_CONNECT_API_KEY_P8")
+  base64 = !raw.include?("BEGIN")
+  app_store_connect_api_key(
+    key_id: require_env!("APP_STORE_CONNECT_API_KEY_ID"),
+    issuer_id: require_env!("APP_STORE_CONNECT_ISSUER_ID"),
+    key_content: raw,
+    is_key_content_base64: base64,
+    duration: 1200,
+    in_house: false
+  )
+end
+
+def p12_present?
+  path = ENV["IOS_DISTRIBUTION_CERTIFICATE_P12_PATH"].to_s.strip
+  !path.empty? && File.file?(path)
+end
+
+def profile_present?
+  path = ENV["IOS_PROVISIONING_PROFILE_PATH"].to_s.strip
+  !path.empty? && File.file?(path)
+end
+
+def xcode_input
+  if File.exist?("ios/App/App.xcworkspace/contents.xcworkspacedata")
+    { workspace: WORKSPACE }
+  else
+    { project: PROJECT }
+  end
+end
+
+def set_build_number!(build_number)
+  increment_build_number(xcodeproj: PROJECT, build_number: build_number)
+rescue StandardError => e
+  UI.important("agvtool increment_build_number failed (#{e}); re-applying patcher")
+  sh("python3", "patch_native_ios.py", "apply", ".", "--build-number", build_number)
+end
+
+def resolve_build_number(api_key)
+  explicit = ENV["IOS_BUILD_NUMBER"].to_s.strip
+  return explicit if explicit.match?(/\A\d+\z/)
+
+  latest = latest_testflight_build_number(
+    api_key: api_key,
+    app_identifier: BUNDLE_ID,
+    initial_build_number: 0
+  )
+  (latest.to_i + 1).to_s
+end
+
+def apply_manual_signing!
+  profile_name = lane_context[SharedValues::SIGH_NAME].to_s
+  if profile_name.empty? && profile_present?
+    update_project_provisioning(
+      xcodeproj: PROJECT,
+      profile: ENV["IOS_PROVISIONING_PROFILE_PATH"],
+      target_filter: SCHEME,
+      build_configuration: "Release",
+      code_signing_identity: "Apple Distribution"
+    )
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: PROJECT,
+      team_id: TEAM_ID,
+      bundle_identifier: BUNDLE_ID,
+      code_sign_identity: "Apple Distribution",
+      targets: [SCHEME]
+    )
+    return
+  end
+
+  UI.user_error!("no App Store provisioning profile (sigh did not set SIGH_NAME)") if profile_name.empty?
+
+  update_code_signing_settings(
+    use_automatic_signing: false,
+    path: PROJECT,
+    team_id: TEAM_ID,
+    bundle_identifier: BUNDLE_ID,
+    code_sign_identity: "Apple Distribution",
+    profile_name: profile_name,
+    targets: [SCHEME]
+  )
+end
+
+platform :ios do
+  desc "Sign, archive, and export an App Store IPA. Does not upload."
+  lane :archive do
+    api_key = api_key_from_env
+    setup_ci if ENV["CI"]
+
+    build_number = resolve_build_number(api_key)
+    set_build_number!(build_number)
+
+    if p12_present?
+      import_certificate(
+        certificate_path: ENV["IOS_DISTRIBUTION_CERTIFICATE_P12_PATH"],
+        certificate_password: require_env!("IOS_DISTRIBUTION_CERTIFICATE_PASSWORD"),
+        keychain_name: ENV["MATCH_KEYCHAIN_NAME"],
+        keychain_password: ENV["MATCH_KEYCHAIN_PASSWORD"]
+      )
+    else
+      UI.important(
+        "IOS_DISTRIBUTION_CERTIFICATE_P12_PATH is empty. " \
+        "get_certificates will create or reuse an Apple Distribution " \
+        "cert in this runner keychain. Persist the P12 as a GitHub " \
+        "secret after the first success or later runs will mint extra certs."
+      )
+      get_certificates(api_key: api_key)
+    end
+
+    if profile_present?
+      install_provisioning_profile(path: ENV["IOS_PROVISIONING_PROFILE_PATH"])
+    else
+      get_provisioning_profile(
+        api_key: api_key,
+        app_identifier: BUNDLE_ID,
+        team_id: TEAM_ID,
+        filename: "BadgeDay_AppStore.mobileprovision",
+        output_path: File.join(ENV.fetch("RUNNER_TEMP", Dir.tmpdir), "badgeday-ios-sigh")
+      )
+    end
+
+    apply_manual_signing!
+
+    build_app(
+      **xcode_input,
+      scheme: SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      export_team_id: TEAM_ID,
+      output_directory: artifact_dir,
+      output_name: "BadgeDay",
+      include_symbols: true,
+      clean: true,
+      xcargs: "DEVELOPMENT_TEAM=#{TEAM_ID}"
+    )
+
+    UI.success("IPA at #{artifact_dir}/BadgeDay.ipa (build #{build_number})")
+    ENV["IOS_RESOLVED_BUILD_NUMBER"] = build_number
+  end
+
+  desc "Archive and upload to TestFlight. Does not submit for App Review. Does not create IAP products."
+  lane :upload do
+    archive
+    api_key = api_key_from_env
+    ipa = File.join(artifact_dir, "BadgeDay.ipa")
+    UI.user_error!("IPA missing at #{ipa}") unless File.file?(ipa)
+
+    upload_to_testflight(
+      api_key: api_key,
+      app_identifier: BUNDLE_ID,
+      ipa: ipa,
+      skip_waiting_for_build_processing: true,
+      skip_submission: true,
+      distribute_external: false,
+      changelog: "CI #{ENV['GITHUB_SHA']}"
+    )
+    UI.success("TestFlight upload requested. IAP product create remains HELD.")
+  end
+end

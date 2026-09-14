@@ -1,0 +1,6 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+# Pin so CI and a future Mac checkout resolve the same Fastlane.
+gem "fastlane", "~> 2.228"
