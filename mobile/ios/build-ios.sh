@@ -135,7 +135,12 @@ prepare_signing_files() {
   export APP_STORE_CONNECT_API_KEY_PATH="$tmp/AuthKey.p8"
   if p12_secrets_present; then
     write_b64_file "$tmp/distribution.p12" IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64
-    export IOS_DISTRIBUTION_CERTIFICATE_P12_PATH="$tmp/distribution.p12"
+    # OpenSSL 3 default P12 bags fail macOS `security import` with
+    # "MAC verification failed (wrong password?)". Re-export so the
+    # Fastfile can import into the setup_ci keychain.
+    python3 "$IOS_DIR/rewrite_p12_for_macos.py" \
+      "$tmp/distribution.p12" "$tmp/distribution-macos.p12"
+    export IOS_DISTRIBUTION_CERTIFICATE_P12_PATH="$tmp/distribution-macos.p12"
   fi
   if [ -n "${IOS_PROVISIONING_PROFILE_BASE64:-}" ]; then
     write_b64_file "$tmp/BadgeDay_AppStore.mobileprovision" IOS_PROVISIONING_PROFILE_BASE64

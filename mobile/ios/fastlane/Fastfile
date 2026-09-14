@@ -61,6 +61,126 @@ def require_p12!
   )
 end
 
+# setup_ci creates fastlane_tmp_keychain and sets MATCH_KEYCHAIN_*.
+# import_certificate's keychain_name env is KEYCHAIN_NAME (not MATCH_*),
+# and Fastlane 2.240 logs a failed `security import` without failing the
+# lane. Import into that keychain, then fail closed on SecKeychainItemImport
+# (MAC verification is the primary error — sigh "no identities" is follow-on).
+def prepare_signing_keychain!
+  unless ENV["CI"]
+    return { name: "login", password: ENV["MATCH_KEYCHAIN_PASSWORD"].to_s, path: nil }
+  end
+
+  setup_ci(timeout: 0)
+  name = ENV["MATCH_KEYCHAIN_NAME"].to_s.strip
+  password = ENV["MATCH_KEYCHAIN_PASSWORD"].to_s
+  UI.user_error!(
+    "setup_ci did not set MATCH_KEYCHAIN_NAME. Cannot import the " \
+    "distribution P12 into the CI keychain sigh/xcodebuild will search."
+  ) if name.empty?
+
+  path = resolve_ci_keychain_path(name)
+  unlock_keychain(path: path, password: password, set_default: true)
+  { name: name, password: password, path: path }
+end
+
+def resolve_ci_keychain_path(name)
+  from_lane = lane_context[SharedValues::KEYCHAIN_PATH].to_s.strip
+  candidates = []
+  candidates << File.expand_path(from_lane) unless from_lane.empty?
+  home = File.expand_path("~/Library/Keychains/#{name}")
+  candidates.concat([home, "#{home}-db", "#{home}.keychain-db", "#{home}.keychain"])
+  found = candidates.find { |candidate| File.exist?(candidate) }
+  UI.user_error!(
+    "setup_ci keychain #{name.inspect} is not on disk " \
+    "(looked for #{candidates.uniq.join(', ')})"
+  ) if found.nil?
+
+  found
+end
+
+def import_distribution_certificate!(keychain)
+  require_p12!
+  # Fastlane 2.240 import_certificate UI.errors a failed security import
+  # and continues. Probe with security(1) first so MAC verification is
+  # the lane failure — do not reach get_provisioning_profile / build_app.
+  import_p12_fail_closed!(keychain)
+  args = {
+    certificate_path: ENV["IOS_DISTRIBUTION_CERTIFICATE_P12_PATH"],
+    certificate_password: require_env!("IOS_DISTRIBUTION_CERTIFICATE_PASSWORD"),
+    keychain_name: keychain[:name],
+    keychain_password: keychain[:password],
+    log_output: true
+  }
+  args[:keychain_path] = keychain[:path] unless keychain[:path].to_s.empty?
+  import_certificate(**args)
+  assert_codesigning_identity!
+end
+
+def signing_keychain_path(keychain)
+  path = keychain[:path].to_s
+  path.empty? ? keychain[:name] : path
+end
+
+def import_p12_fail_closed!(keychain)
+  require "open3"
+  p12 = ENV["IOS_DISTRIBUTION_CERTIFICATE_P12_PATH"]
+  password = require_env!("IOS_DISTRIBUTION_CERTIFICATE_PASSWORD")
+  keychain_path = signing_keychain_path(keychain)
+  _stdout, stderr, status = Open3.capture3(
+    "security", "import", p12,
+    "-k", keychain_path,
+    "-P", password,
+    "-T", "/usr/bin/codesign",
+    "-T", "/usr/bin/security",
+    "-T", "/usr/bin/productbuild"
+  )
+  err = stderr.to_s.strip
+  if status.success? || err.include?("already exists")
+    set_ci_key_partition_list!(keychain)
+    return
+  end
+
+  detail = err.empty? ? "security import exited #{status.exitstatus}" : err
+  UI.user_error!(
+    "SecKeychainItemImport failed — this is the primary signing " \
+    "failure, not a missing sigh identity. #{detail} " \
+    "A bad IOS_DISTRIBUTION_CERTIFICATE_PASSWORD or an OpenSSL 3 P12 " \
+    "macOS cannot read shows as MAC verification failed. Recreate the " \
+    "P12 secrets (see mobile/ios/TESTFLIGHT_CI.md). This lane will not " \
+    "call get_certificates or continue to get_provisioning_profile / " \
+    "build_app."
+  )
+end
+
+def set_ci_key_partition_list!(keychain)
+  require "open3"
+  _out, err, status = Open3.capture3(
+    "security", "set-key-partition-list",
+    "-S", "apple-tool:,apple:,codesign:",
+    "-s",
+    "-k", keychain[:password].to_s,
+    signing_keychain_path(keychain)
+  )
+  UI.important("set-key-partition-list: #{err}") unless status.success?
+end
+
+def assert_codesigning_identity!
+  identities = sh("security find-identity -v -p codesigning")
+  return if identities.match?(/Apple Distribution|iPhone Distribution/)
+
+  UI.user_error!(
+    "No Apple Distribution identity after importing the P12 into the " \
+    "setup_ci keychain. sigh/xcodebuild will not see a signing identity. " \
+    "Check IOS_DISTRIBUTION_CERTIFICATE_PASSWORD, and if the .p12 was " \
+    "made with OpenSSL 3, re-export with -keypbe PBE-SHA1-3DES " \
+    "-certpbe PBE-SHA1-3DES -macalg SHA1 (Apple security rejects the " \
+    "default bag as MAC verification failed). " \
+    "See mobile/ios/TESTFLIGHT_CI.md. This lane will not call " \
+    "get_certificates."
+  )
+end
+
 def profile_present?
   path = ENV["IOS_PROVISIONING_PROFILE_PATH"].to_s.strip
   !path.empty? && File.file?(path)
@@ -131,7 +251,7 @@ platform :ios do
   desc "Sign, archive, and export an App Store IPA. Does not upload."
   lane :archive do
     api_key = api_key_from_env
-    setup_ci if ENV["CI"]
+    keychain = prepare_signing_keychain!
 
     build_number = resolve_build_number(api_key)
     set_build_number!(build_number)
@@ -139,13 +259,7 @@ platform :ios do
     # Fail closed: never call get_certificates on an ephemeral runner.
     # A minted cert's private key dies with the job; Apple caps the team
     # at three distribution certificates.
-    require_p12!
-    import_certificate(
-      certificate_path: ENV["IOS_DISTRIBUTION_CERTIFICATE_P12_PATH"],
-      certificate_password: require_env!("IOS_DISTRIBUTION_CERTIFICATE_PASSWORD"),
-      keychain_name: ENV["MATCH_KEYCHAIN_NAME"],
-      keychain_password: ENV["MATCH_KEYCHAIN_PASSWORD"]
-    )
+    import_distribution_certificate!(keychain)
 
     if profile_present?
       install_provisioning_profile(path: ENV["IOS_PROVISIONING_PROFILE_PATH"])

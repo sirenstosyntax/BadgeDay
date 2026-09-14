@@ -117,14 +117,22 @@ Then in the Apple Developer website (not App Store Connect IAP):
 
 ```bash
 openssl x509 -in ios_distribution.cer -inform DER -out ios_distribution.pem
+# OpenSSL 3's default PKCS#12 is often rejected by Apple `security`
+# even with the correct password (MAC verification failed).
 openssl pkcs12 -export -inkey ios_distribution.key -in ios_distribution.pem \
-  -out ios_distribution.p12
+  -out ios_distribution.p12 \
+  -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg SHA1
 base64 -w0 ios_distribution.p12
 ```
 
 Put the base64 in `IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64` and the export
 password in `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD`. Keep the `.key` / `.p12`
 in a password manager. Never commit them.
+
+`build-ios.sh` also re-exports the uploaded P12 with those same PBE flags
+on the runner before Fastlane imports it, so an existing OpenSSL 3 secret
+can still sign. That rewrite fail-closes if the password cannot decrypt
+the bag.
 
 The App ID `com.badgeday.app` must already exist (it does — the app record
 is in App Store Connect). Enable **Associated Domains** on that App ID if it
@@ -149,6 +157,37 @@ There is **no** `get_certificates` bootstrap. A signed `upload` or `archive`
 without the P12 **fails closed**. `get_provisioning_profile` (`sigh`) still
 runs when `IOS_PROVISIONING_PROFILE_BASE64` is omitted — that fetches or
 creates the **profile**, not a distribution cert and not an IAP product.
+
+## How signing fails closed (run 34903809952)
+
+Two separate problems. Do not collapse them.
+
+**Primary (this run):** `security import` / `SecKeychainItemImport` failed with
+`MAC verification failed during PKCS12 import (wrong password?)`. Fastlane
+2.240 logs that and **continues**. Ops recreates
+`IOS_DISTRIBUTION_CERTIFICATE_P12_*` with
+`-keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg SHA1` (OpenSSL 3's
+default bag is often rejected by Apple `security` even with the correct
+password). `build-ios.sh` re-exports with those flags on the runner; a
+password that cannot decrypt the bag still fail-closes.
+
+**Follow-on:** because the P12 never landed, `get_provisioning_profile` /
+sigh reported “There are no local code signing identities found” / “Could
+not find a matching code signing identity for type 'AppStore'”. That is
+not the root cause.
+
+**Defense in depth (when the P12 is good):** `setup_ci` creates
+`fastlane_tmp_keychain` and sets `MATCH_KEYCHAIN_NAME` /
+`MATCH_KEYCHAIN_PASSWORD`. `import_certificate`'s own env name is
+`KEYCHAIN_NAME`, not `MATCH_*`. The Fastfile resolves the on-disk
+`fastlane_tmp_keychain-db`, unlocks it, and imports into **that** keychain
+(not login). A successful secret must still hit the same keychain sigh
+and xcodebuild search.
+
+The lane runs `security import` itself **before** Fastlane
+`import_certificate`. A `SecKeychainItemImport` / MAC verification failure
+is the lane error. It does **not** continue to `get_provisioning_profile`
+or `build_app`. It does **not** call `get_certificates`.
 
 A pull request **compile** is designed to go green **without** any of these
 secrets. That is not an upload.

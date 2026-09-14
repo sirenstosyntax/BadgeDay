@@ -14,6 +14,7 @@ BUILD_SCRIPT = IOS_DIR / "build-ios.sh"
 FASTFILE = IOS_DIR / "fastlane/Fastfile"
 APPFILE = IOS_DIR / "fastlane/Appfile"
 CI_DOC = IOS_DIR / "TESTFLIGHT_CI.md"
+REWRITE_P12 = IOS_DIR / "rewrite_p12_for_macos.py"
 PERMISSIONS = IOS_DIR / "INFO_PLIST_PERMISSIONS.md"
 GITIGNORE = ROOT / ".gitignore"
 PATCHER_PATH = IOS_DIR / "patch_native_ios.py"
@@ -67,7 +68,7 @@ def _without_comments(text: str) -> str:
 def test_secrets_are_names_only() -> None:
     # Docs may show the PEM header as a format hint. Executable files must not.
     executable = "\n".join(
-        path.read_text() for path in (WORKFLOW, BUILD_SCRIPT, FASTFILE, APPFILE)
+        path.read_text() for path in (WORKFLOW, BUILD_SCRIPT, FASTFILE, APPFILE, REWRITE_P12)
     )
     assert "-----BEGIN" not in executable
     assert "MIGT" not in executable
@@ -135,6 +136,33 @@ def test_fastfile_fails_closed_without_p12() -> None:
     # the fail-closed error string; a call site must not.
     assert "get_certificates(" not in code
     assert "get_certificates(" not in fastfile
+
+
+def test_fastfile_imports_p12_into_setup_ci_keychain() -> None:
+    fastfile = FASTFILE.read_text()
+    code = _without_comments(fastfile)
+    assert "prepare_signing_keychain!" in fastfile
+    assert "import_distribution_certificate!" in fastfile
+    assert "import_p12_fail_closed!" in fastfile
+    assert "assert_codesigning_identity!" in fastfile
+    assert "MATCH_KEYCHAIN_NAME" in fastfile
+    assert "MATCH_KEYCHAIN_PASSWORD" in fastfile
+    assert "unlock_keychain" in code
+    assert "keychain_path" in code
+    assert "find-identity -v -p codesigning" in fastfile
+    assert "Apple Distribution" in fastfile
+    assert "SecKeychainItemImport" in fastfile
+    assert "MAC verification" in fastfile
+    assert "get_provisioning_profile / " in fastfile or "get_provisioning_profile /" in fastfile
+    # security import fail-closed, then import_certificate, then identity,
+    # then sigh — not a bare ENV lookup that can be empty.
+    setup_idx = code.index("setup_ci(")
+    probe_idx = code.index("import_p12_fail_closed!(")
+    import_idx = code.index("import_certificate(")
+    identity_idx = code.index("find-identity")
+    sigh_idx = code.index("get_provisioning_profile(")
+    assert setup_idx < probe_idx < import_idx < identity_idx < sigh_idx
+    assert "keychain_name: ENV[\"MATCH_KEYCHAIN_NAME\"]" not in code
 
 
 def test_cap_add_failure_is_gated_on_deployment_target_refusal() -> None:
@@ -246,6 +274,126 @@ def test_docs_name_every_secret_and_refuse_a_fake_green_upload() -> None:
     assert "fail closed" in doc.lower()
     assert "There is **no** `get_certificates` bootstrap" in doc
     assert "@capgo/native-purchases" in doc
+    assert "MATCH_KEYCHAIN_NAME" in doc
+    assert "PBE-SHA1-3DES" in doc
+    assert "-macalg SHA1" in doc
+    assert "MAC verification" in doc
+    assert "setup_ci" in doc
+    assert "primary" in doc.lower()
+    assert "follow-on" in doc.lower()
+    assert "SecKeychainItemImport" in doc
+    assert "does **not** continue to `get_provisioning_profile`" in doc
+    assert "Apple `security`" in doc or "Apple security" in doc
+
+
+def test_build_script_rewrites_p12_for_macos() -> None:
+    script = BUILD_SCRIPT.read_text()
+    assert "rewrite_p12_for_macos.py" in script
+    assert "distribution-macos.p12" in script
+    assert REWRITE_P12.is_file()
+    text = REWRITE_P12.read_text()
+    assert "PBE-SHA1-3DES" in text
+    assert "SHA1" in text
+    assert "IOS_DISTRIBUTION_CERTIFICATE_PASSWORD" in text
+    assert "get_certificates" not in text
+
+
+def test_rewrite_p12_for_macos_round_trips_openssl3_bag(tmp_path: Path) -> None:
+    import os
+    import shutil
+    import subprocess
+
+    openssl = shutil.which("openssl")
+    if openssl is None:
+        import pytest
+
+        pytest.skip("openssl not available")
+
+    key = tmp_path / "key.pem"
+    cert = tmp_path / "cert.pem"
+    modern = tmp_path / "modern.p12"
+    rewritten = tmp_path / "macos.p12"
+    password = "test-p12-password-not-a-secret"
+    subprocess.run(
+        [
+            openssl,
+            "req",
+            "-x509",
+            "-newkey",
+            "rsa:2048",
+            "-keyout",
+            str(key),
+            "-out",
+            str(cert),
+            "-days",
+            "1",
+            "-nodes",
+            "-subj",
+            "/CN=BadgeDay P12 rewrite test",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    exported = subprocess.run(
+        [
+            openssl,
+            "pkcs12",
+            "-export",
+            "-inkey",
+            str(key),
+            "-in",
+            str(cert),
+            "-out",
+            str(modern),
+            "-passout",
+            f"pass:{password}",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if exported.returncode != 0:
+        import pytest
+
+        pytest.skip(f"openssl pkcs12 -export unavailable: {exported.stderr}")
+
+    spec = importlib.util.spec_from_file_location("rewrite_p12_for_macos", REWRITE_P12)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    os.environ["IOS_DISTRIBUTION_CERTIFICATE_PASSWORD"] = password
+    try:
+        message = module.rewrite(modern, rewritten, password)
+    finally:
+        os.environ.pop("IOS_DISTRIBUTION_CERTIFICATE_PASSWORD", None)
+    assert rewritten.is_file()
+    assert rewritten.stat().st_size >= 32
+    assert "macOS-compatible" in message
+    check = subprocess.run(
+        [
+            openssl,
+            "pkcs12",
+            "-in",
+            str(rewritten),
+            "-passin",
+            f"pass:{password}",
+            "-nokeys",
+            "-noout",
+            "-legacy",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert check.returncode == 0, check.stderr
+
+    try:
+        module.rewrite(modern, tmp_path / "wrong.p12", "not-the-password")
+    except SystemExit as exc:
+        assert "cannot decrypt" in str(exc)
+    else:
+        raise AssertionError("expected wrong password to fail closed")
 
 
 def test_usage_strings_match_permissions_doc() -> None:
