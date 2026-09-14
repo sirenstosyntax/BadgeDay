@@ -131,8 +131,12 @@ in a password manager. Never commit them.
 
 `build-ios.sh` also re-exports the uploaded P12 with those same PBE flags
 on the runner before Fastlane imports it, so an existing OpenSSL 3 secret
-can still sign. That rewrite fail-closes if the password cannot decrypt
-the bag.
+can still sign. Decrypt tries `openssl pkcs12` without `-legacy`, then
+with `-legacy`: OpenSSL 3 needs `-legacy` to unwrap a SHA1-3DES bag and
+rejects `-legacy` on a modern AES-256-CBC bag. SHA1-3DES export has **no**
+OpenSSL-3-default fallback — that bag is what Apple `security` rejects.
+The rewrite fail-closes if neither decrypt works or if SHA1-3DES export
+fails.
 
 The App ID `com.badgeday.app` must already exist (it does — the app record
 is in App Store Connect). Enable **Associated Domains** on that App ID if it
@@ -184,9 +188,12 @@ not the root cause.
 (not login). A successful secret must still hit the same keychain sigh
 and xcodebuild search.
 
-The lane runs `security import` itself **before** Fastlane
-`import_certificate`. A `SecKeychainItemImport` / MAC verification failure
-is the lane error. It does **not** continue to `get_provisioning_profile`
+The lane imports the P12 **before** Fastlane `import_certificate` via
+`import_p12.swift` (`SecPKCS12Import`). Apple `security import` has no
+stdin / fd / env passphrase option — only `-P` on argv or a GUI prompt —
+so the wrapping password is fed on the helper's stdin, never
+`security import -P`. A `SecKeychainItemImport` / MAC verification
+failure is the lane error. It does **not** continue to `get_provisioning_profile`
 or `build_app`. It does **not** call `get_certificates`.
 
 A pull request **compile** is designed to go green **without** any of these

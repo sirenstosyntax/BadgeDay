@@ -51,21 +51,41 @@ def _run(openssl: str, args: Sequence[str], env: dict[str, str]) -> Proc:
     )
 
 
+# OpenSSL 3's default provider cannot unwrap SHA1-3DES / RC2 bags;
+# those need ``-legacy``. A modern AES-256-CBC+PBKDF2 bag fails *with*
+# ``-legacy``. LibreSSL / OpenSSL 1.1 reject the flag entirely. Try
+# without, then with, before fail-closed.
+DECRYPT_PKCS12_EXTRA_FLAGS: tuple[tuple[str, ...], ...] = (
+    (),
+    ("-legacy",),
+)
+
+
 def decrypt_p12(openssl: str, src: Path, pem: Path, env: dict[str, str]) -> Proc:
-    return _run(
-        openssl,
-        [
-            "pkcs12",
-            "-in",
-            str(src),
-            "-passin",
-            "env:IOS_DISTRIBUTION_CERTIFICATE_PASSWORD",
-            "-nodes",
-            "-out",
-            str(pem),
-        ],
-        env,
-    )
+    last: Proc | None = None
+    for extra in DECRYPT_PKCS12_EXTRA_FLAGS:
+        if pem.exists():
+            pem.unlink()
+        result = _run(
+            openssl,
+            [
+                "pkcs12",
+                "-in",
+                str(src),
+                "-passin",
+                "env:IOS_DISTRIBUTION_CERTIFICATE_PASSWORD",
+                "-nodes",
+                "-out",
+                str(pem),
+                *extra,
+            ],
+            env,
+        )
+        if result.returncode == 0:
+            return result
+        last = result
+    assert last is not None
+    return last
 
 
 APPLE_P12_PBE = (
@@ -78,27 +98,25 @@ APPLE_P12_PBE = (
 )
 
 
-def export_p12(
-    openssl: str,
-    pem: Path,
-    dest: Path,
-    env: dict[str, str],
-    *,
-    compatible: bool,
-) -> Proc:
-    args = [
-        "pkcs12",
-        "-export",
-        "-in",
-        str(pem),
-        "-out",
-        str(dest),
-        "-passout",
-        "env:IOS_DISTRIBUTION_CERTIFICATE_PASSWORD",
-    ]
-    if compatible:
-        args.extend(APPLE_P12_PBE)
-    return _run(openssl, args, env)
+def export_p12(openssl: str, pem: Path, dest: Path, env: dict[str, str]) -> Proc:
+    # SHA1-3DES only. An OpenSSL 3 default bag (AES-256-CBC+PBKDF2) is what
+    # Apple `security` rejects as MAC verification failed. Fail closed —
+    # do not fall back to that encoding.
+    return _run(
+        openssl,
+        [
+            "pkcs12",
+            "-export",
+            "-in",
+            str(pem),
+            "-out",
+            str(dest),
+            "-passout",
+            "env:IOS_DISTRIBUTION_CERTIFICATE_PASSWORD",
+            *APPLE_P12_PBE,
+        ],
+        env,
+    )
 
 
 def rewrite(src: Path, dest: Path, password: str) -> str:
@@ -130,9 +148,7 @@ def rewrite(src: Path, dest: Path, password: str) -> str:
                 last_err = last_err.strip()
                 continue
             out = Path(tmp) / "macos.p12"
-            exported = export_p12(openssl, pem, out, env, compatible=True)
-            if exported.returncode != 0:
-                exported = export_p12(openssl, pem, out, env, compatible=False)
+            exported = export_p12(openssl, pem, out, env)
             too_small = not out.is_file() or out.stat().st_size < 32
             if exported.returncode != 0 or too_small:
                 last_err = exported.stderr or exported.stdout
@@ -144,12 +160,14 @@ def rewrite(src: Path, dest: Path, password: str) -> str:
             return f"wrote macOS-compatible P12 via {openssl}"
 
     raise SystemExit(
-        "error: cannot decrypt IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64 "
+        "error: cannot decrypt or SHA1-3DES-export "
+        "IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64 "
         f"with IOS_DISTRIBUTION_CERTIFICATE_PASSWORD ({last_err or 'openssl pkcs12 failed'}). "
-        "Wrong password, or macOS `security import` will report MAC verification "
-        "failed. If this file was made with OpenSSL 3, re-export with "
-        "-keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg SHA1 — "
-        "see mobile/ios/TESTFLIGHT_CI.md."
+        "Wrong password, OpenSSL 3 could not unwrap the bag even with "
+        "-legacy, or SHA1-3DES export failed (no OpenSSL-3-default fallback — "
+        "that bag is what Apple `security` rejects as MAC verification failed). "
+        "Recreate the P12 with -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES "
+        "-macalg SHA1 — see mobile/ios/TESTFLIGHT_CI.md."
     )
 
 

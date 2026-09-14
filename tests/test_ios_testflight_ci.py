@@ -15,6 +15,7 @@ FASTFILE = IOS_DIR / "fastlane/Fastfile"
 APPFILE = IOS_DIR / "fastlane/Appfile"
 CI_DOC = IOS_DIR / "TESTFLIGHT_CI.md"
 REWRITE_P12 = IOS_DIR / "rewrite_p12_for_macos.py"
+IMPORT_P12 = IOS_DIR / "import_p12.swift"
 PERMISSIONS = IOS_DIR / "INFO_PLIST_PERMISSIONS.md"
 GITIGNORE = ROOT / ".gitignore"
 PATCHER_PATH = IOS_DIR / "patch_native_ios.py"
@@ -68,7 +69,8 @@ def _without_comments(text: str) -> str:
 def test_secrets_are_names_only() -> None:
     # Docs may show the PEM header as a format hint. Executable files must not.
     executable = "\n".join(
-        path.read_text() for path in (WORKFLOW, BUILD_SCRIPT, FASTFILE, APPFILE, REWRITE_P12)
+        path.read_text()
+        for path in (WORKFLOW, BUILD_SCRIPT, FASTFILE, APPFILE, REWRITE_P12, IMPORT_P12)
     )
     assert "-----BEGIN" not in executable
     assert "MIGT" not in executable
@@ -100,7 +102,7 @@ def test_fastlane_does_not_create_iap_products() -> None:
     fastfile = FASTFILE.read_text()
     script = BUILD_SCRIPT.read_text()
     workflow = WORKFLOW.read_text()
-    blob = fastfile + script + workflow + CI_DOC.read_text()
+    blob = fastfile + script + workflow + CI_DOC.read_text() + IMPORT_P12.read_text()
     code = _without_comments(fastfile)
     for needle in FORBIDDEN_IAP_CALLS:
         assert needle not in code
@@ -138,6 +140,16 @@ def test_fastfile_fails_closed_without_p12() -> None:
     assert "get_certificates(" not in fastfile
 
 
+def _ruby_method(text: str, name: str) -> str:
+    start = text.index(f"def {name}")
+    collected: list[str] = []
+    for line in text[start:].splitlines():
+        if collected and line.startswith("def "):
+            break
+        collected.append(line)
+    return "\n".join(collected)
+
+
 def test_fastfile_imports_p12_into_setup_ci_keychain() -> None:
     fastfile = FASTFILE.read_text()
     code = _without_comments(fastfile)
@@ -154,7 +166,7 @@ def test_fastfile_imports_p12_into_setup_ci_keychain() -> None:
     assert "SecKeychainItemImport" in fastfile
     assert "MAC verification" in fastfile
     assert "get_provisioning_profile / " in fastfile or "get_provisioning_profile /" in fastfile
-    # security import fail-closed, then import_certificate, then identity,
+    # Fail-closed import, then import_certificate, then identity,
     # then sigh — not a bare ENV lookup that can be empty.
     setup_idx = code.index("setup_ci(")
     probe_idx = code.index("import_p12_fail_closed!(")
@@ -163,6 +175,16 @@ def test_fastfile_imports_p12_into_setup_ci_keychain() -> None:
     sigh_idx = code.index("get_provisioning_profile(")
     assert setup_idx < probe_idx < import_idx < identity_idx < sigh_idx
     assert "keychain_name: ENV[\"MATCH_KEYCHAIN_NAME\"]" not in code
+    # Apple security import's only non-GUI passphrase option is -P on argv.
+    # The fail-closed probe must not put the wrapping password there.
+    probe = _ruby_method(fastfile, "import_p12_fail_closed!")
+    probe_code = _without_comments(probe)
+    assert "import_p12.swift" in probe
+    assert "stdin_data: password" in probe
+    assert '"-P"' not in probe_code
+    assert "'-P'" not in probe_code
+    assert '"security", "import"' not in probe_code
+    assert IMPORT_P12.is_file()
 
 
 def test_cap_add_failure_is_gated_on_deployment_target_refusal() -> None:
@@ -284,6 +306,18 @@ def test_docs_name_every_secret_and_refuse_a_fake_green_upload() -> None:
     assert "SecKeychainItemImport" in doc
     assert "does **not** continue to `get_provisioning_profile`" in doc
     assert "Apple `security`" in doc or "Apple security" in doc
+    assert "-legacy" in doc
+    assert "no stdin / fd / env passphrase" in doc.lower() or "stdin / fd / env" in doc
+    assert "import_p12.swift" in doc
+    assert "OpenSSL-3-default fallback" in doc
+
+
+def _load_rewrite_module():
+    spec = importlib.util.spec_from_file_location("rewrite_p12_for_macos", REWRITE_P12)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_build_script_rewrites_p12_for_macos() -> None:
@@ -296,24 +330,31 @@ def test_build_script_rewrites_p12_for_macos() -> None:
     assert "SHA1" in text
     assert "IOS_DISTRIBUTION_CERTIFICATE_PASSWORD" in text
     assert "get_certificates" not in text
+    assert "-legacy" in text
+    assert "compatible=False" not in text
+    assert "compatible=True" not in text
+    module = _load_rewrite_module()
+    assert module.DECRYPT_PKCS12_EXTRA_FLAGS == ((), ("-legacy",))
 
 
-def test_rewrite_p12_for_macos_round_trips_openssl3_bag(tmp_path: Path) -> None:
-    import os
-    import shutil
+def test_import_p12_helper_reads_password_from_stdin() -> None:
+    text = IMPORT_P12.read_text()
+    assert "SecPKCS12Import" in text
+    assert "kSecImportExportPassphrase" in text
+    assert "FileHandle.standardInput" in text
+    assert "CommandLine.arguments" in text
+    assert "get_certificates" not in text
+    assert "APPSTORE_PRODUCT_ID" not in text
+    # Password is stdin, not argv and not the child environment.
+    assert "ProcessInfo.processInfo.environment" not in text
+    assert "IOS_DISTRIBUTION_CERTIFICATE_PASSWORD" not in text
+
+
+def _make_self_signed_pair(tmp_path: Path, openssl: str) -> tuple[Path, Path]:
     import subprocess
-
-    openssl = shutil.which("openssl")
-    if openssl is None:
-        import pytest
-
-        pytest.skip("openssl not available")
 
     key = tmp_path / "key.pem"
     cert = tmp_path / "cert.pem"
-    modern = tmp_path / "modern.p12"
-    rewritten = tmp_path / "macos.p12"
-    password = "test-p12-password-not-a-secret"
     subprocess.run(
         [
             openssl,
@@ -335,33 +376,69 @@ def test_rewrite_p12_for_macos_round_trips_openssl3_bag(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
     )
-    exported = subprocess.run(
-        [
-            openssl,
-            "pkcs12",
-            "-export",
-            "-inkey",
-            str(key),
-            "-in",
-            str(cert),
-            "-out",
-            str(modern),
-            "-passout",
-            f"pass:{password}",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if exported.returncode != 0:
+    return key, cert
+
+
+def _export_p12_bag(
+    openssl: str,
+    key: Path,
+    cert: Path,
+    dest: Path,
+    password: str,
+    *,
+    apple_pbe: bool,
+) -> bool:
+    import subprocess
+
+    args = [
+        openssl,
+        "pkcs12",
+        "-export",
+        "-inkey",
+        str(key),
+        "-in",
+        str(cert),
+        "-out",
+        str(dest),
+        "-passout",
+        f"pass:{password}",
+    ]
+    if apple_pbe:
+        args.extend(
+            [
+                "-keypbe",
+                "PBE-SHA1-3DES",
+                "-certpbe",
+                "PBE-SHA1-3DES",
+                "-macalg",
+                "SHA1",
+            ]
+        )
+    exported = subprocess.run(args, check=False, capture_output=True, text=True)
+    return exported.returncode == 0 and dest.is_file() and dest.stat().st_size >= 32
+
+
+def test_rewrite_p12_for_macos_round_trips_openssl3_bag(tmp_path: Path) -> None:
+    import os
+    import shutil
+    import subprocess
+
+    openssl = shutil.which("openssl")
+    if openssl is None:
         import pytest
 
-        pytest.skip(f"openssl pkcs12 -export unavailable: {exported.stderr}")
+        pytest.skip("openssl not available")
 
-    spec = importlib.util.spec_from_file_location("rewrite_p12_for_macos", REWRITE_P12)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    key, cert = _make_self_signed_pair(tmp_path, openssl)
+    modern = tmp_path / "modern.p12"
+    rewritten = tmp_path / "macos.p12"
+    password = "test-p12-password-not-a-secret"
+    if not _export_p12_bag(openssl, key, cert, modern, password, apple_pbe=False):
+        import pytest
+
+        pytest.skip("openssl pkcs12 -export unavailable")
+
+    module = _load_rewrite_module()
     os.environ["IOS_DISTRIBUTION_CERTIFICATE_PASSWORD"] = password
     try:
         message = module.rewrite(modern, rewritten, password)
@@ -394,6 +471,111 @@ def test_rewrite_p12_for_macos_round_trips_openssl3_bag(tmp_path: Path) -> None:
         assert "cannot decrypt" in str(exc)
     else:
         raise AssertionError("expected wrong password to fail closed")
+
+
+def test_rewrite_p12_decrypts_sha1_3des_bag_via_legacy(tmp_path: Path) -> None:
+    import os
+    import shutil
+
+    openssl = shutil.which("openssl")
+    if openssl is None:
+        import pytest
+
+        pytest.skip("openssl not available")
+
+    key, cert = _make_self_signed_pair(tmp_path, openssl)
+    legacy = tmp_path / "sha1-3des.p12"
+    rewritten = tmp_path / "macos.p12"
+    password = "test-p12-password-not-a-secret"
+    if not _export_p12_bag(openssl, key, cert, legacy, password, apple_pbe=True):
+        import pytest
+
+        pytest.skip("openssl pkcs12 SHA1-3DES export unavailable")
+
+    module = _load_rewrite_module()
+    os.environ["IOS_DISTRIBUTION_CERTIFICATE_PASSWORD"] = password
+    try:
+        message = module.rewrite(legacy, rewritten, password)
+    finally:
+        os.environ.pop("IOS_DISTRIBUTION_CERTIFICATE_PASSWORD", None)
+    assert rewritten.is_file()
+    assert rewritten.stat().st_size >= 32
+    assert "macOS-compatible" in message
+
+
+def test_decrypt_p12_retries_legacy_before_fail_closed(tmp_path: Path) -> None:
+    import subprocess
+
+    module = _load_rewrite_module()
+    calls: list[list[str]] = []
+
+    def fake_run(openssl: str, args, env):
+        recorded = list(args)
+        calls.append(recorded)
+        if "-legacy" in recorded:
+            return subprocess.CompletedProcess([openssl, *recorded], 0, "", "")
+        return subprocess.CompletedProcess(
+            [openssl, *recorded], 1, "", "legacy provider required"
+        )
+
+    module._run = fake_run
+    result = module.decrypt_p12("openssl", tmp_path / "in.p12", tmp_path / "out.pem", {})
+    assert result.returncode == 0
+    assert len(calls) == 2
+    assert "-legacy" not in calls[0]
+    assert "-legacy" in calls[1]
+
+
+def test_decrypt_p12_fail_closes_after_both_attempts(tmp_path: Path) -> None:
+    import subprocess
+
+    module = _load_rewrite_module()
+    calls: list[list[str]] = []
+
+    def fake_run(openssl: str, args, env):
+        recorded = list(args)
+        calls.append(recorded)
+        return subprocess.CompletedProcess([openssl, *recorded], 1, "", "mac verify failure")
+
+    module._run = fake_run
+    result = module.decrypt_p12("openssl", tmp_path / "in.p12", tmp_path / "out.pem", {})
+    assert result.returncode == 1
+    assert [("-legacy" in call) for call in calls] == [False, True]
+
+
+def test_rewrite_fail_closes_when_sha1_3des_export_fails(tmp_path: Path) -> None:
+    import subprocess
+
+    module = _load_rewrite_module()
+    src = tmp_path / "src.p12"
+    src.write_bytes(b"\x00" * 64)
+    exports: list[list[str]] = []
+
+    def fake_run(openssl: str, args, env):
+        recorded = list(args)
+        if "-export" in recorded:
+            exports.append(recorded)
+            return subprocess.CompletedProcess(
+                [openssl, *recorded], 1, "", "SHA1-3DES export refused"
+            )
+        pem = Path(recorded[recorded.index("-out") + 1])
+        pem.write_text("-----BEGIN PRIVATE KEY-----\n-----END PRIVATE KEY-----\n")
+        return subprocess.CompletedProcess([openssl, *recorded], 0, "", "")
+
+    module._run = fake_run
+    module.openssl_binaries = lambda: ["/usr/bin/openssl"]
+    try:
+        module.rewrite(src, tmp_path / "dest.p12", "test-p12-password-not-a-secret")
+    except SystemExit as exc:
+        assert "cannot decrypt" in str(exc)
+        assert "SHA1-3DES" in str(exc)
+    else:
+        raise AssertionError("expected SHA1-3DES export failure to fail closed")
+    assert exports
+    for call in exports:
+        assert "PBE-SHA1-3DES" in call
+        assert "SHA1" in call
+    assert not (tmp_path / "dest.p12").exists()
 
 
 def test_usage_strings_match_permissions_doc() -> None:
