@@ -166,20 +166,35 @@ without the P12 **fails closed**. `get_provisioning_profile` (`sigh`) still
 runs when `IOS_PROVISIONING_PROFILE_BASE64` is omitted — that fetches or
 creates the **profile**, not a distribution cert and not an IAP product.
 
-## How signing uses the CI keychain
+## How signing fails closed (run 34903809952)
 
-`setup_ci` creates an ephemeral keychain (`fastlane_tmp_keychain`) and sets
-`MATCH_KEYCHAIN_NAME` / `MATCH_KEYCHAIN_PASSWORD`. The Fastfile imports the
-distribution P12 into **that** keychain (not login), unlocks it, and sets it
-as the default. `import_certificate`'s own env name is `KEYCHAIN_NAME` — not
-`MATCH_KEYCHAIN_NAME` — so the lane passes the setup_ci name and the resolved
-on-disk path (`fastlane_tmp_keychain-db` on modern macOS) explicitly.
+Two separate problems. Do not collapse them.
 
-Fastlane 2.240 logs a failed `security import` (wrong password, or an
-OpenSSL 3 P12 macOS cannot read) and **continues**. The lane therefore
-refuses to call `get_provisioning_profile` until
-`security find-identity -v -p codesigning` shows an Apple Distribution
-identity. That is what fail-closes a silent import.
+**Primary (this run):** `security import` / `SecKeychainItemImport` failed with
+`MAC verification failed during PKCS12 import (wrong password?)`. Fastlane
+2.240 logs that and **continues**. Ops recreates
+`IOS_DISTRIBUTION_CERTIFICATE_P12_*` separately. A Linux OpenSSL 3 bag can
+produce the same MAC error even with the correct password — re-export with
+`-legacy` (steps above). `build-ios.sh` also re-exports `-legacy` on the
+runner; a password that cannot decrypt the bag still fail-closes.
+
+**Follow-on:** because the P12 never landed, `get_provisioning_profile` /
+sigh reported “There are no local code signing identities found” / “Could
+not find a matching code signing identity for type 'AppStore'”. That is
+not the root cause.
+
+**Defense in depth (when the P12 is good):** `setup_ci` creates
+`fastlane_tmp_keychain` and sets `MATCH_KEYCHAIN_NAME` /
+`MATCH_KEYCHAIN_PASSWORD`. `import_certificate`'s own env name is
+`KEYCHAIN_NAME`, not `MATCH_*`. The Fastfile resolves the on-disk
+`fastlane_tmp_keychain-db`, unlocks it, and imports into **that** keychain
+(not login). A successful secret must still hit the same keychain sigh
+and xcodebuild search.
+
+The lane runs `security import` itself **before** Fastlane
+`import_certificate`. A `SecKeychainItemImport` / MAC verification failure
+is the lane error. It does **not** continue to `get_provisioning_profile`
+or `build_app`. It does **not** call `get_certificates`.
 
 A pull request **compile** is designed to go green **without** any of these
 secrets. That is not an upload.

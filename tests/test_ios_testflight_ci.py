@@ -143,6 +143,7 @@ def test_fastfile_imports_p12_into_setup_ci_keychain() -> None:
     code = _without_comments(fastfile)
     assert "prepare_signing_keychain!" in fastfile
     assert "import_distribution_certificate!" in fastfile
+    assert "import_p12_fail_closed!" in fastfile
     assert "assert_codesigning_identity!" in fastfile
     assert "MATCH_KEYCHAIN_NAME" in fastfile
     assert "MATCH_KEYCHAIN_PASSWORD" in fastfile
@@ -150,13 +151,17 @@ def test_fastfile_imports_p12_into_setup_ci_keychain() -> None:
     assert "keychain_path" in code
     assert "find-identity -v -p codesigning" in fastfile
     assert "Apple Distribution" in fastfile
-    # Import and identity check must happen before sigh, using the
-    # setup_ci keychain — not a bare ENV lookup that can be empty.
-    setup_idx = fastfile.index("setup_ci")
-    import_idx = fastfile.index("import_certificate(")
-    identity_idx = fastfile.index("find-identity")
-    sigh_idx = fastfile.index("get_provisioning_profile")
-    assert setup_idx < import_idx < identity_idx < sigh_idx
+    assert "SecKeychainItemImport" in fastfile
+    assert "MAC verification" in fastfile
+    assert "get_provisioning_profile / " in fastfile or "get_provisioning_profile /" in fastfile
+    # security import fail-closed, then import_certificate, then identity,
+    # then sigh — not a bare ENV lookup that can be empty.
+    setup_idx = code.index("setup_ci(")
+    probe_idx = code.index("import_p12_fail_closed!(")
+    import_idx = code.index("import_certificate(")
+    identity_idx = code.index("find-identity")
+    sigh_idx = code.index("get_provisioning_profile(")
+    assert setup_idx < probe_idx < import_idx < identity_idx < sigh_idx
     assert "keychain_name: ENV[\"MATCH_KEYCHAIN_NAME\"]" not in code
 
 
@@ -273,6 +278,10 @@ def test_docs_name_every_secret_and_refuse_a_fake_green_upload() -> None:
     assert "-legacy" in doc
     assert "MAC verification" in doc
     assert "setup_ci" in doc
+    assert "primary" in doc.lower()
+    assert "follow-on" in doc.lower()
+    assert "SecKeychainItemImport" in doc
+    assert "does **not** continue to `get_provisioning_profile`" in doc
 
 
 def test_build_script_rewrites_p12_for_macos() -> None:

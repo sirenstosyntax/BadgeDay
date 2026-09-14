@@ -27,6 +27,8 @@ OPENSSL_CANDIDATES = (
     "/usr/local/opt/openssl@3/bin/openssl",
 )
 
+Proc = subprocess.CompletedProcess[str]
+
 
 def openssl_binaries() -> list[str]:
     found: list[str] = []
@@ -39,7 +41,7 @@ def openssl_binaries() -> list[str]:
     return found
 
 
-def _run(openssl: str, args: Sequence[str], env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+def _run(openssl: str, args: Sequence[str], env: dict[str, str]) -> Proc:
     return subprocess.run(
         [openssl, *args],
         check=False,
@@ -49,7 +51,7 @@ def _run(openssl: str, args: Sequence[str], env: dict[str, str]) -> subprocess.C
     )
 
 
-def decrypt_p12(openssl: str, src: Path, pem: Path, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+def decrypt_p12(openssl: str, src: Path, pem: Path, env: dict[str, str]) -> Proc:
     return _run(
         openssl,
         [
@@ -66,7 +68,14 @@ def decrypt_p12(openssl: str, src: Path, pem: Path, env: dict[str, str]) -> subp
     )
 
 
-def export_p12(openssl: str, pem: Path, dest: Path, env: dict[str, str], *, legacy: bool) -> subprocess.CompletedProcess[str]:
+def export_p12(
+    openssl: str,
+    pem: Path,
+    dest: Path,
+    env: dict[str, str],
+    *,
+    legacy: bool,
+) -> Proc:
     args = [
         "pkcs12",
         "-export",
@@ -107,14 +116,17 @@ def rewrite(src: Path, dest: Path, password: str) -> str:
             pem = Path(tmp) / "bag.pem"
             dumped = decrypt_p12(openssl, src, pem, env)
             if dumped.returncode != 0:
-                last_err = (dumped.stderr or dumped.stdout or "openssl pkcs12 failed").strip()
+                last_err = (dumped.stderr or dumped.stdout or "openssl pkcs12 failed")
+                last_err = last_err.strip()
                 continue
             out = Path(tmp) / "macos.p12"
             exported = export_p12(openssl, pem, out, env, legacy=True)
             if exported.returncode != 0:
                 exported = export_p12(openssl, pem, out, env, legacy=False)
-            if exported.returncode != 0 or not out.is_file() or out.stat().st_size < 32:
-                last_err = (exported.stderr or exported.stdout or "openssl pkcs12 -export failed").strip()
+            too_small = not out.is_file() or out.stat().st_size < 32
+            if exported.returncode != 0 or too_small:
+                last_err = exported.stderr or exported.stdout
+                last_err = (last_err or "openssl pkcs12 -export failed").strip()
                 continue
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(out, dest)
