@@ -20,6 +20,10 @@ BUNDLE_ID = "com.badgeday.app"
 TEAM_ID = "G86W79K99V"
 DISPLAY_NAME = "BadgeDay"
 ENTITLEMENTS_BUILD_PATH = "App/App.entitlements"
+# Capacitor 7's ios-pods-template is 14.0. @capgo/native-purchases
+# (StoreKit 2) requires 15.0. Raise both the Podfile and the pbxproj
+# before `pod install` or CocoaPods refuses the plugin.
+IOS_DEPLOYMENT_TARGET = "15.0"
 ASSOCIATED_DOMAINS = (
     "applinks:badgeday.com",
     "webcredentials:badgeday.com",
@@ -80,6 +84,10 @@ def entitlements_path(app_dir: Path) -> Path:
 
 def pbxproj_path(app_dir: Path) -> Path:
     return app_dir / "App.xcodeproj" / "project.pbxproj"
+
+
+def podfile_path(app_dir: Path) -> Path:
+    return app_dir / "Podfile"
 
 
 def default_marketing_version(shell_dir: Path) -> str:
@@ -149,6 +157,17 @@ def _replace_or_insert_setting(block: str, key: str, value: str) -> str:
     )
 
 
+def patch_podfile(text: str) -> str:
+    if not re.search(r"platform\s+:ios\s*,", text):
+        raise ValueError("Podfile has no platform :ios line")
+    return re.sub(
+        r"platform\s+:ios\s*,\s*['\"][\d.]+['\"]",
+        f"platform :ios, '{IOS_DEPLOYMENT_TARGET}'",
+        text,
+        count=1,
+    )
+
+
 def patch_pbxproj(text: str, marketing_version: str, build_number: str) -> str:
     """Set bundle id / team / entitlements on the App target configs only."""
 
@@ -165,9 +184,17 @@ def patch_pbxproj(text: str, marketing_version: str, build_number: str) -> str:
             block, "CURRENT_PROJECT_VERSION", build_number
         )
         block = _replace_or_insert_setting(block, "MARKETING_VERSION", marketing_version)
+        block = _replace_or_insert_setting(
+            block, "IPHONEOS_DEPLOYMENT_TARGET", IOS_DEPLOYMENT_TARGET
+        )
         return block
 
     patched = re.sub(r"buildSettings = \{[^{}]*\}", repl, text, flags=re.DOTALL)
+    patched = re.sub(
+        r"IPHONEOS_DEPLOYMENT_TARGET = [^;]*;",
+        f"IPHONEOS_DEPLOYMENT_TARGET = {IOS_DEPLOYMENT_TARGET};",
+        patched,
+    )
     if patched.count(f"PRODUCT_BUNDLE_IDENTIFIER = {BUNDLE_ID};") < 1:
         raise ValueError("pbxproj patch did not set PRODUCT_BUNDLE_IDENTIFIER")
     if patched.count(f"DEVELOPMENT_TEAM = {TEAM_ID};") < 1:
@@ -235,6 +262,17 @@ def assert_patched(
         errors.append("pbxproj missing marketing version")
     if f"CURRENT_PROJECT_VERSION = {build_number};" not in pbx:
         errors.append("pbxproj missing build number")
+    if f"IPHONEOS_DEPLOYMENT_TARGET = {IOS_DEPLOYMENT_TARGET};" not in pbx:
+        errors.append("pbxproj missing iOS 15 deployment target")
+    if "IPHONEOS_DEPLOYMENT_TARGET = 14.0;" in pbx:
+        errors.append("pbxproj still has Capacitor template iOS 14.0")
+    podfile = podfile_path(app_dir)
+    if podfile.is_file():
+        pod_text = podfile.read_text(encoding="utf-8")
+        if f"platform :ios, '{IOS_DEPLOYMENT_TARGET}'" not in pod_text:
+            errors.append("Podfile was not raised to iOS 15.0")
+        if "platform :ios, '14.0'" in pod_text:
+            errors.append("Podfile still has Capacitor template iOS 14.0")
     if "com.getcapacitor.App" in pbx:
         errors.append("pbxproj still has the Capacitor template bundle id")
 
@@ -264,6 +302,11 @@ def apply(
         patch_pbxproj(pbx.read_text(encoding="utf-8"), marketing, build),
         encoding="utf-8",
     )
+    podfile = podfile_path(app_dir)
+    if podfile.is_file():
+        podfile.write_text(
+            patch_podfile(podfile.read_text(encoding="utf-8")), encoding="utf-8"
+        )
     copy_store_icon(app_dir, icon_src)
     assert_patched(app_dir, marketing, build)
     return {

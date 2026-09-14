@@ -156,18 +156,38 @@ install_js_deps() {
   )
 }
 
-generate_native_project() {
+add_native_project() {
   (
     cd "$IOS_DIR"
     export LANG="${LANG:-en_US.UTF-8}"
     export LC_ALL="${LC_ALL:-en_US.UTF-8}"
-    if [ ! -f ios/App/App.xcodeproj/project.pbxproj ]; then
-      echo "Generating native iOS project (npx cap add ios --packagemanager Cocoapods)…"
-      # Capacitor 7 defaults to CocoaPods; Capacitor 8 defaults to SPM.
-      # Pin CocoaPods so a lockfile bump cannot silently change the project
-      # shape under Fastlane. Third-party plugins here are pods-first.
-      npx cap add ios --packagemanager Cocoapods
+    if [ -f ios/App/App.xcodeproj/project.pbxproj ]; then
+      exit 0
     fi
+    echo "Generating native iOS project (npx cap add ios --packagemanager Cocoapods)…"
+    # Capacitor 7 defaults to CocoaPods; Capacitor 8 defaults to SPM.
+    # Pin CocoaPods so a lockfile bump cannot silently change the project
+    # shape under Fastlane. Third-party plugins here are pods-first.
+    #
+    # `cap add` copies the template (iOS 14.0) and then runs pod install.
+    # @capgo/native-purchases requires 15.0, so that first pod install
+    # fails. The Xcode project is already on disk; we patch and sync.
+    if npx cap add ios --packagemanager Cocoapods; then
+      exit 0
+    fi
+    if [ ! -f ios/App/App.xcodeproj/project.pbxproj ]; then
+      echo "error: npx cap add ios failed before writing the Xcode project" >&2
+      exit 1
+    fi
+    echo "cap add ios stopped at pod install (template is iOS 14.0). Will raise the deployment target and sync."
+  )
+}
+
+sync_native_project() {
+  (
+    cd "$IOS_DIR"
+    export LANG="${LANG:-en_US.UTF-8}"
+    export LC_ALL="${LC_ALL:-en_US.UTF-8}"
     echo "Syncing Capacitor iOS plugins…"
     npx cap sync ios
   )
@@ -261,8 +281,14 @@ main() {
   assert_shell_guardrails
 
   install_js_deps
-  generate_native_project
+  add_native_project
   patch_native_project
+  sync_native_project
+  patch_native_project
+  if [ -f "$IOS_DIR/ios/App/Podfile" ]; then
+    echo "Reconciling CocoaPods after the iOS 15.0 patch…"
+    (cd "$IOS_DIR/ios/App" && pod install)
+  fi
   python3 "$PATCHER" assert "$IOS_DIR" --build-number "${IOS_BUILD_NUMBER:-${GITHUB_RUN_NUMBER:-1}}" \
     ${IOS_MARKETING_VERSION:+--marketing-version "$IOS_MARKETING_VERSION"}
 

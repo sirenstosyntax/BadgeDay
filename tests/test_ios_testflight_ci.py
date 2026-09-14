@@ -117,6 +117,8 @@ def test_build_script_fails_upload_without_secrets() -> None:
     assert "npx cap add ios" in script
     assert "--packagemanager Cocoapods" in script
     assert "npx cap sync ios" in script
+    assert "failed before writing the Xcode project" in script
+    assert "15.0" in script
     assert "cap add ios" in script
     assert "TWA_KEYSTORE" not in script
 
@@ -164,6 +166,7 @@ def test_patcher_writes_bundle_team_usage_and_associated_domains(tmp_path: Path)
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.getcapacitor.App;
 			};
@@ -172,6 +175,7 @@ def test_patcher_writes_bundle_team_usage_and_associated_domains(tmp_path: Path)
 		P1 /* Project Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				SDKROOT = iphoneos;
 			};
 			name = Debug;
@@ -188,6 +192,7 @@ def test_patcher_writes_bundle_team_usage_and_associated_domains(tmp_path: Path)
     with (native / "App" / "Info.plist").open("wb") as fh:
         plistlib.dump(info, fh)
     (native / "App.xcodeproj" / "project.pbxproj").write_text(pbx, encoding="utf-8")
+    (native / "Podfile").write_text("platform :ios, '14.0'\nuse_frameworks!\n", encoding="utf-8")
     (shell / "package.json").write_text(
         json.dumps({"name": "badgeday-ios", "version": "1.0.0"}),
         encoding="utf-8",
@@ -208,6 +213,10 @@ def test_patcher_writes_bundle_team_usage_and_associated_domains(tmp_path: Path)
     assert "CURRENT_PROJECT_VERSION = 42;" in patched_pbx
     assert "MARKETING_VERSION = 1.0.0;" in patched_pbx
     assert "com.getcapacitor.App" not in patched_pbx
+    assert "IPHONEOS_DEPLOYMENT_TARGET = 15.0;" in patched_pbx
+    assert "IPHONEOS_DEPLOYMENT_TARGET = 14.0;" not in patched_pbx
+    assert "platform :ios, '15.0'" in (native / "Podfile").read_text()
+    assert "platform :ios, '14.0'" not in (native / "Podfile").read_text()
     # Project-level config must not gain a bundle id.
     assert patched_pbx.count("PRODUCT_BUNDLE_IDENTIFIER") == 1
 
@@ -226,6 +235,13 @@ def test_patcher_writes_bundle_team_usage_and_associated_domains(tmp_path: Path)
     assert plist["ITSAppUsesNonExemptEncryption"] is False
     iconset = native / "App" / "Assets.xcassets" / "AppIcon.appiconset"
     assert (iconset / "AppIcon-512@2x.png").is_file()
+
+
+def test_patch_podfile_raises_capacitor_template() -> None:
+    patcher = _patcher()
+    out = patcher.patch_podfile("platform :ios, '14.0'\nuse_frameworks!\n")
+    assert "platform :ios, '15.0'" in out
+    assert "14.0" not in out
 
 
 def test_patcher_rejects_non_numeric_build_numbers() -> None:

@@ -33,6 +33,12 @@ the worse fit here:
 The durable source of truth is the Capacitor shell + the patcher + Fastlane,
 not a generated `project.pbxproj`.
 
+`npx cap add ios` copies Capacitor's iOS 14.0 template and immediately runs
+`pod install`. `@capgo/native-purchases` requires iOS 15.0, so that first
+install fails. The Xcode project is already on disk. The script patches the
+deployment target, then `npx cap sync ios` succeeds. That failure is
+expected and is not an IAP product create.
+
 ## What each run does
 
 | Event | Mode | Secrets missing | Secrets present |
@@ -155,6 +161,8 @@ Things this CI cannot prove, even after a green upload:
 - Dawn Shield `web/public/icons/icon-1024.png` as the 1024 App Icon
 - `ITSAppUsesNonExemptEncryption = false` so TestFlight is not blocked on
   the export-compliance questionnaire
+- iOS deployment target **15.0** (Podfile + pbxproj) so CocoaPods accepts
+  `@capgo/native-purchases`. This is not an IAP product create.
 
 It does not add IAP product identifiers to the binary.
 
