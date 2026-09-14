@@ -126,6 +126,17 @@ def test_build_script_fails_upload_without_secrets() -> None:
     assert "Will not mint a distribution cert" in script
 
 
+def test_fastfile_workspace_path_resolves_from_fastfile_dir() -> None:
+    # Mirror cocoapods_workspace_path: File.expand_path("../#{WORKSPACE}", __dir__)
+    # so gym cannot miss the workspace the way a Dir.pwd-relative check did.
+    fastfile_dir = IOS_DIR / "fastlane"
+    expected = (IOS_DIR / "ios" / "App" / "App.xcworkspace").resolve()
+    resolved = (fastfile_dir / ".." / "ios/App/App.xcworkspace").resolve()
+    assert resolved == expected
+    assert resolved.name == "App.xcworkspace"
+    assert "App.xcodeproj" not in str(resolved)
+
+
 def test_fastfile_archives_cocoapods_workspace_not_xcodeproj() -> None:
     fastfile = FASTFILE.read_text()
     code = _without_comments(fastfile)
