@@ -33,10 +33,11 @@ the worse fit here:
 The durable source of truth is the Capacitor shell + the patcher + Fastlane,
 not a generated `project.pbxproj`.
 
-`npx cap add` / `npx cap sync` pin `--packagemanager Cocoapods`. After
-`pod install`, Capacitor lives in the Pods project. Compile and archive
-must use `ios/App/App.xcworkspace` (absolute path). They must **not**
-fall back to `App.xcodeproj`. Run 34906234215 archived the project
+`npx cap add ios --packagemanager Cocoapods` pins CocoaPods (Capacitor 7
+`cap sync` has no `--packagemanager` flag). After `pod install`, Capacitor
+lives in the Pods project. Compile and archive must use
+`ios/App/App.xcworkspace` (absolute path). They must **not** fall back to
+`App.xcodeproj`. Run 34906234215 archived the project
 (`Target dependency graph (1 target)`), so `import Capacitor` failed.
 The green PR compile path already used the workspace (12 targets).
 Signing / P12 import is a separate path — do not treat a Capacitor

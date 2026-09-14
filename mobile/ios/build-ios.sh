@@ -227,9 +227,9 @@ sync_native_project() {
     export LANG="${LANG:-en_US.UTF-8}"
     export LC_ALL="${LC_ALL:-en_US.UTF-8}"
     echo "Syncing Capacitor iOS plugins…"
-    # Same CocoaPods pin as cap add. Capacitor 8 defaults to SPM; a lockfile
-    # bump must not silently drop the workspace archive needs for Capacitor.
-    npx cap sync ios --packagemanager Cocoapods
+    # Capacitor 7's `cap sync` has no --packagemanager flag (cap add does).
+    # The project was added with CocoaPods; sync updates that Podfile.
+    npx cap sync ios
   )
 }
 

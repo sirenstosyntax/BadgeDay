@@ -162,7 +162,9 @@ def test_build_script_requires_cocoapods_workspace() -> None:
     script = BUILD_SCRIPT.read_text()
     assert "require_cocoapods_workspace" in script
     assert "cocoapods_workspace_ready" in script
-    assert "npx cap sync ios --packagemanager Cocoapods" in script
+    assert "npx cap sync ios" in script
+    assert "npx cap sync ios --packagemanager" not in script
+    assert "cap add ios --packagemanager Cocoapods" in script
     assert "-workspace \"$workspace\"" in script
     assert "run 34906234215" in script
     assert "Podfile missing after cap add/sync" in script
