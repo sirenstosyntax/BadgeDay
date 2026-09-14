@@ -1,6 +1,6 @@
 # BD-iOS-4.2 — Capacitor native capabilities (App Review 4.2)
 
-Status: draft for Zazu / Gyro — START ORDER 2026-09-12
+Status: draft for Zazu / Gyro — START ORDER 2026-09-12. Explicitly-out updated 2026-09-14 for PR 84 Mac CI TestFlight; IAP create HELD.
 Product: BadgeDay iOS Capacitor shell (`mobile/ios`, `appId` `com.badgeday.app`, `server.url` `https://app.badgeday.com`)
 Audience: pre-hire Recruit candidates and serving Promote candidates using the iOS app
 Soft constraint: no real FD names, logos, insignia, apparatus, or facilities; no employer naming (listings, screenshots, copy)
@@ -24,8 +24,8 @@ As a BadgeDay candidate on iOS, I need the Capacitor shell to do work that mobil
 
 ### Explicitly out
 
-- Mac / Xcode archive, signing, provisioning, TestFlight upload, App Store Connect listing submit, screenshot capture for ASC.
-- Compiling the iOS project in CI (no Xcode in the Linux build environment).
+- **Still out:** App Store Connect listing submit / App Review submission, ASC screenshot/listing asset capture, creating IAP products in App Store Connect (HELD — lawyer; do not invent `APPSTORE_PRODUCT_ID_*`), sandbox StoreKit proving until IAP exists.
+- **No longer out (superseded by PR 84):** macOS CI generate-in-CI + archive + TestFlight upload path (`mobile/ios/TESTFLIGHT_CI.md` / the macos-latest workflow). That path is ops+secrets; this native-capabilities spec still owns the web/plugin 4.2 work, not re-implementing the CI workflow.
 - A second product codebase, bundled offline copy of the whole SPA as the primary surface, or forking Promote/Recruit business logic into native Swift screens.
 - Offline **Recruit** oral boards (ASR + critique require network). Recruit remains online-only in V1.
 - Changing Stripe web checkout or Play Digital Goods flows (except shared paywall detection that selects App Store till when running inside Capacitor iOS).
@@ -87,8 +87,8 @@ As a BadgeDay candidate on iOS, I need the Capacitor shell to do work that mobil
 
 ### G. Docs in-repo
 
-28. `mobile/README.md` iOS section is updated so the capability table reads **implemented** (or “landed in web + plugins; archive on Mac”) rather than “none implemented,” without claiming TestFlight or ASC submit.
-29. `mobile_release_plan.md` step 4 (iOS capability set) is updated to point at this spec and mark code-landed vs still-needs-Mac-archive.
+28. `mobile/README.md` iOS section is updated so the capability table reads **implemented** (or “landed in web + plugins”) rather than “none implemented.” Point archive / TestFlight upload at the PR 84 Mac CI path (`mobile/ios/TESTFLIGHT_CI.md` / the macos-latest workflow). Do not claim ASC App Review submit. Capabilities implementation (this spec) and CI archive/upload (PR 84) stay separate.
+29. `mobile_release_plan.md` step 4 (iOS capability set) is updated to point at this spec and mark code-landed vs Mac CI archive / TestFlight (PR 84; ops+secrets). Do not treat generate-in-CI / archive / TestFlight upload as still-needs-a-registered-Mac.
 
 ---
 
@@ -147,7 +147,7 @@ No new server tables. Existing `store_purchases` + entitlements + `APPSTORE_PROD
 - Declared plugins already in `mobile/ios/package.json`: `@capacitor/filesystem`, `@capacitor/camera`, `@capacitor/local-notifications` (and core/app/splash). StoreKit bridge dependency is **not** yet declared — add whatever Gyro chooses that can complete IAP and yield a transaction id for `POST /billing/store/appstore/purchase` (behavior-specified only).
 - Server: `POST /billing/store/appstore/purchase`, `POST /billing/store/appstore/notifications`, `/me` `managed_by`, module mapping for App Store product ids — already built; configuration may still 503 until ops credentials + product ids exist.
 - Promote documents upload + quiz/review APIs — already live on web.
-- Ops (not Gyro alone): create App Store Connect IAP products at amount parity; fill `APPSTORE_*` env on Azure; sandbox Apple ID for proving run (five-step sequence in `mobile_release_plan.md`) — **after** Mac archive, outside this spec’s code slice.
+- Ops (not Gyro alone): create App Store Connect IAP products at amount parity (still **HELD** — lawyer; do not invent `APPSTORE_PRODUCT_ID_*`); fill `APPSTORE_*` env on Azure; sandbox Apple ID for proving run (five-step sequence in `mobile_release_plan.md`). Archive / TestFlight upload is the Mac CI path from PR 84 (`mobile/ios/TESTFLIGHT_CI.md` / macos-latest workflow) — ops+secrets, not a registered Mac and not this spec’s 4.2 web/plugin slice. IAP create remains held/ops after that path exists.
 - Play Production may still be in review; does not block iOS capability landing in repo.
 
 ---
@@ -192,7 +192,7 @@ No requirement to change Python store verification in this slice unless a gap bl
 
 ---
 
-## 10. Test plan (repo-landable; Mac/device later)
+## 10. Test plan (repo-landable; device proving later)
 
 ### Automated / web-testable where possible
 
@@ -201,7 +201,9 @@ No requirement to change Python store verification in this slice unless a gap bl
 - Paywall till selection: iOS shell → appstore path; browser → stripe; TWA → play (existing).
 - Billing client: report App Store purchase posts expected body shape to `/billing/store/appstore/purchase`.
 
-### Manual on Mac + device (out of scope to execute here; required before ASC)
+### Manual on device (out of scope to execute on Linux; required before ASC)
+
+Physical-device proving stays out of this Linux workstream. Archive / TestFlight upload is the Mac CI workflow from PR 84 (`mobile/ios/TESTFLIGHT_CI.md`) when secrets exist — not impossible, and not something this spec re-implements.
 
 - Files pick PDF → appears in reading list.
 - Camera capture path → upload or clear refusal.
@@ -213,6 +215,6 @@ No requirement to change Python store verification in this slice unless a gap bl
 
 ## 11. Gyro hand-off
 
-Implement in priority order A/B → C → D → E. Land in-repo so a later Mac `npx cap sync ios` / archive is mechanical. Do not submit TestFlight from this workstream. Do not invent `APPSTORE_PRODUCT_ID_*` values. Do not resolve account-deletion-with-live-Apple-sub without Grant. Soft constraint on FD identity unchanged.
+Implement in priority order A/B → C → D → E. Land in-repo so the Mac CI generate/sync/archive path (PR 84) stays mechanical. TestFlight upload is that macos-latest workflow (`mobile/ios/TESTFLIGHT_CI.md`), not something Gyro invents ad hoc. IAP product create stays **HELD** (lawyer). Do not invent `APPSTORE_PRODUCT_ID_*` values. Do not resolve account-deletion-with-live-Apple-sub without Grant. Soft constraint on FD identity unchanged.
 
 When notification strings are ready for candidates, route to Red before release copy ships.
