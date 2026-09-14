@@ -49,6 +49,18 @@ def p12_present?
   !path.empty? && File.file?(path)
 end
 
+def require_p12!
+  return if p12_present?
+
+  UI.user_error!(
+    "IOS_DISTRIBUTION_CERTIFICATE_P12_PATH is missing. " \
+    "Upload/archive fail closed until IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64 " \
+    "and IOS_DISTRIBUTION_CERTIFICATE_PASSWORD exist — see " \
+    "mobile/ios/TESTFLIGHT_CI.md. This lane will not call get_certificates " \
+    "on an ephemeral runner (the private key would die with the job)."
+  )
+end
+
 def profile_present?
   path = ENV["IOS_PROVISIONING_PROFILE_PATH"].to_s.strip
   !path.empty? && File.file?(path)
@@ -124,22 +136,16 @@ platform :ios do
     build_number = resolve_build_number(api_key)
     set_build_number!(build_number)
 
-    if p12_present?
-      import_certificate(
-        certificate_path: ENV["IOS_DISTRIBUTION_CERTIFICATE_P12_PATH"],
-        certificate_password: require_env!("IOS_DISTRIBUTION_CERTIFICATE_PASSWORD"),
-        keychain_name: ENV["MATCH_KEYCHAIN_NAME"],
-        keychain_password: ENV["MATCH_KEYCHAIN_PASSWORD"]
-      )
-    else
-      UI.important(
-        "IOS_DISTRIBUTION_CERTIFICATE_P12_PATH is empty. " \
-        "get_certificates will create or reuse an Apple Distribution " \
-        "cert in this runner keychain. Persist the P12 as a GitHub " \
-        "secret after the first success or later runs will mint extra certs."
-      )
-      get_certificates(api_key: api_key)
-    end
+    # Fail closed: never call get_certificates on an ephemeral runner.
+    # A minted cert's private key dies with the job; Apple caps the team
+    # at three distribution certificates.
+    require_p12!
+    import_certificate(
+      certificate_path: ENV["IOS_DISTRIBUTION_CERTIFICATE_P12_PATH"],
+      certificate_password: require_env!("IOS_DISTRIBUTION_CERTIFICATE_PASSWORD"),
+      keychain_name: ENV["MATCH_KEYCHAIN_NAME"],
+      keychain_password: ENV["MATCH_KEYCHAIN_PASSWORD"]
+    )
 
     if profile_present?
       install_provisioning_profile(path: ENV["IOS_PROVISIONING_PROFILE_PATH"])

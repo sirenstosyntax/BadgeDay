@@ -144,7 +144,7 @@ No new server tables. Existing `store_purchases` + entitlements + `APPSTORE_PROD
 ## 6. Dependencies and prerequisites
 
 - Existing Capacitor shell: `mobile/ios/capacitor.config.json` (`appId` `com.badgeday.app`, `server.url` `https://app.badgeday.com`).
-- Declared plugins already in `mobile/ios/package.json`: `@capacitor/filesystem`, `@capacitor/camera`, `@capacitor/local-notifications` (and core/app/splash). StoreKit bridge dependency is **not** yet declared — add whatever Gyro chooses that can complete IAP and yield a transaction id for `POST /billing/store/appstore/purchase` (behavior-specified only).
+- Declared plugins already in `mobile/ios/package.json`: `@capacitor/filesystem`, `@capacitor/camera`, `@capacitor/local-notifications`, `@capgo/native-purchases` (and core/app/splash). StoreKit bridge **is declared** as `@capgo/native-purchases` (PR 79). Still wire purchases → `POST /billing/store/appstore/purchase`. IAP product create remains **HELD**. Do not invent `APPSTORE_PRODUCT_ID_*`.
 - Server: `POST /billing/store/appstore/purchase`, `POST /billing/store/appstore/notifications`, `/me` `managed_by`, module mapping for App Store product ids — already built; configuration may still 503 until ops credentials + product ids exist.
 - Promote documents upload + quiz/review APIs — already live on web.
 - Ops (not Gyro alone): create App Store Connect IAP products at amount parity (still **HELD** — lawyer; do not invent `APPSTORE_PRODUCT_ID_*`); fill `APPSTORE_*` env on Azure; sandbox Apple ID for proving run (five-step sequence in `mobile_release_plan.md`). Archive / TestFlight upload is the Mac CI path from PR 84 (`mobile/ios/TESTFLIGHT_CI.md` / macos-latest workflow) — ops+secrets, not a registered Mac and not this spec’s 4.2 web/plugin slice. IAP create remains held/ops after that path exists.
@@ -175,7 +175,7 @@ No requirement to change Python store verification in this slice unless a gap bl
 ## 8. Cost / risk flags
 
 - **Paid / ops:** App Store Connect IAP creation; Apple fees ~15% SBP; sandbox proving needs a Mac + device.
-- **New dependency:** StoreKit Capacitor plugin (or equivalent) — new native dependency.
+- **StoreKit plugin (declared):** `@capgo/native-purchases` is already in `mobile/ios/package.json`. IAP product create remains **HELD**; do not invent `APPSTORE_PRODUCT_ID_*`. This is not a new plugin choice for Gyro.
 - **Possible schema:** only if exam date is persisted server-side (optional; device-local preferred for V1).
 - **AI / candidate-facing notification copy:** route streak/exam notification strings to Red before shipping wording that reads as coaching.
 - **Open product decision (do not invent):** account deletion while App Store subscription is live (`mobile_release_plan.md`).

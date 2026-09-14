@@ -156,6 +156,14 @@ install_js_deps() {
   )
 }
 
+cap_add_failure_is_expected_pod_refusal() {
+  # Only the Capacitor 14.0 template vs CapgoNativePurchases 15.0
+  # CocoaPods refusal is expected. Presence of pbxproj is not enough.
+  local log="$1"
+  grep -qiE 'CapgoNativePurchases' "$log" \
+    && grep -qiE 'higher minimum deployment target|deployment.target' "$log"
+}
+
 add_native_project() {
   (
     cd "$IOS_DIR"
@@ -164,6 +172,14 @@ add_native_project() {
     if [ -f ios/App/App.xcodeproj/project.pbxproj ]; then
       exit 0
     fi
+    # A CocoaPods cache of ios/App/Pods (or any leftover generate-in-CI
+    # tree) can create ./ios without a pbxproj. Capacitor then refuses
+    # `cap add` with "ios platform already exists." That is not the
+    # CapgoNativePurchases refusal and is not success.
+    if [ -e ios ]; then
+      echo "Removing stale ios/ (no project.pbxproj — leftover or partial CocoaPods cache)."
+      rm -rf ios
+    fi
     echo "Generating native iOS project (npx cap add ios --packagemanager Cocoapods)…"
     # Capacitor 7 defaults to CocoaPods; Capacitor 8 defaults to SPM.
     # Pin CocoaPods so a lockfile bump cannot silently change the project
@@ -171,15 +187,32 @@ add_native_project() {
     #
     # `cap add` copies the template (iOS 14.0) and then runs pod install.
     # @capgo/native-purchases requires 15.0, so that first pod install
-    # fails. The Xcode project is already on disk; we patch and sync.
-    if npx cap add ios --packagemanager Cocoapods; then
+    # fails with a deployment-target / CapgoNativePurchases refusal.
+    # Only that refusal is treated as expected; any other failure is
+    # fatal even if project.pbxproj already exists.
+    cap_add_log="$(mktemp)"
+    set +e
+    npx cap add ios --packagemanager Cocoapods >"$cap_add_log" 2>&1
+    cap_add_status=$?
+    set -e
+    cat "$cap_add_log"
+    if [ "$cap_add_status" -eq 0 ]; then
+      rm -f "$cap_add_log"
       exit 0
     fi
     if [ ! -f ios/App/App.xcodeproj/project.pbxproj ]; then
       echo "error: npx cap add ios failed before writing the Xcode project" >&2
+      rm -f "$cap_add_log"
       exit 1
     fi
-    echo "cap add ios stopped at pod install (template is iOS 14.0). Will raise the deployment target and sync."
+    if cap_add_failure_is_expected_pod_refusal "$cap_add_log"; then
+      echo "cap add ios stopped at pod install (template is iOS 14.0 / CapgoNativePurchases refuses). Will raise the deployment target and sync."
+      rm -f "$cap_add_log"
+      exit 0
+    fi
+    echo "error: npx cap add ios failed for an unexpected reason (not the iOS 14.0 / CapgoNativePurchases deployment-target refusal). Not treating pbxproj presence as success." >&2
+    rm -f "$cap_add_log"
+    exit 1
   )
 }
 
@@ -257,7 +290,7 @@ write_notes() {
     echo "iapProductCreate=held"
     echo "mode=$MODE"
     if [ "$upload_state" = "blocked-until-secrets" ]; then
-      echo "Grant: add APP_STORE_CONNECT_API_KEY_ID, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_API_KEY_P8 as GitHub Actions secrets, then re-run the TestFlight workflow (workflow_dispatch). Persist IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64 and IOS_DISTRIBUTION_CERTIFICATE_PASSWORD after the first signed run. Do not create IAP products. Do not commit secrets."
+      echo "Grant: add APP_STORE_CONNECT_API_KEY_ID, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_API_KEY_P8, IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64, and IOS_DISTRIBUTION_CERTIFICATE_PASSWORD as GitHub Actions secrets, then re-run the TestFlight workflow (workflow_dispatch). Signed upload/archive fail closed until the P12 exists — CI will not mint a distribution cert whose private key dies with the runner. Do not create IAP products. Do not commit secrets."
     fi
   } > "$note"
   echo "Wrote $note"
@@ -316,6 +349,12 @@ main() {
   fi
 
   prepare_signing_files
+  if ! p12_secrets_present || [ ! -f "${IOS_DISTRIBUTION_CERTIFICATE_P12_PATH:-}" ]; then
+    write_notes 0 blocked-until-secrets
+    echo "error: signed archive/upload fail closed until IOS_DISTRIBUTION_CERTIFICATE_P12_BASE64 and IOS_DISTRIBUTION_CERTIFICATE_PASSWORD exist. Will not mint a distribution cert whose private key dies with the runner." >&2
+    echo "Grant: add the two P12 secrets. See mobile/ios/TESTFLIGHT_CI.md." >&2
+    exit 1
+  fi
   if [ "$MODE" = "archive" ]; then
     run_fastlane archive
     write_notes 1 ready
