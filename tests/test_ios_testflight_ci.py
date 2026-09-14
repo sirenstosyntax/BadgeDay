@@ -235,7 +235,7 @@ def test_docs_name_every_secret_and_refuse_a_fake_green_upload() -> None:
     assert TEAM_ID in doc
     assert "fail closed" in doc.lower()
     assert "There is **no** `get_certificates` bootstrap" in doc
-    assert "Geppetto owns the spec rewrite" in doc
+    assert "@capgo/native-purchases" in doc
 
 
 def test_usage_strings_match_permissions_doc() -> None:

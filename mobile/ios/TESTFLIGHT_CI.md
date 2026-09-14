@@ -43,8 +43,9 @@ deployment target). A different `cap add` failure is fatal even if
 `npx cap sync ios` succeeds. That expected refusal is not an IAP product
 create.
 
-The BD-iOS-4.2 spec's "Explicitly out" still lists "Compiling the iOS
-project in CI" — that line is stale after #84; Geppetto owns the spec rewrite.
+The BD-iOS-4.2 spec's "Explicitly out" / Mac CI pointers were corrected in
+#85. StoreKit §6 now matches the landed `@capgo/native-purchases` declare
+(IAP product create stays HELD).
 
 ## What each run does
 

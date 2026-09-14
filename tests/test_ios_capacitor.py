@@ -98,6 +98,16 @@ def test_offline_sync_and_recache_avoid_orphans() -> None:
     assert "reusableOfflineSessionId" in practice
 
 
+def test_bd_ios_42_spec_declares_landed_storekit_plugin() -> None:
+    spec = (ROOT / "specs/badgeday/BD-iOS-4.2-capacitor-native-capabilities.md").read_text()
+    assert "@capgo/native-purchases" in spec
+    assert "StoreKit bridge dependency is **not** yet declared" not in spec
+    assert "add whatever Gyro chooses" not in spec
+    assert "StoreKit Capacitor plugin (or equivalent)" not in spec
+    assert "IAP product create remains **HELD**" in spec
+    assert "Do not invent `APPSTORE_PRODUCT_ID_*`" in spec
+
+
 def test_docs_mark_capabilities_landed_and_testflight_ci_ready() -> None:
     readme = README.read_text()
     plan = PLAN.read_text()
