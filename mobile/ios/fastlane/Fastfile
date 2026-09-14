@@ -127,13 +127,14 @@ def import_p12_fail_closed!(keychain)
   p12 = ENV["IOS_DISTRIBUTION_CERTIFICATE_P12_PATH"]
   password = require_env!("IOS_DISTRIBUTION_CERTIFICATE_PASSWORD")
   keychain_path = signing_keychain_path(keychain)
+  helper = File.expand_path("../import_p12.swift", __dir__)
+  # Apple security(1) `import` has no stdin / fd / env passphrase form.
+  # The only non-GUI option is `-P passphrase` on argv (process list).
+  # import_p12.swift calls SecPKCS12Import; the wrapping password is
+  # stdin only — never `-P` and never a child env var.
   _stdout, stderr, status = Open3.capture3(
-    "security", "import", p12,
-    "-k", keychain_path,
-    "-P", password,
-    "-T", "/usr/bin/codesign",
-    "-T", "/usr/bin/security",
-    "-T", "/usr/bin/productbuild"
+    "swift", helper, p12, keychain_path,
+    stdin_data: password
   )
   err = stderr.to_s.strip
   if status.success? || err.include?("already exists")
@@ -141,7 +142,7 @@ def import_p12_fail_closed!(keychain)
     return
   end
 
-  detail = err.empty? ? "security import exited #{status.exitstatus}" : err
+  detail = err.empty? ? "SecPKCS12Import exited #{status.exitstatus}" : err
   UI.user_error!(
     "SecKeychainItemImport failed — this is the primary signing " \
     "failure, not a missing sigh identity. #{detail} " \
