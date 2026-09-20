@@ -22,6 +22,8 @@ from app.api.deps import CurrentUserDep, DbDep, GatewayDep, ServiceDbDep, Settin
 from app.billing.gateway import WebhookVerificationError
 from app.billing.module import (
     ALREADY_HELD_MESSAGE,
+    NO_PORTAL_FOR_GRANT_MESSAGE,
+    NO_PORTAL_YET_MESSAGE,
     is_module_held,
     module_for_plan,
     module_for_stripe_price,
@@ -130,12 +132,26 @@ def portal(
     gateway: GatewayDep,
     settings: SettingsDep,
 ) -> Redirect:
-    """Open Stripe's billing portal, where the candidate manages or cancels their plan."""
+    """Open Stripe's billing portal, where the candidate manages or cancels their plan.
+
+    Ops grants and one-time passes can leave a candidate entitled with no
+    Stripe customer. The portal has nothing to open then — do not invent a
+    customer, and do not tell someone who already has access to start a plan.
+    """
     customer_id = customer_id_for(db, user.id)
     if not customer_id:
+        promote = entitlement(db, user.id)
+        recruit = module_entitlement(db, user.id, "recruit")
+        held = is_module_held(
+            entitled=promote.entitled,
+            subscription_status=promote.subscription_status,
+        ) or is_module_held(
+            entitled=recruit.entitled,
+            subscription_status=recruit.subscription_status,
+        )
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            "There is no billing account to manage yet. Start a plan first.",
+            NO_PORTAL_FOR_GRANT_MESSAGE if held else NO_PORTAL_YET_MESSAGE,
         )
     url = gateway.open_portal(
         customer_id=customer_id, return_url=f"{settings.public_web_url}/account"

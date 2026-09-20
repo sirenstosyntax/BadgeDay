@@ -24,6 +24,17 @@ HELD_SUBSCRIPTION_STATUSES = frozenset({"active", "past_due"})
 ALREADY_HELD_MESSAGE = (
     "You already have a plan for this. Manage billing from your account."
 )
+# No Stripe customer: a candidate who has never begun checkout, or an
+# ops-granted row (play-reviewer) that never touched Stripe. The first
+# still needs to start a plan; the second already has access and must
+# not be told to start one.
+NO_PORTAL_YET_MESSAGE = (
+    "There is no billing account to manage yet. Start a plan first."
+)
+NO_PORTAL_FOR_GRANT_MESSAGE = (
+    "This access is not billed through a customer portal. "
+    "There is nothing to manage here."
+)
 
 
 def is_module_held(*, entitled: bool, subscription_status: str) -> bool:

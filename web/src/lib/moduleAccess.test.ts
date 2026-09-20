@@ -62,6 +62,7 @@ describe('module entitlement', () => {
 describe('manageable billing', () => {
   it('shows Manage for a Recruit subscriber who has no Promote plan', () => {
     const recruitOnly = account({
+      has_stripe_customer: true,
       recruit: { entitled: true, subscription_status: 'active', access_expires_at: null },
     })
     assert.equal(moduleHasManageableBilling(recruitOnly, 'recruit'), true)
@@ -78,6 +79,7 @@ describe('manageable billing', () => {
     const promoteOnly = account({
       entitled: true,
       subscription_status: 'active',
+      has_stripe_customer: true,
     })
     assert.equal(moduleHasManageableBilling(promoteOnly, 'promote'), true)
     assert.equal(moduleHasManageableBilling(promoteOnly, 'recruit'), false)
@@ -96,11 +98,14 @@ describe('manageable billing', () => {
     })
     assert.equal(moduleManagedBy(playRecruit, 'recruit'), 'play')
     assert.equal(moduleManagedBy(playRecruit, 'promote'), null)
+    assert.equal(moduleHasManageableBilling(playRecruit, 'recruit'), true)
+    assert.equal(anyModuleHasManageableBilling(playRecruit), true)
     assert.equal(headerManageModule(playRecruit, 'other'), 'recruit')
   })
 
   it('lets past_due open Manage instead of a second checkout', () => {
     const pastDue = account({
+      has_stripe_customer: true,
       recruit: {
         entitled: false,
         subscription_status: 'past_due',
@@ -127,6 +132,7 @@ describe('manageable billing', () => {
 
   it('summarizes an active Recruit subscription in plain words', () => {
     const recruitOnly = account({
+      has_stripe_customer: true,
       recruit: { entitled: true, subscription_status: 'active', access_expires_at: null },
     })
     assert.equal(modulePlanSummary(recruitOnly, 'recruit'), 'Active subscription.')
@@ -146,6 +152,28 @@ describe('manageable billing', () => {
     assert.equal(shouldOfferCheckout(passOnly, 'promote'), false)
     assert.match(modulePlanSummary(passOnly, 'promote'), /nothing to cancel/)
     assert.match(modulePlanSummary(passOnly, 'promote'), /One-time pass/)
+  })
+
+  it('does not offer a portal for an ops-granted active plan with no Stripe customer', () => {
+    const opsGranted = account({
+      entitled: true,
+      subscription_status: 'active',
+      has_stripe_customer: false,
+      recruit: {
+        entitled: true,
+        subscription_status: 'active',
+        access_expires_at: null,
+      },
+    })
+    assert.equal(moduleHasManageableBilling(opsGranted, 'promote'), false)
+    assert.equal(moduleHasManageableBilling(opsGranted, 'recruit'), false)
+    assert.equal(anyModuleHasManageableBilling(opsGranted), false)
+    assert.equal(shouldOfferCheckout(opsGranted, 'promote'), false)
+    assert.equal(shouldOfferCheckout(opsGranted, 'recruit'), false)
+    assert.equal(moduleIsPassOnly(opsGranted, 'promote'), false)
+    assert.match(modulePlanSummary(opsGranted, 'promote'), /not billed through a customer portal/)
+    assert.match(modulePlanSummary(opsGranted, 'recruit'), /not billed through a customer portal/)
+    assert.match(modulePlanSummary(opsGranted, 'promote'), /Active access/)
   })
 
   it('does not treat a Recruit pass as Manage billing', () => {

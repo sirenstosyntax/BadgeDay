@@ -9,6 +9,7 @@ import {
   headerManageModule,
   headerSubscribeModule,
   moduleHasManageableBilling,
+  moduleIsPassOnly,
   moduleManagedBy,
   shouldOfferCheckout,
 } from './lib/moduleAccess'
@@ -518,6 +519,7 @@ export default function App() {
           module={paywallModule}
           alreadyEntitled={!shouldOfferCheckout(account, paywallModule)}
           canManageBilling={moduleHasManageableBilling(account, paywallModule)}
+          passOnly={moduleIsPassOnly(account, paywallModule)}
           onManageBilling={() => {
             setShowPaywall(false)
             void manageBilling(paywallModule)

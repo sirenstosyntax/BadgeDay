@@ -62,6 +62,10 @@ export type Account = {
   // Which till took the money, when it was not Stripe. The account screen uses
   // this to send a Play subscriber to Play, not to an empty Stripe portal.
   managed_by?: 'play' | 'appstore' | null
+  // True when the profile has a Stripe customer. Ops grants (play-reviewer)
+  // and store tills can be entitled/active with this false — those accounts
+  // must not be offered the Stripe billing portal.
+  has_stripe_customer?: boolean
   // Play product ids as configured on the server. Empty until Grant names the
   // offer — the client must not invent a substitute.
   play_products?: PlayProducts

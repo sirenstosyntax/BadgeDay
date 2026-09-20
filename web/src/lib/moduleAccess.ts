@@ -62,10 +62,13 @@ export function shouldOfferCheckout(
 
 /**
  * Something to cancel or update on this module: a subscription that is
- * still live (including past_due). A one-time pass grants access but has
- * nothing to cancel — sending that candidate to the Stripe portal is how
- * they land on an empty manage page. A canceled row without access is
- * not managed here either; that candidate sees See plans.
+ * still live (including past_due) *and* a till that can actually open.
+ * A one-time pass grants access but has nothing to cancel. An ops grant
+ * can look like an active subscription with no Stripe customer and no
+ * store till — offering Manage billing there is how they hit the portal
+ * 409 that says "start a plan" while Account says Active. A canceled
+ * row without access is not managed here either; that candidate sees
+ * See plans.
  */
 export function moduleHasManageableBilling(
   account: Account | null,
@@ -73,7 +76,10 @@ export function moduleHasManageableBilling(
 ): boolean {
   if (!account) return false
   const status = moduleSubscriptionStatus(account, module)
-  return status === 'active' || status === 'past_due'
+  if (status !== 'active' && status !== 'past_due') return false
+  const till = moduleManagedBy(account, module)
+  if (till === 'play' || till === 'appstore') return true
+  return Boolean(account.has_stripe_customer)
 }
 
 /** Entitled via a one-time pass — access, but no cancelable subscription. */
@@ -118,7 +124,10 @@ export function modulePlanSummary(
 ): string {
   if (!account) return 'Loading your account…'
   const status = moduleSubscriptionStatus(account, module)
-  if (status === 'active') return 'Active subscription.'
+  if (status === 'active') {
+    if (moduleHasManageableBilling(account, module)) return 'Active subscription.'
+    return 'Active access. This plan is not billed through a customer portal.'
+  }
   if (moduleEntitled(account, module)) {
     const when = moduleExpiresAt(account, module)
     const through = when

@@ -16,6 +16,11 @@ from fastapi.testclient import TestClient
 from app.api.billing import router as billing_router
 from app.api.deps import CurrentUser, current_user, get_gateway, service_db, user_db
 from app.billing.gateway import WebhookVerificationError
+from app.billing.module import (
+    ALREADY_HELD_MESSAGE,
+    NO_PORTAL_FOR_GRANT_MESSAGE,
+    NO_PORTAL_YET_MESSAGE,
+)
 from app.billing.plan import GrantPass, LinkCustomer
 from app.config import Settings, get_settings
 from app.storage.billing import Entitlement
@@ -223,7 +228,7 @@ def test_checkout_refuses_a_module_the_candidate_already_holds(
     )
     response = client.post("/billing/checkout", json={"plan": "recruit_monthly"})
     assert response.status_code == 409
-    assert "already have a plan" in response.json()["detail"]
+    assert response.json()["detail"] == ALREADY_HELD_MESSAGE
     assert gateway.checkouts == []
 
 
@@ -302,12 +307,65 @@ def test_the_portal_opens_for_a_customer(monkeypatch: pytest.MonkeyPatch) -> Non
     assert gateway.portals[0]["customer_id"] == "cus_existing"
 
 
+def test_the_portal_still_opens_for_an_entitled_stripe_subscriber(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, gateway, _ = _harness(
+        monkeypatch,
+        existing_customer="cus_existing",
+        entitled_promote=True,
+        entitled_recruit=True,
+    )
+    response = client.post("/billing/portal")
+    assert response.status_code == 200
+    assert response.json()["url"] == "https://portal.stripe.test/session"
+    assert gateway.portals[0]["customer_id"] == "cus_existing"
+
+
 def test_the_portal_refuses_when_there_is_nothing_to_manage(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client, _, _ = _harness(monkeypatch, existing_customer=None)
     response = client.post("/billing/portal")
     assert response.status_code == 409
+    assert response.json()["detail"] == NO_PORTAL_YET_MESSAGE
+
+
+def test_the_portal_refuses_an_ops_grant_without_telling_them_to_start_a_plan(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Entitled/active with no Stripe customer must not contradict Account."""
+    client, gateway, _ = _harness(
+        monkeypatch,
+        existing_customer=None,
+        entitled_promote=True,
+        entitled_recruit=True,
+    )
+    response = client.post("/billing/portal")
+    assert response.status_code == 409
+    assert response.json()["detail"] == NO_PORTAL_FOR_GRANT_MESSAGE
+    assert "Start a plan first" not in response.json()["detail"]
+    assert gateway.portals == []
+
+
+def test_checkout_already_held_is_unchanged_for_an_ops_grant(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, gateway, _ = _harness(
+        monkeypatch,
+        existing_customer=None,
+        settings=RECRUIT_CONFIGURED,
+        entitled_promote=True,
+        entitled_recruit=True,
+    )
+    promote = client.post("/billing/checkout", json={"plan": "monthly"})
+    recruit = client.post("/billing/checkout", json={"plan": "recruit_monthly"})
+    assert promote.status_code == 409
+    assert recruit.status_code == 409
+    assert promote.json()["detail"] == ALREADY_HELD_MESSAGE
+    assert recruit.json()["detail"] == ALREADY_HELD_MESSAGE
+    assert gateway.checkouts == []
+    assert gateway.ensured == []
 
 
 # --- Webhook -----------------------------------------------------------------
