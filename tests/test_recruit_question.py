@@ -348,7 +348,7 @@ def _milestone_billing(account: dict | None) -> str:
         return "none"
     if recruit.get("managed_by") in ("play", "appstore"):
         return "store"
-    if recruit.get("subscription_status") != "none":
+    if recruit.get("subscription_status") != "none" and account.get("has_stripe_customer"):
         return "stripe"
     return "none"
 
@@ -460,6 +460,7 @@ def test_milestone_billing_omits_pause_for_free_and_skips_stripe_for_store() -> 
             {
                 "entitled": False,
                 "subscription_status": "none",
+                "has_stripe_customer": True,
                 "recruit": {
                     "entitled": True,
                     "subscription_status": "active",
@@ -468,6 +469,20 @@ def test_milestone_billing_omits_pause_for_free_and_skips_stripe_for_store() -> 
             }
         )
         == "stripe"
+    )
+    # Ops grant: Recruit entitled/active, no Stripe customer — no portal CTA.
+    assert (
+        _milestone_billing(
+            {
+                "has_stripe_customer": False,
+                "recruit": {
+                    "entitled": True,
+                    "subscription_status": "active",
+                    "managed_by": None,
+                },
+            }
+        )
+        == "none"
     )
     assert (
         _milestone_billing(
@@ -482,7 +497,7 @@ def test_milestone_billing_omits_pause_for_free_and_skips_stripe_for_store() -> 
         == "store"
     )
     assert "!recruit?.entitled" in copy
-    assert "recruit.subscription_status !== 'none'" in copy
+    assert "recruit.subscription_status !== 'none' && account?.has_stripe_customer" in copy
     assert "recruit.managed_by === 'play'" in copy
     assert "recruit.managed_by === 'appstore'" in copy
     assert "billing !== 'none'" in screen

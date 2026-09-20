@@ -69,6 +69,7 @@ export function Paywall({
   module = 'promote',
   alreadyEntitled = false,
   canManageBilling = false,
+  passOnly = false,
 }: {
   onClose: () => void
   playProducts?: PlayProductIds | null
@@ -78,6 +79,7 @@ export function Paywall({
   module?: PaywallModule
   alreadyEntitled?: boolean
   canManageBilling?: boolean
+  passOnly?: boolean
 }) {
   const [pending, setPending] = useState<Plan | string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -258,7 +260,9 @@ export function Paywall({
           <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
             {canManageBilling
               ? 'This plan is already active. Manage or cancel billing from the billing portal.'
-              : 'This is a one-time pass. Access runs until it expires — there is nothing to cancel.'}
+              : passOnly
+                ? 'This is a one-time pass. Access runs until it expires — there is nothing to cancel.'
+                : 'This plan is already active. It is not billed through a customer portal, so there is nothing to manage here.'}
           </p>
         ) : till === 'play-unlisted' ? (
           <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">

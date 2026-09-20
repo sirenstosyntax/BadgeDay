@@ -6,6 +6,9 @@ swapped here is how a Lieutenant subscription would open the oral board.
 """
 
 from app.billing.module import (
+    ALREADY_HELD_MESSAGE,
+    NO_PORTAL_FOR_GRANT_MESSAGE,
+    NO_PORTAL_YET_MESSAGE,
     is_module_held,
     module_for_store_product,
     module_for_stripe_price,
@@ -13,6 +16,13 @@ from app.billing.module import (
     stripe_price_ids_for,
 )
 from app.config import Settings
+
+
+def test_portal_copy_does_not_contradict_an_ops_grant() -> None:
+    assert "Start a plan first" in NO_PORTAL_YET_MESSAGE
+    assert "Start a plan first" not in NO_PORTAL_FOR_GRANT_MESSAGE
+    assert "not billed through a customer portal" in NO_PORTAL_FOR_GRANT_MESSAGE
+    assert "already have a plan" in ALREADY_HELD_MESSAGE
 
 
 def test_is_module_held_matches_checkout_409() -> None:

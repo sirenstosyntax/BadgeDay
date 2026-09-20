@@ -20,9 +20,11 @@ const MODULES: { module: PaywallModule; name: string }[] = [
  * to be done first.
  *
  * Recruit and Promote are separate modules. Manage billing appears only when
- * there is a live subscription to cancel. A one-time pass shows the expiry
- * and no portal CTA — the portal has nothing to cancel. See plans appears
- * only for a module they do not hold.
+ * there is a live subscription *and* a till that can open (Stripe customer
+ * or Play / App Store). A one-time pass or an ops grant shows the status
+ * and no portal CTA — the portal has nothing to open, and must not say
+ * "start a plan" while the row is Active. See plans appears only for a
+ * module they do not hold.
  */
 export function Account({
   account,

@@ -61,6 +61,10 @@ class Account(Entitlement):
     # Store cannot be cancelled from our billing portal, and offering that candidate a
     # portal button is how a cancellation becomes a chargeback.
     managed_by: str | None = None
+    # True when profiles.stripe_customer_id is set. Ops grants and store
+    # tills can leave a candidate entitled with no Stripe customer — the
+    # account screen uses this so it does not offer a portal that 409s.
+    has_stripe_customer: bool = False
     play_products: PlayProducts
     appstore_products: PlayProducts
     recruit: RecruitModule
@@ -80,6 +84,7 @@ def me(user: CurrentUserDep, db: DbDep, settings: SettingsDep) -> Account:
         id=user.id,
         email=user.email,
         managed_by=store.platform if store else None,
+        has_stripe_customer=bool(customer_id_for(db, user.id)),
         play_products=PlayProducts(
             monthly=settings.play_product_id_monthly or None,
             intensive_90day=settings.play_product_id_intensive_90day or None,

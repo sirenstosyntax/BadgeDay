@@ -41,7 +41,9 @@ export function milestoneBilling(account: Account | null): MilestoneBilling {
   const recruit = account?.recruit
   if (!recruit?.entitled) return 'none'
   if (recruit.managed_by === 'play' || recruit.managed_by === 'appstore') return 'store'
-  if (recruit.subscription_status !== 'none') return 'stripe'
+  if (recruit.subscription_status !== 'none' && account?.has_stripe_customer) {
+    return 'stripe'
+  }
   return 'none'
 }
 

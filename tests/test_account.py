@@ -48,6 +48,7 @@ def _client(
     recruit: ModuleEntitlement | None = None,
     recruit_store: ManagedElsewhere | None = None,
     settings: Settings | None = None,
+    stripe_customer_id: str | None = None,
 ) -> TestClient:
     configured = settings or Settings()
     app = FastAPI()
@@ -74,6 +75,9 @@ def _client(
         return None
 
     monkeypatch.setattr("app.api.account.managed_elsewhere_for", _managed)
+    monkeypatch.setattr(
+        "app.api.account.customer_id_for", lambda *_: stripe_customer_id
+    )
     return TestClient(app)
 
 
@@ -102,6 +106,7 @@ def test_me_reports_the_entitlement_verdict(monkeypatch: pytest.MonkeyPatch) -> 
         "recruit_6month": None,
         "recruit_annual": None,
     }
+    assert body["has_stripe_customer"] is False
 
 
 def test_me_carries_the_candidates_identity(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -134,8 +139,28 @@ def test_a_stripe_candidate_is_not_reported_as_managed_by_a_store(
     client = _client(
         monkeypatch,
         Entitlement(entitled=True, subscription_status="active", access_expires_at=None),
+        stripe_customer_id="cus_existing",
     )
-    assert client.get("/me").json()["managed_by"] is None
+    body = client.get("/me").json()
+    assert body["managed_by"] is None
+    assert body["has_stripe_customer"] is True
+
+
+def test_an_ops_grant_is_reported_without_a_stripe_customer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """play-reviewer is entitled/active with no Stripe row. The UI must see that."""
+    client = _client(
+        monkeypatch,
+        Entitlement(entitled=True, subscription_status="active", access_expires_at=None),
+        recruit=_recruit(entitled=True, subscription_status="active"),
+    )
+    body = client.get("/me").json()
+    assert body["entitled"] is True
+    assert body["recruit"]["entitled"] is True
+    assert body["has_stripe_customer"] is False
+    assert body["managed_by"] is None
+    assert body["recruit"]["managed_by"] is None
 
 
 def test_a_store_subscription_is_reported_so_the_app_can_send_them_to_the_right_place(
