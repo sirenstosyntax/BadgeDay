@@ -27,20 +27,25 @@ from pydantic import BaseModel
 
 from app.api.deps import CurrentUserDep, DbDep, ServiceDbDep, SettingsDep, StoreGatewayDep
 from app.billing.module import (
-    ALREADY_HELD_MESSAGE,
     Module,
+    already_held_message,
     is_module_held,
     module_for_store_product,
     pass_days_for_store_product,
+    store_product_ids_for,
 )
 from app.billing.play_gateway import persist_then_acknowledge
 from app.billing.recruit_plan import recruit_entitlement_from_store
 from app.billing.store import PurchaseFacts, store_changes
 from app.billing.store_gateway import StoreNotConfigured, StoreVerificationError
 from app.config import Settings
-from app.storage.billing import entitlement
+from app.storage.billing import customer_id_for, entitlement
 from app.storage.entitlements import apply_entitlement, module_entitlement
-from app.storage.store import apply_store_change, user_id_for_purchase
+from app.storage.store import (
+    apply_store_change,
+    managed_elsewhere_for,
+    user_id_for_purchase,
+)
 
 router = APIRouter(tags=["billing"])
 
@@ -209,7 +214,16 @@ def _refuse_if_module_held(
     already = user_id_for_purchase(service, facts.platform, facts.purchase_identifier)
     if already == user_id:
         return
-    raise HTTPException(status.HTTP_409_CONFLICT, ALREADY_HELD_MESSAGE)
+    store = managed_elsewhere_for(
+        db, user_id, product_ids=store_product_ids_for(settings, module)
+    )
+    raise HTTPException(
+        status.HTTP_409_CONFLICT,
+        already_held_message(
+            has_stripe_customer=bool(customer_id_for(db, user_id)),
+            has_store_till=store is not None,
+        ),
+    )
 
 
 def _held_for(db, user_id: str, module: Module):
