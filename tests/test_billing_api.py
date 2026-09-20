@@ -18,6 +18,7 @@ from app.api.deps import CurrentUser, current_user, get_gateway, service_db, use
 from app.billing.gateway import WebhookVerificationError
 from app.billing.module import (
     ALREADY_HELD_MESSAGE,
+    ALREADY_HELD_NO_PORTAL_MESSAGE,
     NO_PORTAL_FOR_GRANT_MESSAGE,
     NO_PORTAL_YET_MESSAGE,
 )
@@ -74,6 +75,7 @@ def _harness(
     applied: list = []
 
     monkeypatch.setattr("app.api.billing.customer_id_for", lambda *_: existing_customer)
+    monkeypatch.setattr("app.api.billing.managed_elsewhere_for", lambda *_a, **_k: None)
     monkeypatch.setattr("app.api.billing.apply_change", lambda _db, change: applied.append(change))
     monkeypatch.setattr(
         "app.api.billing.apply_entitlement", lambda _db, change: applied.append(change)
@@ -229,6 +231,7 @@ def test_checkout_refuses_a_module_the_candidate_already_holds(
     response = client.post("/billing/checkout", json={"plan": "recruit_monthly"})
     assert response.status_code == 409
     assert response.json()["detail"] == ALREADY_HELD_MESSAGE
+    assert "Manage billing" in response.json()["detail"]
     assert gateway.checkouts == []
 
 
@@ -348,12 +351,53 @@ def test_the_portal_refuses_an_ops_grant_without_telling_them_to_start_a_plan(
     assert gateway.portals == []
 
 
-def test_checkout_already_held_is_unchanged_for_an_ops_grant(
+def test_checkout_already_held_does_not_point_an_ops_grant_at_manage_billing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Entitled/active, no Stripe customer, no store till — Account has no portal CTA."""
+    client, gateway, _ = _harness(
+        monkeypatch,
+        existing_customer=None,
+        settings=RECRUIT_CONFIGURED,
+        entitled_promote=True,
+        entitled_recruit=True,
+    )
+    promote = client.post("/billing/checkout", json={"plan": "monthly"})
+    recruit = client.post("/billing/checkout", json={"plan": "recruit_monthly"})
+    assert promote.status_code == 409
+    assert recruit.status_code == 409
+    assert promote.json()["detail"] == ALREADY_HELD_NO_PORTAL_MESSAGE
+    assert recruit.json()["detail"] == ALREADY_HELD_NO_PORTAL_MESSAGE
+    assert "Manage billing" not in promote.json()["detail"]
+    assert "Manage billing" not in recruit.json()["detail"]
+    assert gateway.checkouts == []
+    assert gateway.ensured == []
+
+
+def test_checkout_already_held_points_a_store_till_at_manage_billing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Play / App Store still have Manage billing on Account — keep pointing there."""
+    client, gateway, _ = _harness(
+        monkeypatch,
+        existing_customer=None,
+        settings=RECRUIT_CONFIGURED,
+        entitled_recruit=True,
+    )
+    monkeypatch.setattr("app.api.billing.managed_elsewhere_for", lambda *_a, **_k: object())
+    response = client.post("/billing/checkout", json={"plan": "recruit_monthly"})
+    assert response.status_code == 409
+    assert response.json()["detail"] == ALREADY_HELD_MESSAGE
+    assert gateway.checkouts == []
+    assert gateway.ensured == []
+
+
+def test_checkout_already_held_still_points_a_stripe_subscriber_at_manage_billing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client, gateway, _ = _harness(
         monkeypatch,
-        existing_customer=None,
+        existing_customer="cus_existing",
         settings=RECRUIT_CONFIGURED,
         entitled_promote=True,
         entitled_recruit=True,

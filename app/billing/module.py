@@ -24,6 +24,11 @@ HELD_SUBSCRIPTION_STATUSES = frozenset({"active", "past_due"})
 ALREADY_HELD_MESSAGE = (
     "You already have a plan for this. Manage billing from your account."
 )
+# Ops grant / pass: entitled with no Stripe customer and no store till.
+# Account no longer offers Manage billing — do not point them at it.
+ALREADY_HELD_NO_PORTAL_MESSAGE = (
+    "You already have access to this. Your account shows the current status."
+)
 # No Stripe customer: a candidate who has never begun checkout, or an
 # ops-granted row (play-reviewer) that never touched Stripe. The first
 # still needs to start a plan; the second already has access and must
@@ -35,6 +40,19 @@ NO_PORTAL_FOR_GRANT_MESSAGE = (
     "This access is not billed through a customer portal. "
     "There is nothing to manage here."
 )
+
+
+def already_held_message(
+    *, has_stripe_customer: bool, has_store_till: bool = False
+) -> str:
+    """409 body when a second charge is refused.
+
+    Stripe subscribers and store tills still have a Manage billing control.
+    An ops grant has neither — Account shows status only.
+    """
+    if has_stripe_customer or has_store_till:
+        return ALREADY_HELD_MESSAGE
+    return ALREADY_HELD_NO_PORTAL_MESSAGE
 
 
 def is_module_held(*, entitled: bool, subscription_status: str) -> bool:
