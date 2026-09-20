@@ -21,6 +21,7 @@ from app.api.deps import (
     user_db,
 )
 from app.api.store import router as store_router
+from app.billing.module import ALREADY_HELD_MESSAGE, ALREADY_HELD_NO_PORTAL_MESSAGE
 from app.billing.store import PurchaseFacts, RecordPurchase
 from app.billing.store_gateway import StoreNotConfigured, StoreVerificationError
 from app.config import Settings
@@ -97,6 +98,8 @@ def _harness(
     promote_status: str | None = None,
     recruit_status: str | None = None,
     known_purchase_user: str | None = None,
+    stripe_customer_id: str | None = None,
+    store_till: object | None = None,
     **settings: object,
 ):
     """Returns a client and the list of changes that reached the database."""
@@ -126,6 +129,12 @@ def _harness(
     monkeypatch.setattr(
         "app.api.store.user_id_for_purchase",
         lambda *_: known_purchase_user,
+    )
+    monkeypatch.setattr(
+        "app.api.store.customer_id_for", lambda *_: stripe_customer_id
+    )
+    monkeypatch.setattr(
+        "app.api.store.managed_elsewhere_for", lambda *_a, **_k: store_till
     )
     # Mapped Promote SKUs so a confirmed store purchase can write. Tests that
     # need a blank or Recruit mapping pass their own IDs; an unmapped product
@@ -335,7 +344,8 @@ def test_play_purchase_refuses_a_module_the_candidate_already_holds(
     )
 
     assert response.status_code == 409
-    assert "already have a plan" in response.json()["detail"]
+    assert response.json()["detail"] == ALREADY_HELD_NO_PORTAL_MESSAGE
+    assert "Manage billing" not in response.json()["detail"]
     assert written == []
     assert gateway.acks == []
 
@@ -369,6 +379,51 @@ def test_play_purchase_refuses_promote_when_promote_is_already_held(
     )
 
     assert response.status_code == 409
+    assert response.json()["detail"] == ALREADY_HELD_NO_PORTAL_MESSAGE
+    assert written == []
+    assert gateway.acks == []
+
+
+def test_play_purchase_already_held_points_a_stripe_subscriber_at_manage_billing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gateway = _AcknowledgingGateway()
+    client, written = _harness(
+        monkeypatch,
+        gateway,
+        entitled_recruit=True,
+        stripe_customer_id="cus_existing",
+        play_product_id_recruit_monthly="badgeday.recruit.monthly",
+    )
+    response = client.post(
+        "/billing/store/play/purchase",
+        json={"purchase_token": "token-new", "product_id": "badgeday.recruit.monthly"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == ALREADY_HELD_MESSAGE
+    assert written == []
+    assert gateway.acks == []
+
+
+def test_play_purchase_already_held_points_a_store_till_at_manage_billing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gateway = _AcknowledgingGateway()
+    client, written = _harness(
+        monkeypatch,
+        gateway,
+        entitled_recruit=True,
+        store_till=object(),
+        play_product_id_recruit_monthly="badgeday.recruit.monthly",
+    )
+    response = client.post(
+        "/billing/store/play/purchase",
+        json={"purchase_token": "token-new", "product_id": "badgeday.recruit.monthly"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == ALREADY_HELD_MESSAGE
     assert written == []
     assert gateway.acks == []
 
@@ -390,6 +445,7 @@ def test_play_purchase_refuses_past_due_instead_of_a_second_charge(
     )
 
     assert response.status_code == 409
+    assert response.json()["detail"] == ALREADY_HELD_NO_PORTAL_MESSAGE
     assert written == []
     assert gateway.acks == []
 
@@ -424,7 +480,26 @@ def test_appstore_purchase_refuses_a_module_the_candidate_already_holds(
     )
 
     assert response.status_code == 409
-    assert "already have a plan" in response.json()["detail"]
+    assert response.json()["detail"] == ALREADY_HELD_NO_PORTAL_MESSAGE
+    assert "Manage billing" not in response.json()["detail"]
+    assert written == []
+
+
+def test_appstore_purchase_already_held_points_a_stripe_subscriber_at_manage_billing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, written = _harness(
+        monkeypatch,
+        _ConfirmingGateway(),
+        entitled_promote=True,
+        stripe_customer_id="cus_existing",
+    )
+    response = client.post(
+        "/billing/store/appstore/purchase", json={"transaction_id": "2000000012345678"}
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == ALREADY_HELD_MESSAGE
     assert written == []
 
 
