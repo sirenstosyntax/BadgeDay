@@ -7,8 +7,10 @@ swapped here is how a Lieutenant subscription would open the oral board.
 
 from app.billing.module import (
     ALREADY_HELD_MESSAGE,
+    ALREADY_HELD_NO_PORTAL_MESSAGE,
     NO_PORTAL_FOR_GRANT_MESSAGE,
     NO_PORTAL_YET_MESSAGE,
+    already_held_message,
     is_module_held,
     module_for_store_product,
     module_for_stripe_price,
@@ -23,6 +25,22 @@ def test_portal_copy_does_not_contradict_an_ops_grant() -> None:
     assert "Start a plan first" not in NO_PORTAL_FOR_GRANT_MESSAGE
     assert "not billed through a customer portal" in NO_PORTAL_FOR_GRANT_MESSAGE
     assert "already have a plan" in ALREADY_HELD_MESSAGE
+    assert "Manage billing" in ALREADY_HELD_MESSAGE
+    assert "Manage billing" not in ALREADY_HELD_NO_PORTAL_MESSAGE
+    assert "already have access" in ALREADY_HELD_NO_PORTAL_MESSAGE
+
+
+def test_already_held_copy_depends_on_whether_billing_can_be_managed() -> None:
+    assert already_held_message(has_stripe_customer=True) == ALREADY_HELD_MESSAGE
+    assert already_held_message(has_stripe_customer=False) == ALREADY_HELD_NO_PORTAL_MESSAGE
+    assert (
+        already_held_message(has_stripe_customer=False, has_store_till=True)
+        == ALREADY_HELD_MESSAGE
+    )
+    assert (
+        already_held_message(has_stripe_customer=False, has_store_till=False)
+        == ALREADY_HELD_NO_PORTAL_MESSAGE
+    )
 
 
 def test_is_module_held_matches_checkout_409() -> None:
