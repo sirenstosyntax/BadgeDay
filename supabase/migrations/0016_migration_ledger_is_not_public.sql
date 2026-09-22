@@ -19,6 +19,13 @@
 --
 -- The revokes are the second lock. A policy added later does not reopen the
 -- table to the publishable key unless someone also restores the privilege.
+--
+-- 0011_recruit_critique_jobs.sql is not this gap. The live ledger checksum
+-- matches the file in the repo. That file has no CREATE TABLE and no
+-- ENABLE or DISABLE ROW LEVEL SECURITY. It alters recruit_attempts and jobs,
+-- replaces the security_invoker view dead_jobs, and adds policies on
+-- storage.objects for the private recruit-audio bucket. Those two tables
+-- already have RLS from 0009 and 0001. Project tqunuflbtoiqyflnecmu.
 
 create table if not exists public.schema_migrations (
   filename text primary key,
