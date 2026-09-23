@@ -8,7 +8,12 @@ without pulling in a migration framework before the schema has settled.
     python scripts/apply_migrations.py --mark-applied 0001_initial_schema.sql
 
 Each file runs inside a transaction, so a migration that fails partway leaves nothing
-behind. Applied filenames are recorded in schema_migrations.
+behind. Applied filenames are recorded in schema_migrations. That ledger lives in
+public, so the statements below enable row-level security and revoke the
+client roles. Supabase would otherwise expose it through PostgREST on the
+publishable key. The runner uses the direct database connection as the table
+owner, which bypasses RLS. Migration 0016 repeats the lock for a database
+whose ledger was created by an older copy of this script.
 
 `--mark-applied` records a migration as run without running it. It exists for schema
 applied out of band — pasted into the Supabase SQL editor before this script had
@@ -33,6 +38,12 @@ create table if not exists public.schema_migrations (
   checksum text not null,
   applied_at timestamptz not null default now()
 );
+
+alter table public.schema_migrations enable row level security;
+
+revoke all on table public.schema_migrations from public;
+revoke all on table public.schema_migrations from anon;
+revoke all on table public.schema_migrations from authenticated;
 """
 
 
