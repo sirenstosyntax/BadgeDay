@@ -18,8 +18,11 @@ Each store makes you do different work for that:
     Authorization header that must be verified against Google's keys AND checked for the
     audience and service account we configured. The notification body then carries only a
     purchase token — the paid-through date and the account token require a Play Developer
-    API call (`purchases.subscriptionsv2.get`, or `purchases.products.get` for a pass)
-    authenticated with a service account holding the "View financial data" grant.
+    API call (`purchases.subscriptionsv2.get`, or `purchases.products.get` for a pass).
+    Production makes that call through the keyless Cloud Run verifier
+    (`PLAY_VERIFY_BASE_URL`), because project sirens-to-syntax-play blocks service-account
+    key creation. A JSON key (`PLAY_SERVICE_ACCOUNT_JSON`) is still accepted where one
+    already exists. Either way the caller must hold the "View financial data" grant.
   * **Apple.** The POST body is a JWS whose payload is itself two nested JWS blobs. Each
     must be verified against the x5c certificate chain, up to Apple's root CA, with the
     chain's validity actually checked rather than the leaf simply read. `expiresDate` and
@@ -181,13 +184,14 @@ def build_store_gateway(settings) -> StoreGateways:
     """Assemble whichever stores are configured and constructible.
 
     Construction is where a bad credential shows up — an unparseable service-account JSON,
-    an empty root-certificate list — and it must not take the application down at import
+    a non-https verifier URL, an empty root-certificate list — and it must not take the
+    application down at import
     time. A store that will not construct is recorded as unavailable with its reason, which
     is the same outcome as never having configured it and is visibly different in the logs.
     """
     play = None
     play_error = "Google Play billing is not configured."
-    if settings.play_configured:
+    if settings.play_purchase_configured:
         try:
             from app.billing.play_gateway import PlayGateway
 

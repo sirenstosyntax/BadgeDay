@@ -126,9 +126,13 @@ To wire Play Billing:
    those amounts. Product ids must match Console exactly.
 2. Set `PLAY_PACKAGE_NAME=com.badgeday.app` and `PLAY_PRODUCT_ID_*` on the
    Azure app (names only in `.env.example`).
-3. Wire Play Developer API + RTDN as in `mobile_release_plan.md` before taking
-   a real purchase. Until those credentials exist, `/billing/store/play/*`
-   correctly answers 503.
+3. Wire verification through the keyless Cloud Run service in
+   `deploy/play-verify/README.md`. Do **not** create a JSON key —
+   `PLAY_SERVICE_ACCOUNT_JSON` stays empty. Until `PLAY_VERIFY_BASE_URL`,
+   `PLAY_VERIFY_SHARED_SECRET`, and `PLAY_PACKAGE_NAME` are set on Azure,
+   `/billing/store/play/purchase` answers 503, grants nothing, and does not
+   acknowledge. RTDN (renewals and refunds) also needs the Pub/Sub settings
+   in that README.
 4. The TWA paywall shows a Play buy path only after `/me` returns those ids
    **and** Digital Goods `getDetails` recognises them. No id, no buy button.
 

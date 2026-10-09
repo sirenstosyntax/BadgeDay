@@ -37,5 +37,8 @@ def ready(settings: SettingsDep) -> dict[str, object]:
             "supabase": bool(settings.supabase_url and settings.supabase_service_role_key),
             "stripe": settings.stripe_configured,
             "transcription": settings.transcription_configured,
+            # Booleans only. Never the verifier URL, the shared secret, or a key.
+            "play_purchase": settings.play_purchase_configured,
+            "play_rtdn": settings.play_configured,
         },
     }

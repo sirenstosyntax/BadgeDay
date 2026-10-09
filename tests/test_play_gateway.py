@@ -24,7 +24,7 @@ from app.billing.play_gateway import (
     acknowledge_already_done,
     persist_then_acknowledge,
 )
-from app.billing.store_gateway import StoreVerificationError
+from app.billing.store_gateway import StoreNotConfigured, StoreVerificationError
 from app.config import Settings
 
 # Test-only product ids. Not PLAY_PRODUCT_ID_* values and not a price.
@@ -309,6 +309,109 @@ def test_already_acknowledged_from_play_is_not_raised() -> None:
 
     assert persisted == [facts]
     assert len(publisher.acks) == 1
+
+
+def _keyless_gateway():
+    gateway = PlayGateway(
+        Settings(
+            play_package_name="com.badgeday.app",
+            play_verify_base_url="https://verify.example.test",
+            play_verify_shared_secret="secret",
+            play_service_account_json="{not-json",
+            play_product_id_monthly=_SUBSCRIPTION_ID,
+        )
+    )
+    calls: list[str] = []
+
+    def call(payload: dict) -> dict:
+        calls.append(payload["op"])
+        if payload["op"] == "subscription.get":
+            return {
+                "subscriptionState": "SUBSCRIPTION_STATE_ACTIVE",
+                "lineItems": [{"expiryTime": "2026-10-31T12:00:00Z"}],
+                "externalAccountIdentifiers": {},
+            }
+        if payload["op"] == "product.get":
+            return {"purchaseState": 0}
+        return {"acknowledged": True}
+
+    assert gateway._proxy is not None
+    assert gateway._key_info is None
+    gateway._proxy._call = call  # type: ignore[method-assign]
+    return gateway, calls
+
+
+def test_keyless_verify_does_not_parse_a_json_key_and_acks_after_persist() -> None:
+    gateway, calls = _keyless_gateway()
+    persisted: list[object] = []
+
+    facts = gateway.verify_play_purchase(
+        purchase_token=_TOKEN, product_id=_SUBSCRIPTION_ID, user_id=_USER
+    )
+    assert calls == ["subscription.get"]
+    assert facts.state == "purchased"
+
+    persist_then_acknowledge(gateway, facts, lambda: persisted.append(facts))
+
+    assert persisted == [facts]
+    assert calls == ["subscription.get", "subscription.acknowledge"]
+
+
+def test_keyless_notification_state_wins_over_the_lookup() -> None:
+    """A revocation and an expiry look the same in subscriptionsv2.get."""
+    gateway, calls = _keyless_gateway()
+    facts = gateway._subscription_facts(
+        _TOKEN, _SUBSCRIPTION_ID, user_id=None, state="revoked"
+    )
+    assert facts.state == "revoked"
+    assert calls == ["subscription.get"]
+
+
+def test_keyless_verifier_outage_is_not_a_rejected_purchase() -> None:
+    """A down verifier is 503, not 402. 402 would tell the buyer Google refused them."""
+    gateway, calls = _keyless_gateway()
+
+    def down(payload: dict) -> dict:
+        calls.append(payload["op"])
+        raise StoreNotConfigured("Play verifier is unavailable (503)")
+
+    assert gateway._proxy is not None
+    gateway._proxy._call = down  # type: ignore[method-assign]
+    with pytest.raises(StoreNotConfigured):
+        gateway.verify_play_purchase(
+            purchase_token=_TOKEN, product_id=_SUBSCRIPTION_ID, user_id=_USER
+        )
+    assert calls == ["subscription.get"]
+
+
+def test_keyless_lookup_failure_does_not_acknowledge() -> None:
+    gateway, calls = _keyless_gateway()
+
+    def boom(payload: dict) -> dict:
+        calls.append(payload["op"])
+        raise StoreVerificationError("Play would not confirm the purchase (400)")
+
+    assert gateway._proxy is not None
+    gateway._proxy._call = boom  # type: ignore[method-assign]
+    with pytest.raises(StoreVerificationError):
+        gateway.verify_play_purchase(
+            purchase_token=_TOKEN, product_id=_SUBSCRIPTION_ID, user_id=_USER
+        )
+    assert calls == ["subscription.get"]
+
+
+def test_keyless_persist_failure_does_not_acknowledge() -> None:
+    gateway, calls = _keyless_gateway()
+    facts = gateway.verify_play_purchase(
+        purchase_token=_TOKEN, product_id=_SUBSCRIPTION_ID, user_id=_USER
+    )
+
+    def boom() -> None:
+        raise RuntimeError("store_purchases write failed")
+
+    with pytest.raises(RuntimeError):
+        persist_then_acknowledge(gateway, facts, boom)
+    assert calls == ["subscription.get"]
 
 
 def test_anything_that_is_not_an_envelope_is_a_verification_failure() -> None:

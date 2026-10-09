@@ -91,6 +91,61 @@ def test_a_store_that_failed_to_start_says_why() -> None:
         gateway.read_appstore_notification(payload=b"{}")
 
 
+def test_play_is_not_configured_without_a_credential() -> None:
+    """A package name alone must not open the purchase path."""
+    settings = _settings(play_package_name="com.badgeday.app")
+    assert settings.play_purchase_configured is False
+    assert settings.play_configured is False
+    gateway = build_store_gateway(settings)
+    with pytest.raises(StoreNotConfigured):
+        gateway.verify_play_purchase(purchase_token="t", product_id="p", user_id="u")
+
+
+def test_a_verifier_url_without_the_shared_secret_stays_closed() -> None:
+    settings = _settings(
+        play_package_name="com.badgeday.app",
+        play_verify_base_url="https://verify.example.test",
+    )
+    assert settings.play_purchase_configured is False
+
+
+def test_keyless_settings_open_purchases_without_a_json_key_or_pubsub() -> None:
+    """The purchase the app just made does not wait on real-time notifications."""
+    settings = _settings(
+        play_package_name="com.badgeday.app",
+        play_verify_base_url="https://verify.example.test",
+        play_verify_shared_secret="secret",
+        play_service_account_json="{",
+    )
+    assert settings.play_purchase_configured is True
+    assert settings.play_configured is False
+    gateway = build_store_gateway(settings)
+    assert gateway._play._key_info is None
+    assert gateway._play._proxy is not None
+
+
+def test_keyless_real_time_notifications_still_need_the_pubsub_names() -> None:
+    settings = _settings(
+        play_package_name="com.badgeday.app",
+        play_verify_base_url="https://verify.example.test",
+        play_verify_shared_secret="secret",
+        play_pubsub_audience="https://app.badgeday.com/billing/store/play/notifications",
+        play_pubsub_service_account="badgeday-play@sirens-to-syntax-play.iam.gserviceaccount.com",
+    )
+    assert settings.play_configured is True
+
+
+def test_a_cleartext_verifier_url_fails_to_start() -> None:
+    settings = _settings(
+        play_package_name="com.badgeday.app",
+        play_verify_base_url="http://verify.example.test",
+        play_verify_shared_secret="secret",
+    )
+    gateway = build_store_gateway(settings)
+    with pytest.raises(StoreNotConfigured, match="https"):
+        gateway.verify_play_purchase(purchase_token="t", product_id="p", user_id="u")
+
+
 def test_apple_is_not_considered_configured_without_its_root_certificates() -> None:
     """Credentials without roots is a verifier that rejects every real notification.
 

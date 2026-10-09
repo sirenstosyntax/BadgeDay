@@ -60,7 +60,7 @@ select = ["E", "F", "I", "UP", "B"]
 "app/recruit/bank_data.py" = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "tests"]
+known-first-party = ["app", "play_verify", "tests"]
 # `supabase/` at the repo root holds the SQL migrations, not a Python package. Ruff
 # infers first-party names from top-level directories, so without this it files the
 # Supabase SDK alongside our own imports and then fights the fix on every run.
