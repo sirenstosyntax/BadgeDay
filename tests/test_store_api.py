@@ -538,6 +538,37 @@ def test_store_notifications_still_apply_when_the_module_is_held(
 # --- The store reporting it ---------------------------------------------------
 
 
+def test_keyless_purchase_settings_do_not_open_notifications_without_pubsub(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A verifier URL unlocks the purchase path. It does not trust anonymous POSTs."""
+    client, written = _harness(
+        monkeypatch,
+        _ConfirmingGateway(),
+        play_package_name="com.badgeday.app",
+        play_verify_base_url="https://verify.example.test",
+        play_verify_shared_secret="secret",
+    )
+    assert client.post("/billing/store/play/notifications", content=b"{}").status_code == 503
+    assert written == []
+
+
+def test_keyless_pubsub_settings_accept_a_verified_notification(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, written = _harness(
+        monkeypatch,
+        _ConfirmingGateway(),
+        play_package_name="com.badgeday.app",
+        play_verify_base_url="https://verify.example.test",
+        play_verify_shared_secret="secret",
+        play_pubsub_audience="https://app.badgeday.com/billing/store/play/notifications",
+        play_pubsub_service_account="badgeday-play@sirens-to-syntax-play.iam.gserviceaccount.com",
+    )
+    assert client.post("/billing/store/play/notifications", content=b"{}").status_code == 200
+    assert written == []
+
+
 def test_notifications_are_refused_until_the_store_is_configured(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

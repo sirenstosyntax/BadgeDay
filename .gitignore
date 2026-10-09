@@ -1,6 +1,7 @@
 # Secrets
 .env
 .env.local
+deploy/play-verify/shared-secret.txt
 
 # Python
 __pycache__/

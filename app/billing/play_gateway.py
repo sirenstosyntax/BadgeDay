@@ -19,7 +19,12 @@ the difference (type 12 versus type 13) and the lookup does not. Since a revocat
 end access immediately while an expiry lets the paid-through date stand, the notification's
 verdict is kept and the lookup is used only for the facts it alone has.
 
-Push-token verification and a live Developer API call still need a service account.
+Push-token verification uses Google's public OIDC keys plus the audience and service
+account email we configured. It does not need a JSON key. The Developer API call does
+need a credential: either a service-account JSON key, or the keyless Cloud Run verifier
+in deploy/play-verify/ (metadata-server identity; project sirens-to-syntax-play blocks
+key creation). The keyless verifier is preferred when both are set.
+
 The lookup-then-persist-then-acknowledge order is unit-tested against a fake
 publisher in test_play_gateway.py. The mapping those facts feed is tested in
 test_store_plan.py.
@@ -33,8 +38,9 @@ import re
 from collections.abc import Callable
 from datetime import UTC, datetime
 
+from app.billing.play_proxy import KeylessProxyPlayClient
 from app.billing.store import PurchaseFacts, StoreState
-from app.billing.store_gateway import StoreVerificationError
+from app.billing.store_gateway import StoreNotConfigured, StoreVerificationError
 from app.billing.store_payloads import parse_play_notification
 from app.config import Settings
 
@@ -63,15 +69,36 @@ _SUBSCRIPTION_STATE: dict[str, StoreState | None] = {
 
 
 class PlayGateway:
-    """StoreGateway, backed by Google Play. Constructed only when `play_configured`."""
+    """StoreGateway, backed by Google Play. Constructed only when a purchase can be verified."""
 
     def __init__(self, settings: Settings) -> None:
         self._package = settings.play_package_name
         self._audience = settings.play_pubsub_audience
         self._service_account = settings.play_pubsub_service_account
         self._subscription_products = settings.subscription_product_ids
-        self._key_info = json.loads(settings.play_service_account_json)
+        self._proxy: KeylessProxyPlayClient | None = None
+        self._key_info = None
         self._client = None
+        # Keyless wins. A JSON key cannot be created under the Play project's org
+        # policy, and a stale key must not shadow the verifier that can actually
+        # call Google.
+        if settings.play_keyless_configured:
+            self._proxy = KeylessProxyPlayClient(
+                settings.play_verify_base_url,
+                settings.play_verify_shared_secret,
+            )
+            if settings.play_service_account_json.strip():
+                logger.info(
+                    "Play billing is using the keyless verifier; "
+                    "PLAY_SERVICE_ACCOUNT_JSON is set and will not be used"
+                )
+            else:
+                logger.info("Play billing is using the keyless verifier")
+        elif settings.play_service_account_json.strip():
+            self._key_info = json.loads(settings.play_service_account_json)
+            logger.info("Play billing is using a service account JSON key")
+        else:
+            raise ValueError("Play billing has no API credentials")
 
     # --- Play Developer API ---------------------------------------------------
 
@@ -91,6 +118,8 @@ class PlayGateway:
 
     def _look_up_subscription(self, purchase_token: str) -> dict:
         try:
+            if self._proxy is not None:
+                return self._proxy.get_subscription(purchase_token)
             return (
                 self._androidpublisher()
                 .purchases()
@@ -98,6 +127,8 @@ class PlayGateway:
                 .get(packageName=self._package, token=purchase_token)
                 .execute()
             )
+        except (StoreVerificationError, StoreNotConfigured):
+            raise
         except Exception as exc:
             # Deliberately broad. googleapiclient raises HttpError for a token Google does
             # not recognise and a spread of transport errors otherwise, and the caller's
@@ -106,6 +137,8 @@ class PlayGateway:
 
     def _look_up_product(self, purchase_token: str, product_id: str) -> dict:
         try:
+            if self._proxy is not None:
+                return self._proxy.get_product(purchase_token, product_id)
             return (
                 self._androidpublisher()
                 .purchases()
@@ -113,6 +146,8 @@ class PlayGateway:
                 .get(packageName=self._package, productId=product_id, token=purchase_token)
                 .execute()
             )
+        except (StoreVerificationError, StoreNotConfigured):
+            raise
         except Exception as exc:
             raise StoreVerificationError(f"Play would not confirm the purchase: {exc}") from exc
 
@@ -265,6 +300,11 @@ class PlayGateway:
         them like the purchase failed. Already-acknowledged is success.
         """
         try:
+            if self._proxy is not None:
+                self._proxy.acknowledge(
+                    product_id, purchase_token, subscription=subscription
+                )
+                return
             publisher = self._androidpublisher()
             if subscription:
                 (

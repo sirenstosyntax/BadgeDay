@@ -145,13 +145,21 @@ class Settings(BaseSettings):
     play_product_id_recruit_intensive_90day: str = ""
     play_product_id_recruit_6month: str = ""
     play_product_id_recruit_annual: str = ""
-    # The service account that may read purchase state from the Play Developer API, as the
-    # JSON key file's contents. A purchase token means nothing without this call — the
-    # notification carries no expiry date.
+    # Legacy Play Developer API credential: the JSON key file's contents. The GCP
+    # project sirens-to-syntax-play blocks service-account key creation, so production
+    # leaves this empty and uses the keyless verifier below. A non-empty value is still
+    # accepted where a key already exists (tests, a project that allows keys).
     play_service_account_json: str = ""
+    # Keyless verifier. BadgeDay posts purchase tokens to a Cloud Run service that
+    # calls the Play Developer API as its runtime service account (metadata server,
+    # no JSON key). Both must be set. The URL is not a secret; the shared secret is.
+    # See deploy/play-verify/README.md.
+    play_verify_base_url: str = ""
+    play_verify_shared_secret: str = ""
     # The Pub/Sub push subscription's expected audience and service account. Both are
     # checked on the OIDC token every notification carries; without them, any POST to the
-    # notification URL would be believed.
+    # notification URL would be believed. They are names, not keys. Renewals and refunds
+    # need them. The purchase the app just made does not.
     play_pubsub_audience: str = ""
     play_pubsub_service_account: str = ""
     # Play Console reviewer sign-in. Empty means the path is off — no public
@@ -187,12 +195,36 @@ class Settings(BaseSettings):
     appstore_environment: Literal["sandbox", "production"] = "sandbox"
 
     @property
+    def play_keyless_configured(self) -> bool:
+        """True when the Cloud Run verifier can be called. No JSON key involved."""
+        return bool(self.play_verify_base_url.strip() and self.play_verify_shared_secret.strip())
+
+    @property
+    def play_api_configured(self) -> bool:
+        """True when some credential can call the Play Developer API.
+
+        The keyless verifier wins when it is set, including over a JSON key the
+        org policy means we should not be creating. A whitespace-only key is
+        not a credential.
+        """
+        return bool(self.play_service_account_json.strip()) or self.play_keyless_configured
+
+    @property
+    def play_purchase_configured(self) -> bool:
+        """True when an app-reported purchase can be verified and acknowledged."""
+        return bool(self.play_package_name.strip() and self.play_api_configured)
+
+    @property
     def play_configured(self) -> bool:
+        """True when real-time developer notifications can be verified too.
+
+        Pub/Sub audience and service-account email are checked on every push.
+        They are not required to unlock the purchase the app just reported.
+        """
         return bool(
-            self.play_package_name
-            and self.play_service_account_json
-            and self.play_pubsub_audience
-            and self.play_pubsub_service_account
+            self.play_purchase_configured
+            and self.play_pubsub_audience.strip()
+            and self.play_pubsub_service_account.strip()
         )
 
     @property

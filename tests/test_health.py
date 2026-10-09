@@ -23,8 +23,12 @@ def test_ready_reports_each_dependency() -> None:
         "supabase",
         "stripe",
         "transcription",
+        "play_purchase",
+        "play_rtdn",
     }
     assert isinstance(configured["transcription"], bool)
+    assert isinstance(configured["play_purchase"], bool)
+    assert isinstance(configured["play_rtdn"], bool)
     dumped = json.dumps(response.json())
     assert "api_key" not in dumped
     assert "sk-" not in dumped

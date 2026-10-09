@@ -143,13 +143,20 @@ An unconfigured or failed-to-start store refuses on its own behalf and the endpo
 ### What is still needed to switch each one on
 
 **Google Play**
-1. A service account with the *View financial data* grant, linked to the Play Console.
-   `PLAY_SERVICE_ACCOUNT_JSON` is the whole key file.
+1. Do **not** create a service-account JSON key. Project `sirens-to-syntax-play`
+   blocks key creation (`iam.managed.disableServiceAccountKeyCreation`), which is
+   why `PLAY_SERVICE_ACCOUNT_JSON` stays empty. Verification and acknowledgement
+   go through the keyless Cloud Run service in `deploy/play-verify/`. The runtime
+   service account still needs *View financial data* and *Manage orders and
+   subscriptions* on `com.badgeday.app` only. Setup, including the two Play Console
+   clicks, is `deploy/play-verify/README.md`.
 2. A Cloud Pub/Sub topic, and a **push** subscription pointed at
    `/billing/store/play/notifications`. Set `PLAY_PUBSUB_AUDIENCE` to that URL and
    `PLAY_PUBSUB_SERVICE_ACCOUNT` to the account the subscription pushes as — both are
    checked on every notification, and without them a signature check proves only that
-   *some* Google account signed the token.
+   *some* Google account signed the token. These are names, not a key. The deploy
+   script creates the topic and the push subscription. The purchase the app just
+   reported can unlock without them; renewals and refunds cannot.
 3. The RTDN topic named in Play Console under *Monetisation setup*.
 
 **Apple**
@@ -207,8 +214,10 @@ Nothing below is code.
 **Both developer accounts already exist** (confirmed 2026-08-16), which removes what would
 otherwise have been the longest lead time on this list.
 
-1. **Generate the credentials** for each store, per "What is still needed to switch each one
-   on" above. This is the only thing standing between the code and a working purchase.
+1. **Play does not get a JSON key.** Follow `deploy/play-verify/README.md`: one
+   deploy command, then two Play Console clicks (invite the service account, select
+   the RTDN topic). Apple still needs the App Store Connect API key in that same
+   section above. Neither is done by this repository's Azure deploy.
 2. **Decide the two open questions above** — deletion-with-a-live-store-subscription, and
    store pricing.
 3. **Create the in-app products** in both consoles once pricing is decided, and put their ids
@@ -253,8 +262,9 @@ every test written here.
    is generated and compiled by the **TestFlight** `macos-latest` workflow
    (`mobile/ios/TESTFLIGHT_CI.md`); this Linux container still has no Xcode, and
    no IPA has been uploaded from this repo yet. IAP product create stays held.
-3. ~~The two gateway implementations.~~ **Written, never run against a store.** Now blocked
-   only on the credentials in Grant's step 2.
+3. ~~The two gateway implementations.~~ **Written, never run against a store.** Play
+   is blocked on the keyless verifier in `deploy/play-verify/` (no JSON key) plus
+   the Play Console invite. Apple is still blocked on its API key.
 4. The iOS capability set that clears 4.2 — upload from Files and camera, offline
    Promote practice, local notifications, StoreKit wiring. **Code-landed** against
    `specs/badgeday/BD-iOS-4.2-capacitor-native-capabilities.md` (web + Capacitor
