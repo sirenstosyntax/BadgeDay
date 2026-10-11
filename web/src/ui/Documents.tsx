@@ -148,8 +148,8 @@ export function Documents({
         <div>
           <h2 className="text-lg font-semibold">Your reading list</h2>
           <p className="text-sm text-stone-600 dark:text-stone-400">
-            Upload the documents your exam announcement lists. Questions come from those
-            documents and cite them.
+            Upload the department policies and SOPs your exam covers. Questions come from
+            those documents and cite them.
           </p>
           <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
             Upload your department’s own policies and SOPs that you’re allowed to use. Don’t
@@ -231,7 +231,7 @@ export function Documents({
 
       {documents.length === 0 ? (
         <p className="rounded-lg border border-dashed border-stone-300 p-8 text-center text-sm text-stone-500 dark:border-stone-700">
-          Nothing uploaded yet. Start with one SOG from your announcement.
+          Nothing uploaded yet. Start with one of your department’s policies or SOPs.
         </p>
       ) : (
         <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 dark:divide-stone-800 dark:border-stone-800">

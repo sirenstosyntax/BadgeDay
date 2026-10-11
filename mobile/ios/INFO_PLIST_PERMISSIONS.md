@@ -12,7 +12,7 @@ Photos path the UI does not offer.
 
 | Key | String |
 |---|---|
-| `NSCameraUsageDescription` | BadgeDay uses the camera so you can photograph a page from your promotional reading list and upload it for cited practice questions. |
+| `NSCameraUsageDescription` | BadgeDay uses the camera so you can photograph a page of your department's policies or SOPs and upload it for cited practice questions. |
 | `NSPhotoLibraryUsageDescription` | BadgeDay does not read your photo library. Scan page uses the camera only. This string exists only if the camera plugin requires the key. |
 | `NSPhotoLibraryAddUsageDescription` | BadgeDay does not save photos to your library. This string exists only if a plugin requires the key. |
 | `NSMicrophoneUsageDescription` | BadgeDay records your spoken oral-board answer so it can be transcribed and critiqued. Recordings are discarded unless you keep them for self-review. |

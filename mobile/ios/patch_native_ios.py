@@ -31,8 +31,8 @@ ASSOCIATED_DOMAINS = (
 # Exact strings from INFO_PLIST_PERMISSIONS.md. Do not invent department names.
 USAGE_STRINGS = {
     "NSCameraUsageDescription": (
-        "BadgeDay uses the camera so you can photograph a page from your "
-        "promotional reading list and upload it for cited practice questions."
+        "BadgeDay uses the camera so you can photograph a page of your "
+        "department's policies or SOPs and upload it for cited practice questions."
     ),
     "NSPhotoLibraryUsageDescription": (
         "BadgeDay does not read your photo library. Scan page uses the camera "
