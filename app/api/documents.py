@@ -41,7 +41,7 @@ def upload_document(
     if file.content_type not in CONTENT_TYPES:
         raise HTTPException(
             status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            "Upload a PDF or a Word document — that is what a reading list comes as.",
+            "Upload a PDF or a Word document — department policies and SOPs come as those files.",
         )
 
     # Read one byte past the ceiling: enough to know the limit was exceeded, without

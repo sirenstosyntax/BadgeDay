@@ -23,7 +23,7 @@ logging.basicConfig(level=settings.log_level)
 
 app = FastAPI(
     title="BadgeDay",
-    description="Cited practice questions from your department's promotional reading list.",
+    description="Cited practice questions from your department's policies and SOPs.",
     version="0.1.0",
 )
 

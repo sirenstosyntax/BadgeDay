@@ -79,7 +79,7 @@ def test_privacy_strings_are_documented_for_mac_sync() -> None:
     assert "NSCameraUsageDescription" in text
     assert "NSPhotoLibraryUsageDescription" in text
     assert "NSMicrophoneUsageDescription" in text
-    assert "reading list" in text.lower()
+    assert "department's policies or sops" in text.lower()
     assert "oral-board" in text.lower() or "oral board" in text.lower()
     assert "does not read your photo library" in text.lower()
     assert "camera only" in text.lower()

@@ -13,7 +13,7 @@ export const DOCX_MIME =
 
 /** Same 415 the API returns — shown before upload when a capture cannot be wrapped. */
 export const READING_LIST_TYPE_LIMIT =
-  'Upload a PDF or a Word document — that is what a reading list comes as.'
+  'Upload a PDF or a Word document — department policies and SOPs come as those files.'
 
 export const IOS_SETTINGS_ACCESS =
   'Allow access in iOS Settings → BadgeDay, then try again. You can still add a PDF or Word file from Files.'
