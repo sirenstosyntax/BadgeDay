@@ -151,6 +151,11 @@ export function Documents({
             Upload the documents your exam announcement lists. Questions come from those
             documents and cite them.
           </p>
+          <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
+            Upload your department’s own policies and SOPs that you’re allowed to use. Don’t
+            upload textbooks or other copyrighted books, or anything with patient or personnel
+            information.
+          </p>
         </div>
         {entitled && iosShell ? (
           <div className="flex shrink-0 flex-wrap justify-end gap-2">

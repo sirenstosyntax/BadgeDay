@@ -132,7 +132,7 @@ export function SignIn() {
           BadgeDay
         </h1>
         <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-          Practice the oral board out loud, or study questions from your reading list.
+          Practice the oral board out loud, or study questions from your department's SOPs.
         </p>
 
         <div className="mt-8 space-y-4">
