@@ -15,7 +15,7 @@ export function Choose({ onOralBoard, onReadingList }: ChooseProps) {
         real board.
       </p>
       <p className="text-sm text-stone-600 dark:text-stone-400">
-        Reading list: add the material you’re testing on. The practice questions come from that.
+        Reading list: add your department’s policies and SOPs. The practice questions come from that.
       </p>
       <div className="flex flex-wrap gap-2">
         <button
