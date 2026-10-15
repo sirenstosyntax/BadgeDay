@@ -36,6 +36,7 @@ class PaymentGateway(Protocol):
         success_url: str,
         cancel_url: str,
         metadata: dict[str, str] | None = None,
+        allow_promotion_codes: bool = False,
     ) -> str:
         """Create a checkout session and return the URL to send the candidate to."""
         ...
@@ -89,6 +90,7 @@ class StripeGateway:
         success_url: str,
         cancel_url: str,
         metadata: dict[str, str] | None = None,
+        allow_promotion_codes: bool = False,
     ) -> str:
         session_metadata = {key: value for key, value in (metadata or {}).items() if value}
         params: dict[str, object] = {
@@ -105,6 +107,8 @@ class StripeGateway:
             # same ids onto the subscription so later renewals still map to a module.
             if mode == "subscription":
                 params["subscription_data"] = {"metadata": session_metadata}
+        if allow_promotion_codes:
+            params["allow_promotion_codes"] = True
         session = self._client.checkout.sessions.create(params=params)
         if session.url is None:
             raise RuntimeError("Stripe returned a checkout session without a URL.")

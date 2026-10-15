@@ -206,6 +206,26 @@ def test_recruit_pass_checkout_is_a_one_time_payment(
     assert gateway.checkouts[0]["price_id"] == "price_recruit_6mo"
 
 
+def test_recruit_checkout_allows_promotion_codes_only_when_the_flag_is_set(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    off, gateway, _ = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
+    response = off.post("/billing/checkout", json={"plan": "recruit_intensive_90day"})
+    assert response.status_code == 200
+    assert gateway.checkouts[0]["allow_promotion_codes"] is False
+
+    on_settings = RECRUIT_CONFIGURED.model_copy(update={"stripe_allow_promotion_codes": True})
+    on, on_gateway, _ = _harness(monkeypatch, settings=on_settings)
+    response = on.post("/billing/checkout", json={"plan": "recruit_intensive_90day"})
+    assert response.status_code == 200
+    assert on_gateway.checkouts[0]["allow_promotion_codes"] is True
+
+    promote, promote_gateway, _ = _harness(monkeypatch, settings=on_settings)
+    response = promote.post("/billing/checkout", json={"plan": "monthly"})
+    assert response.status_code == 200
+    assert promote_gateway.checkouts[0]["allow_promotion_codes"] is False
+
+
 def test_promote_checkout_is_unchanged_when_recruit_prices_are_also_set(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

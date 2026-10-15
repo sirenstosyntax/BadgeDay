@@ -33,6 +33,7 @@ from app.billing.module import (
 from app.billing.plan import (
     CHECKOUT_MODE,
     PROMOTE_PLANS,
+    RECRUIT_PLANS,
     LinkCustomer,
     Plan,
     plan_changes,
@@ -132,6 +133,9 @@ def checkout(
         success_url=f"{settings.public_web_url}/?checkout=success",
         cancel_url=f"{settings.public_web_url}/?checkout=cancelled",
         metadata={"plan": body.plan, "price_id": price_id, "user_id": user.id},
+        allow_promotion_codes=(
+            settings.stripe_allow_promotion_codes and body.plan in RECRUIT_PLANS
+        ),
     )
     return Redirect(url=url)
 
