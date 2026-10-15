@@ -19,6 +19,7 @@ from app.billing.module import (
 from app.billing.plan import (
     LinkCustomer,
     Plan,
+    checkout_session_entitles,
     stripe_price_id_from_event,
 )
 from app.billing.store import PurchaseFacts, status_for
@@ -140,10 +141,11 @@ def _from_checkout(
         LinkCustomer(user_id=resolved_user, customer_id=customer_id)
     ]
 
-    paid = session.get("payment_status") == "paid"
+    payment = session.get("payment_status")
+    settled = checkout_session_entitles(session)
     complete = session.get("status") == "complete"
 
-    if session.get("mode") == "payment" and paid:
+    if session.get("mode") == "payment" and settled:
         days = pass_days_for_plan(settings, plan)
         if days:
             changes.append(
@@ -157,7 +159,11 @@ def _from_checkout(
     # Promote still waits on subscription.* for monthly access. Recruit must
     # not: production paid monthly linked the customer and left entitlements
     # empty when those events were missing or unordered.
-    if session.get("mode") == "subscription" and (paid or complete):
+    # A coupon finishes as paid (partial) or no_payment_required (100% off).
+    # status complete with no payment_status still entitles: that is how a
+    # paid monthly was recovered when payment_status was absent. unpaid does
+    # not, even when the session status is complete.
+    if session.get("mode") == "subscription" and payment != "unpaid" and (settled or complete):
         changes.append(
             SetModuleSubscription(
                 user_id=resolved_user, module="recruit", status="active"

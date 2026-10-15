@@ -95,6 +95,29 @@ class GrantPass(BaseModel):
 Change = LinkCustomer | SetSubscription | GrantPass
 
 
+def checkout_session_entitles(session: dict) -> bool:
+    """Whether a checkout.session.completed should grant the purchased access.
+
+    Full price and a partial discount both arrive as payment_status ``paid``.
+    A 100% promotion completes with ``no_payment_required``, and only once
+    ``status`` is ``complete``. ``unpaid`` is an async method that has not
+    cleared, so it does not grant access even when status is complete.
+    A paid session that omits status still grants: the event type is already
+    checkout.session.completed.
+    """
+    payment = session.get("payment_status")
+    status = session.get("status")
+    if payment == "unpaid":
+        return False
+    if status not in (None, "complete"):
+        return False
+    if payment == "paid":
+        return True
+    if payment == "no_payment_required":
+        return status == "complete"
+    return False
+
+
 def _subscription_status(stripe_status: str) -> str:
     # An unknown status is treated as no access rather than passed through: a value Stripe
     # adds later must not silently grant entitlement, and it cannot be written to the column
@@ -180,7 +203,7 @@ def _from_checkout(session: dict, *, pass_days: int, now: datetime) -> list[Chan
 
     # A one-time pass is mode 'payment'; a subscription's access arrives later on its own
     # subscription.* events, so a subscription checkout only links the customer here.
-    if session.get("mode") == "payment" and session.get("payment_status") == "paid":
+    if session.get("mode") == "payment" and checkout_session_entitles(session):
         changes.append(
             GrantPass(customer_id=customer_id, expires_at=now + timedelta(days=pass_days))
         )
