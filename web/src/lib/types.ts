@@ -76,6 +76,10 @@ export type Account = {
   // signal that opens further practice. Oral-board milestone billing reads
   // this nest, never the Promote fields above.
   recruit?: RecruitModule
+  // True until the free oral board has released notes. /start uses it.
+  free_board_open?: boolean
+  signup_src?: string | null
+  recruit_test_on?: string | null
 }
 
 /** Named offers. Amounts live in Stripe / Play — never hardcoded here. */

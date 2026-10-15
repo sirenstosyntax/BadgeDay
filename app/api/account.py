@@ -12,7 +12,7 @@ the worst outcome here, so a failure to reach Stripe aborts the whole delete rat
 pressing on.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from app.api.deps import CurrentUserDep, DbDep, GatewayDep, ServiceDbDep, SettingsDep
 from app.billing.module import store_product_ids_for
 from app.storage.account import purge_account
+from app.storage.activation import read_activation_public
 from app.storage.billing import Entitlement, customer_id_for, entitlement
 from app.storage.entitlements import module_entitlement
 from app.storage.store import managed_elsewhere_for
@@ -68,6 +69,10 @@ class Account(Entitlement):
     play_products: PlayProducts
     appstore_products: PlayProducts
     recruit: RecruitModule
+    # /start uses this. True until the free board (released notes) is used.
+    free_board_open: bool = True
+    signup_src: str | None = None
+    recruit_test_on: date | None = None
 
 
 @router.get("/me")
@@ -80,6 +85,7 @@ def me(user: CurrentUserDep, db: DbDep, settings: SettingsDep) -> Account:
     recruit_store = managed_elsewhere_for(
         db, user.id, product_ids=store_product_ids_for(settings, "recruit")
     )
+    activation = read_activation_public(db, settings)
     return Account(
         id=user.id,
         email=user.email,
@@ -111,6 +117,9 @@ def me(user: CurrentUserDep, db: DbDep, settings: SettingsDep) -> Account:
             access_expires_at=recruit_state.access_expires_at,
             managed_by=recruit_store.platform if recruit_store else None,
         ),
+        free_board_open=activation.free_board_open,
+        signup_src=activation.signup_src,
+        recruit_test_on=activation.recruit_test_on,
         **state.model_dump(),
     )
 

@@ -109,12 +109,23 @@ def _give_up(db: Client, job: Job, detail: str) -> None:
         )
 
 
+def _sweep_followup(db: Client, settings: Settings) -> None:
+    """Results and reminder mail. Not a jobs-table kind — it scans profiles."""
+    try:
+        from app.storage.activation import run_followup
+
+        run_followup(db, settings)
+    except Exception:
+        logger.exception("recruit follow-up sweep failed")
+
+
 def run_forever(db: Client, settings: Settings, worker: str) -> None:
     last_sweep = 0.0
     while True:
         now = time.monotonic()
         if now - last_sweep > STALE_SWEEP_EVERY:
             requeue_stale(db)
+            _sweep_followup(db, settings)
             last_sweep = now
 
         if not run_one(db, settings, worker):
@@ -145,6 +156,7 @@ def main() -> int:
 
     if args.once:
         requeue_stale(db)
+        _sweep_followup(db, settings)
         drained = 0
         while run_one(db, settings, worker):
             drained += 1

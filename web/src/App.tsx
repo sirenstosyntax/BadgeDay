@@ -1,6 +1,18 @@
 import { useEffect, useState } from 'react'
 import { ApiError, api } from './lib/api'
 import { useAccount } from './lib/account'
+import {
+  activationEntry,
+  clearPendingEntry,
+  clearSignupSrc,
+  normalizePath,
+  pathFor,
+  readPendingEntry,
+  readSignupSrc,
+  rememberPendingEntry,
+  startEntry,
+  syncSignupSrc,
+} from './lib/startRoute'
 import { signOut, useSession } from './lib/auth'
 import { isOnline } from './lib/connectivity'
 import { clearDeviceLocalUserData } from './lib/deviceLocal'
@@ -45,6 +57,7 @@ import { LegalLinks } from './ui/LegalLinks'
 import { Paywall } from './ui/Paywall'
 import { Quiz } from './ui/Quiz'
 import { Recruit } from './ui/Recruit'
+import { TestDate } from './ui/TestDate'
 import { Review } from './ui/Review'
 import { Saved } from './ui/Saved'
 import { SignIn } from './ui/SignIn'
@@ -62,13 +75,15 @@ type View =
   | { name: 'account' }
   | { name: 'quiz'; sessionId: string; offline?: boolean }
   | { name: 'review'; sessionId: string; offline?: boolean }
-  | { name: 'recruit' }
+  | { name: 'recruit'; entry?: 'board' | 'home' }
+  | { name: 'test-date' }
   | { name: 'offline-empty' }
 
 export default function App() {
   const { session, loading } = useSession()
-  const { account, entitled, refreshAccount } = useAccount(!!session)
+  const { account, entitled, refreshAccount, settled } = useAccount(!!session)
   const [view, setView] = useState<View>({ name: 'choose' })
+  const [entryApplied, setEntryApplied] = useState(false)
   const [starting, setStarting] = useState(false)
   const [showPaywall, setShowPaywall] = useState(false)
   const [paywallModule, setPaywallModule] = useState<PaywallModule>('promote')
@@ -186,6 +201,51 @@ export default function App() {
     }
   }, [session, iosShell, userId, online])
 
+  useEffect(() => {
+    if (session) return
+    const path = window.location.pathname
+    rememberPendingEntry(path, localStorage)
+    if (activationEntry(path, null) === 'start') {
+      syncSignupSrc(window.location.search, localStorage)
+    }
+  }, [session])
+
+  useEffect(() => {
+    if (!session) return
+    const onStart =
+      activationEntry(window.location.pathname, readPendingEntry(localStorage)) === 'start'
+    if (!onStart) return
+    const src = readSignupSrc(localStorage)
+    if (!src) return
+    let cancelled = false
+    void api.account
+      .setSignupSrc(src)
+      .then(() => {
+        if (!cancelled) clearSignupSrc(localStorage)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [session])
+
+  useEffect(() => {
+    if (!session || !account || entryApplied) return
+    const kind = activationEntry(window.location.pathname, readPendingEntry(localStorage))
+    if (!kind) return
+    const path = pathFor(kind)
+    if (normalizePath(window.location.pathname) !== path) {
+      window.history.replaceState(null, '', path)
+    }
+    clearPendingEntry(localStorage)
+    setView(
+      kind === 'start'
+        ? { name: 'recruit', entry: startEntry(account.free_board_open === true) }
+        : { name: 'test-date' },
+    )
+    setEntryApplied(true)
+  }, [session, account, entryApplied])
+
   // Blank rather than a spinner: restoring a stored session takes a few milliseconds, and
   // a spinner that flashes for one frame reads as jank. What must not happen here is
   // rendering SignIn, which would tell a returning candidate they are logged out.
@@ -195,6 +255,18 @@ export default function App() {
 
   if (!session) {
     return <SignIn />
+  }
+
+  const pendingKind = activationEntry(window.location.pathname, readPendingEntry(localStorage))
+  if (pendingKind && !entryApplied) {
+    if (settled && !account) {
+      return (
+        <div className="min-h-screen bg-stone-50 px-4 py-8 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
+          <p className="text-sm">Could not open the oral board. Refresh to try again.</p>
+        </div>
+      )
+    }
+    return <div className="min-h-screen bg-stone-50 dark:bg-stone-950" />
   }
 
   function needsAccess() {
@@ -361,7 +433,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
       <header className="border-b border-stone-200 dark:border-stone-800">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-4 py-3">
           <button
             onClick={() => setView({ name: 'choose' })}
             className="font-semibold tracking-tight"
@@ -479,8 +551,14 @@ export default function App() {
             examDate={examDate}
             onExamDateChange={(next) => void changeExamDate(next)}
           />
+        ) : view.name === 'test-date' ? (
+          <TestDate
+            initial={account?.recruit_test_on ?? null}
+            onDone={() => setView({ name: 'choose' })}
+          />
         ) : view.name === 'recruit' ? (
           <Recruit
+            entry={view.entry ?? 'board'}
             onDone={() => setView({ name: 'choose' })}
             account={account}
             onOpenAccount={() => setView({ name: 'account' })}

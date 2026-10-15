@@ -13,6 +13,7 @@ place, so the handlers can read as the sequence of steps they are.
 
 import logging
 import tempfile
+from datetime import UTC, datetime
 from pathlib import Path
 
 from anthropic import Anthropic
@@ -316,6 +317,19 @@ def run_recruit_c1(db: Client, settings: Settings, job: Job) -> None:
         ),
     )
     logger.info("recruit board %s: C1 stored and notes released", board.id)
+    _queue_free_board_followup(db, settings, board.user_id)
+
+
+def _queue_free_board_followup(db: Client, settings: Settings, user_id: str) -> None:
+    """The free board's results email. A failure here does not fail the critique."""
+    try:
+        from app.storage.activation import on_free_board_completed, run_followup
+
+        now = datetime.now(UTC)
+        on_free_board_completed(db, settings, user_id, now)
+        run_followup(db, settings, now=now)
+    except Exception:
+        logger.exception("recruit follow-up email was not queued for %s", user_id)
 
 
 HANDLERS = {

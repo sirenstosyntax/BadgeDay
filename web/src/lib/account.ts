@@ -14,9 +14,21 @@ import type { Account } from './types'
  */
 export function useAccount(enabled: boolean) {
   const [account, setAccount] = useState<Account | null>(null)
+  const [settled, setSettled] = useState(false)
+  const [enabledSeen, setEnabledSeen] = useState(enabled)
+  if (enabled !== enabledSeen) {
+    setEnabledSeen(enabled)
+    setSettled(false)
+    if (!enabled) setAccount(null)
+  }
 
   const refresh = useCallback(async () => {
-    if (!enabled) return
+    if (!enabled) {
+      setAccount(null)
+      setSettled(true)
+      return
+    }
+    setSettled(false)
     try {
       setAccount(await api.account.me())
     } catch {
@@ -24,6 +36,8 @@ export function useAccount(enabled: boolean) {
       // treat "unknown" as "not entitled", which is the safe direction: it shows the
       // paywall rather than waving through work the candidate may not have paid for.
       setAccount(null)
+    } finally {
+      setSettled(true)
     }
   }, [enabled])
 
@@ -31,5 +45,5 @@ export function useAccount(enabled: boolean) {
     void refresh()
   }, [refresh])
 
-  return { account, entitled: account?.entitled ?? false, refreshAccount: refresh }
+  return { account, entitled: account?.entitled ?? false, refreshAccount: refresh, settled }
 }
