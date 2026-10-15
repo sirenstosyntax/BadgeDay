@@ -16,7 +16,7 @@
 set -euo pipefail
 
 RESOURCE_GROUP="${RESOURCE_GROUP:-sts-examgen-rg}"
-LOCATION="${LOCATION:-eastus}"
+LOCATION="${LOCATION:-centralus}"
 ACR_NAME="${ACR_NAME:-stsbadgeday}"          # must be globally unique, alphanumeric only
 ENVIRONMENT_NAME="${ENVIRONMENT_NAME:-badgeday-env}"
 WEB_APP="${WEB_APP:-badgeday-web}"
