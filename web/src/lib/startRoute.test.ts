@@ -8,6 +8,8 @@ import {
   clearSignupSrc,
   pathFor,
   readSignupSrc,
+  START_CAMPAIGN_HEADING,
+  showStartCampaign,
   startEntry,
   syncSignupSrc,
   validSignupSrc,
@@ -63,6 +65,20 @@ test('/start?src=test1 is kept and a visit with no tag stores nothing', () => {
   assert.equal(readSignupSrc(bare), null)
   clearSignupSrc(bare)
   assert.equal(readSignupSrc(bare), null)
+})
+
+test('a signed-out /start with ?src= is the free-board campaign', () => {
+  assert.equal(
+    START_CAMPAIGN_HEADING,
+    'Practice a full oral board out loud. Your first board is free, no card.',
+  )
+  assert.equal(showStartCampaign('/start', '?src=zazu-test'), true)
+  assert.equal(showStartCampaign('/start/', '?src=zazu-test'), true)
+  assert.equal(showStartCampaign('/start', ''), false)
+  assert.equal(showStartCampaign('/start', '?src='), false)
+  assert.equal(showStartCampaign('/start', '?src=a@b.com'), false)
+  assert.equal(showStartCampaign('/', '?src=zazu-test'), false)
+  assert.equal(showStartCampaign('/recruit', '?src=zazu-test'), false)
 })
 
 test('the start page is a phone page: viewport, one date field, question 1, home', () => {

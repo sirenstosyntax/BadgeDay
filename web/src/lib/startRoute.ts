@@ -37,6 +37,15 @@ export function startEntry(freeBoardOpen: boolean): BoardEntry {
   return freeBoardOpen ? 'board' : 'home'
 }
 
+export const START_CAMPAIGN_HEADING =
+  'Practice a full oral board out loud. Your first board is free, no card.'
+
+/** Signed-out /start with a valid ?src= tag. Other routes stay the plain sign-in. */
+export function showStartCampaign(pathname: string, search: string): boolean {
+  if (activationKindFromPath(pathname) !== 'start') return false
+  return validSignupSrc(new URLSearchParams(search).get('src')) !== null
+}
+
 export function validSignupSrc(raw: string | null | undefined): string | null {
   if (raw == null) return null
   const text = raw.trim()

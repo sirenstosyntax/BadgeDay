@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { api } from './api'
 import { clearAuthRedirectError } from './authRedirectError'
 import { emailOtpVerifyParams } from './emailOtp'
+import { signInEmailToSend } from './signInEmail'
 import { supabase } from './supabase'
 
 const SIGNIN_EMAIL_KEY = 'badgeday.signin-email'
@@ -49,12 +50,13 @@ export function useSession() {
 }
 
 export async function sendMagicLink(email: string) {
+  const address = signInEmailToSend(email)
   const { error } = await supabase.auth.signInWithOtp({
-    email,
+    email: address,
     options: { emailRedirectTo: window.location.origin },
   })
   if (error) throw error
-  rememberSignInEmail(email)
+  rememberSignInEmail(address)
 }
 
 /**

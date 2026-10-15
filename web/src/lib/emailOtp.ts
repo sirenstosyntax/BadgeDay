@@ -1,3 +1,10 @@
+/**
+ * GoTrue's default `otp_length` is 6. A hosted project may set 6, 7, or 8,
+ * and {{ .Token }} in the auth email is that many digits. This client
+ * accepts the whole range.
+ */
+export const SUPABASE_DEFAULT_OTP_LENGTH = 6
+
 /** Supabase email OTPs are 6–8 digits depending on the project; ignore spaces. */
 export function normalizeEmailOtp(raw: string): string {
   return raw.replace(/\D/g, '').slice(0, 8)
