@@ -194,7 +194,12 @@ def store_test_date(db: Client, user_id: str, test_on: date | None, now: datetim
         return
     state = apply_test_date(_state_from_row(row), test_on, now)
     _write_state(db, user_id, state)
-    db.table("profiles").update({"recruit_reminder_claimed_at": None}).eq("id", user_id).execute()
+    patch: dict = {"recruit_reminder_claimed_at": None}
+    # The reminder send requires a token. Finishing the free board mints one;
+    # a date saved before that board would otherwise be skipped forever.
+    if test_on is not None and not (row.get("recruit_email_token") or "").strip():
+        patch["recruit_email_token"] = secrets.token_urlsafe(32)
+    db.table("profiles").update(patch).eq("id", user_id).execute()
 
 
 def unsubscribe_token(db: Client, token: str, now: datetime) -> bool:

@@ -435,6 +435,26 @@ def test_a_second_board_does_not_send_another_results_email() -> None:
     assert sender.messages == []
 
 
+def test_saving_a_test_date_before_the_free_board_mints_a_reminder_token() -> None:
+    db = FakeDb()
+    db.tables["profiles"].append(_profile())
+    far = date(2026, 11, 14)
+    store_test_date(db, USER, far, NOW)
+    token = _row(db)["recruit_email_token"]
+    assert token
+
+    kept = FakeDb()
+    kept.tables["profiles"].append(_profile(recruit_email_token="already-set"))
+    store_test_date(kept, USER, far, NOW)
+    assert kept.tables["profiles"][0]["recruit_email_token"] == "already-set"
+
+    sender = RecordingSender()
+    due = datetime(2026, 11, 7, tzinfo=UTC)
+    assert run_followup(db, _settings(), sender=sender, now=due).reminders_sent == 1
+    assert len(sender.messages) == 1
+    assert f"token={token}" in sender.messages[0].text
+
+
 def test_thirty_days_out_reminds_once_seven_days_prior_and_three_days_does_not() -> None:
     db = _db()
     settings = _settings()
