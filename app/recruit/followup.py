@@ -30,7 +30,11 @@ FORBIDDEN_WORDS = re.compile(
 )
 
 # Fixed lines. The notes under them are the candidate's own board summary.
-RESULTS_SUBJECT = "Your oral board notes"
+RESULTS_SUBJECT = "Your BadgeDay practice board notes"
+PRACTICE_NOTE = (
+    "This was practice. It does not predict how a real board will score you. "
+    "Panels, questions, and scoring vary by department."
+)
 REMINDER_SUBJECT = "Practice before your test"
 SENDER_NAME = "BadgeDay"
 SENDER_ORG = "Sirens to Syntax LLC"
@@ -147,7 +151,7 @@ def render_results(
     price_line: str,
 ) -> OutboundEmail:
     """The results email. Notes are copied from the board, not rewritten."""
-    parts: list[str] = [BOARD_FRAMING, ""]
+    parts: list[str] = [BOARD_FRAMING, PRACTICE_NOTE, ""]
     for answer in summary.answers:
         parts.append(f"Question {answer.question_index}")
         question = answer.question_text.strip()

@@ -17,7 +17,16 @@ from fastapi.testclient import TestClient
 from app.api.activation import router as activation_router
 from app.api.deps import CurrentUser, current_user, service_db
 from app.config import Settings
-from app.recruit.followup import FORBIDDEN_WORDS, FollowUpState, apply_signup_src, apply_test_date
+from app.recruit.followup import (
+    FORBIDDEN_WORDS,
+    PRACTICE_NOTE,
+    RESULTS_SUBJECT,
+    BoardSummary,
+    FollowUpState,
+    apply_signup_src,
+    apply_test_date,
+    render_results,
+)
 from app.recruit.mail import LogSender, ResendSender, SendResult, build_sender
 from app.storage.activation import run_followup, store_signup_src, store_test_date
 
@@ -249,7 +258,7 @@ def test_finishing_the_free_board_sends_one_results_email_within_five_minutes() 
 
     message = sender.messages[0]
     text = message.text
-    assert message.subject == "Your oral board notes"
+    assert message.subject == RESULTS_SUBJECT
     assert QUESTION in text
     assert NOTE in text
     assert C1 in text
@@ -272,6 +281,23 @@ def test_finishing_the_free_board_sends_one_results_email_within_five_minutes() 
     )
     assert message.headers["List-Unsubscribe-Post"] == "List-Unsubscribe=One-Click"
     assert "Grant" not in text
+
+
+def test_results_email_states_it_was_practice() -> None:
+    message = render_results(
+        BoardSummary(answers=[], c1_lines=[]),
+        continue_url="https://app.badgeday.com/start",
+        test_date_url="https://app.badgeday.com/recruit/test-date",
+        unsub_url="https://app.badgeday.com/email/unsubscribe?token=t",
+        address=ADDRESS,
+        price_line=PRICE,
+    )
+    assert message.subject == "Your BadgeDay practice board notes"
+    assert message.subject == RESULTS_SUBJECT
+    assert PRACTICE_NOTE in message.text
+    assert message.text.index(PRACTICE_NOTE) > message.text.index("Board complete")
+    assert FORBIDDEN_WORDS.search(message.text) is None
+    assert FORBIDDEN_WORDS.search(message.subject) is None
 
 
 def test_a_second_board_does_not_send_another_results_email() -> None:
