@@ -21,6 +21,11 @@ credentials, which is how the first project was stood up. The alternative is wor
 DDL is not idempotent (`create table public.profiles`, not `create table if not exists`),
 so a blind re-run aborts on the first statement and the ledger stays empty forever.
 Recording the truth once lets every later migration flow through the script normally.
+
+0014 and 0015 are a known ledger gap: the objects exist on the live database and
+the rows in schema_migrations do not. Re-running those files fails. When the
+probe below sees the objects, the runner records the filename and does not
+execute the SQL, then continues. See deploy/README.md.
 """
 
 import argparse
@@ -31,6 +36,31 @@ from pathlib import Path
 from app.config import get_settings
 
 MIGRATIONS_DIR = Path(__file__).resolve().parent.parent / "supabase" / "migrations"
+
+# Live schema_migrations is missing these two even though the objects exist.
+# The SQL is not idempotent, so a blind apply aborts. Record them instead.
+LEDGER_GAPS: dict[str, str] = {
+    "0014_recruit_boards.sql": "select to_regclass('public.recruit_boards') is not null",
+    "0015_store_purchases_module.sql": (
+        "select exists ("
+        " select 1 from information_schema.columns"
+        " where table_schema = 'public'"
+        " and table_name = 'store_purchases'"
+        " and column_name = 'module'"
+        ")"
+    ),
+}
+
+
+def ledger_gap_already_present(cur, filename: str) -> bool:
+    """True when this pending file is one of the known gaps and its objects exist."""
+    probe = LEDGER_GAPS.get(filename)
+    if probe is None:
+        return False
+    cur.execute(probe)
+    row = cur.fetchone()
+    return bool(row and row[0])
+
 
 LEDGER = """
 create table if not exists public.schema_migrations (
@@ -129,6 +159,26 @@ def main() -> int:
                         "file instead of editing this one."
                     )
                 continue
+
+            if path.name in LEDGER_GAPS:
+                with conn.cursor() as cur:
+                    present = ledger_gap_already_present(cur, path.name)
+                if present:
+                    label = "pending (objects exist)" if args.status else "recorded existing"
+                    print(f"  {label:<22} {path.name}")
+                    if not args.status:
+                        print(
+                            "    Already in the database and missing from "
+                            "schema_migrations. Recorded without re-running the SQL."
+                        )
+                        with conn.cursor() as cur:
+                            cur.execute(
+                                "insert into public.schema_migrations "
+                                "(filename, checksum) values (%s, %s)",
+                                (path.name, digest),
+                            )
+                        conn.commit()
+                    continue
 
             if args.status:
                 print(f"  {'pending':<22} {path.name}")

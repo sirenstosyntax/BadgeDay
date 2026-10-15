@@ -65,6 +65,30 @@ usage, which are per-document and unchanged by this.
    `sk_live_…` secret, the live price IDs, and the live webhook signing secret in `.env`,
    then re-run. The script will warn you when it sees `sk_live`.
 
+## Migrations
+
+From the repo root, with `SUPABASE_DB_URL` set:
+
+```bash
+python scripts/apply_migrations.py --status
+python scripts/apply_migrations.py
+```
+
+The runner applies each file in `supabase/migrations` that is not already in
+`public.schema_migrations`. It does not rewrite a file that is already recorded.
+
+`0014_recruit_boards.sql` and `0015_store_purchases_module.sql` are a known gap:
+those objects are already on the live database, and the ledger rows are not.
+The SQL is not idempotent, so running it again stops on the first `create`.
+When `public.recruit_boards` or `store_purchases.module` is already there, the
+runner records that filename and does not execute the file, then continues
+with later migrations. To record them by hand instead:
+
+```bash
+python scripts/apply_migrations.py --mark-applied \
+  0014_recruit_boards.sql 0015_store_purchases_module.sql
+```
+
 ## Notes
 
 - Secrets are pushed as Container Apps **secrets** and referenced by env var, so they do not
