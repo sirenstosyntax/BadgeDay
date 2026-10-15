@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.account import router as account_router
+from app.api.activation import router as activation_router
 from app.api.billing import router as billing_router
 from app.api.documents import router as documents_router
 from app.api.health import router as health_router
@@ -48,6 +49,7 @@ app.include_router(play_reviewer_router)
 app.include_router(documents_router)
 app.include_router(practice_router)
 app.include_router(account_router)
+app.include_router(activation_router)
 app.include_router(billing_router)
 app.include_router(reports_router)
 app.include_router(store_router)

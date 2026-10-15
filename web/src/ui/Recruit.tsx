@@ -77,6 +77,7 @@ async function pollBoardComplete(
 }
 
 type Phase =
+  | 'home'
   | 'loading'
   | 'ready'
   | 'milestone'
@@ -115,14 +116,18 @@ export function Recruit({
   onOpenAccount,
   onNeedsAccess,
   onBoardStarted,
+  entry = 'board',
 }: {
   onDone: () => void
   account: Account | null
   onOpenAccount: () => void
   onNeedsAccess?: () => void
   onBoardStarted?: () => void
+  /** board opens question 1. home is Recruit home and does not start a board. */
+  entry?: 'board' | 'home'
 }) {
-  const [phase, setPhase] = useState<Phase>('loading')
+  const [phase, setPhase] = useState<Phase>(entry === 'home' ? 'home' : 'loading')
+  const [opened, setOpened] = useState(entry !== 'home')
   const [board, setBoard] = useState<RecruitBoardView | null>(null)
   const [exhausted, setExhausted] = useState<RecruitQuestionExhausted | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -141,6 +146,12 @@ export function Recruit({
   onBoardStartedRef.current = onBoardStarted
 
   useEffect(() => {
+    if (!opened) {
+      return () => {
+        left.current = true
+        stopTracks()
+      }
+    }
     left.current = false
     if (!isOnline()) {
       setError(NEEDS_CONNECTION)
@@ -206,7 +217,7 @@ export function Recruit({
       left.current = true
       stopTracks()
     }
-  }, [])
+  }, [opened])
 
   // Soft timer. Display only — hitting 0:00 does not submit.
   useEffect(() => {
@@ -345,14 +356,36 @@ export function Recruit({
 
   return (
     <div className="space-y-6">
+      {phase === 'home' && (
+        <div data-testid="recruit-home" className="space-y-4">
+          <h2 className="text-lg font-medium">Oral board</h2>
+          <p className="text-sm text-stone-600 dark:text-stone-400">
+            Five questions, answered out loud. Notes wait until the end, same as a real
+            board.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setPhase('loading')
+              setOpened(true)
+            }}
+            className="min-h-12 rounded-lg bg-stone-900 px-4 text-base font-medium text-white dark:bg-stone-100 dark:text-stone-900"
+          >
+            Continue
+          </button>
+        </div>
+      )}
+
+      {phase !== 'home' && (
       <div className="flex items-center justify-between text-sm text-stone-500 dark:text-stone-400">
         <button onClick={() => void leave()} className="hover:underline">
           ← Leave
         </button>
         {phase !== 'milestone' && phase !== 'summary' && board && (
-          <span>{boardProgressLabel(index, board.board_size)}</span>
+          <span data-testid="board-progress">{boardProgressLabel(index, board.board_size)}</span>
         )}
       </div>
+      )}
 
       {phase === 'milestone' && exhausted && (
         <RecruitMilestone
@@ -363,7 +396,7 @@ export function Recruit({
         />
       )}
 
-      {phase !== 'milestone' && phase !== 'summary' && (
+      {phase !== 'milestone' && phase !== 'summary' && phase !== 'home' && (
         <>
           <div className="flex justify-center gap-2" aria-hidden="true">
             {[1, 2, 3, 4, 5].map((slot) => (
@@ -379,7 +412,11 @@ export function Recruit({
               />
             ))}
           </div>
-          {heading && <h2 className="text-lg font-medium">{heading}</h2>}
+          {heading && (
+            <h2 className="text-lg font-medium" data-testid="oral-board-question">
+              {heading}
+            </h2>
+          )}
           {question && phase !== 'holding' && (
             <p className="text-sm text-stone-600 dark:text-stone-400">
               Answer out loud. Notes are held until the end of the board — same as a real

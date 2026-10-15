@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 from app.api.account import router as account_router
 from app.api.deps import CurrentUser, current_user, get_gateway, get_settings, service_db, user_db
 from app.config import Settings
+from app.storage.activation import ActivationPublic
 from app.storage.billing import Entitlement
 from app.storage.entitlements import ModuleEntitlement
 from app.storage.store import ManagedElsewhere
@@ -77,6 +78,12 @@ def _client(
     monkeypatch.setattr("app.api.account.managed_elsewhere_for", _managed)
     monkeypatch.setattr(
         "app.api.account.customer_id_for", lambda *_: stripe_customer_id
+    )
+    monkeypatch.setattr(
+        "app.api.account.read_activation_public",
+        lambda *_args, **_kwargs: ActivationPublic(
+            free_board_open=True, signup_src=None, recruit_test_on=None
+        ),
     )
     return TestClient(app)
 

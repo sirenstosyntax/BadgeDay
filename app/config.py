@@ -120,6 +120,21 @@ class Settings(BaseSettings):
     # back in the web app, not on a JSON endpoint.
     public_web_url: str = "http://localhost:5173"
 
+    # --- Recruit follow-up email --------------------------------------------
+    # Sign-in mail stays on Supabase Auth. These two emails (results, one
+    # reminder) go through Resend when both values are set. Empty means the
+    # log sender: nothing is delivered and the row stays unsent.
+    resend_api_key: str = ""
+    # Full From header once the domain is verified, e.g. BadgeDay <hello@badgeday.com>
+    email_from: str = ""
+    # CAN-SPAM postal address. Empty refuses the send. The address published
+    # in web/public/terms.html is the one to put here; it is not assumed.
+    mailing_address: str = ""
+    # The one price line those emails may include. Live on badgeday.com;
+    # badgeday_pricing.md records the monthly amount. No other price belongs
+    # in the follow-up mail.
+    recruit_price_line: str = "paid plans from $24.99/mo"
+
     @property
     def stripe_configured(self) -> bool:
         return bool(

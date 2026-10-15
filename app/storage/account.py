@@ -3,7 +3,8 @@
 The same seam delete_document lives on: Postgres cascades, object storage does not. Every
 table in the schema references auth.users (directly, or through documents and sessions that
 do) with `on delete cascade`, so removing the one auth row removes every row the candidate
-owns — profiles, documents, chunks, questions, sessions, responses, saved questions, jobs.
+owns — profiles (including the test date and any follow-up reminder), documents,
+chunks, questions, sessions, responses, saved questions, jobs.
 Object storage has no such reach: the uploaded files must be removed by hand, and their keys
 live in the document rows the auth delete is about to destroy.
 
