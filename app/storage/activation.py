@@ -21,7 +21,7 @@ from app.recruit.followup import (
     DueReminder,
     DueResults,
     FollowUpState,
-    apply_signup_src,
+    apply_signup_attribution,
     apply_test_date,
     apply_unsubscribe,
     dispatch_due,
@@ -30,7 +30,9 @@ from app.recruit.mail import EmailSender, build_sender
 from app.storage.boards import notes_were_released, worker_board_attempts
 
 _PROFILE_FIELDS = (
-    "id,email,created_at,signup_src,recruit_test_on,recruit_reminder_due_at,"
+    "id,email,created_at,signup_src,signup_referrer_domain,"
+    "signup_utm_source,signup_utm_medium,signup_utm_campaign,"
+    "recruit_test_on,recruit_reminder_due_at,"
     "recruit_reminder_sent_for,recruit_reminder_claimed_at,"
     "recruit_results_ready_at,recruit_results_sent_at,recruit_results_claimed_at,"
     "recruit_unsubscribed_at,recruit_email_token"
@@ -82,6 +84,10 @@ def _claim_open(claimed_at: object, now: datetime) -> bool:
 def _state_from_row(row: dict) -> FollowUpState:
     return FollowUpState(
         signup_src=row.get("signup_src"),
+        signup_referrer_domain=row.get("signup_referrer_domain"),
+        signup_utm_source=row.get("signup_utm_source"),
+        signup_utm_medium=row.get("signup_utm_medium"),
+        signup_utm_campaign=row.get("signup_utm_campaign"),
         test_on=_parse_date(row.get("recruit_test_on")),
         reminder_due_at=_parse_ts(row.get("recruit_reminder_due_at")),
         reminder_sent_for=_parse_date(row.get("recruit_reminder_sent_for")),
@@ -106,6 +112,10 @@ def _write_state(db: Client, user_id: str, state: FollowUpState) -> None:
     db.table("profiles").update(
         {
             "signup_src": state.signup_src,
+            "signup_referrer_domain": state.signup_referrer_domain,
+            "signup_utm_source": state.signup_utm_source,
+            "signup_utm_medium": state.signup_utm_medium,
+            "signup_utm_campaign": state.signup_utm_campaign,
             "recruit_test_on": _dump_date(state.test_on),
             "recruit_reminder_due_at": _dump_ts(state.reminder_due_at),
             "recruit_reminder_sent_for": _dump_date(state.reminder_sent_for),
@@ -146,9 +156,17 @@ def read_activation_public(db: Client, settings: Settings) -> ActivationPublic:
 
 
 def store_signup_src(
-    db: Client, user_id: str, raw: str | None, now: datetime | None = None
+    db: Client,
+    user_id: str,
+    raw: str | None,
+    now: datetime | None = None,
+    *,
+    referrer_domain: str | None = None,
+    utm_source: str | None = None,
+    utm_medium: str | None = None,
+    utm_campaign: str | None = None,
 ) -> None:
-    """First valid tag, and only while the account is still new. Otherwise no write."""
+    """First valid tag and first-touch columns, only while the account is still new."""
     row = _profile(db, user_id)
     if row is None:
         return
@@ -156,10 +174,18 @@ def store_signup_src(
     created = _parse_ts(row.get("created_at"))
     if created is None or moment - created > _SIGNUP_SRC_WINDOW:
         return
-    state = apply_signup_src(_state_from_row(row), raw)
-    if state.signup_src == row.get("signup_src"):
+    state = _state_from_row(row)
+    updated = apply_signup_attribution(
+        state,
+        src=raw,
+        referrer_domain=referrer_domain,
+        utm_source=utm_source,
+        utm_medium=utm_medium,
+        utm_campaign=utm_campaign,
+    )
+    if updated == state:
         return
-    _write_state(db, user_id, state)
+    _write_state(db, user_id, updated)
 
 
 def store_test_date(db: Client, user_id: str, test_on: date | None, now: datetime) -> None:

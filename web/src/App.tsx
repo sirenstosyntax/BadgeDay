@@ -13,6 +13,12 @@ import {
   startEntry,
   syncSignupSrc,
 } from './lib/startRoute'
+import {
+  captureSignupTouch,
+  clearSignupTouch,
+  readSignupTouch,
+  signupAttributionBody,
+} from './lib/signupTouch'
 import { signOut, useSession } from './lib/auth'
 import { isOnline } from './lib/connectivity'
 import { clearDeviceLocalUserData } from './lib/deviceLocal'
@@ -202,6 +208,13 @@ export default function App() {
   }, [session, iosShell, userId, online])
 
   useEffect(() => {
+    captureSignupTouch(
+      { referrer: document.referrer, search: window.location.search },
+      localStorage,
+    )
+  }, [])
+
+  useEffect(() => {
     if (session) return
     const path = window.location.pathname
     rememberPendingEntry(path, localStorage)
@@ -212,16 +225,17 @@ export default function App() {
 
   useEffect(() => {
     if (!session) return
-    const onStart =
-      activationEntry(window.location.pathname, readPendingEntry(localStorage)) === 'start'
-    if (!onStart) return
     const src = readSignupSrc(localStorage)
-    if (!src) return
+    const touch = readSignupTouch(localStorage)
+    const body = signupAttributionBody(src, touch)
+    if (Object.keys(body).length === 0) return
     let cancelled = false
     void api.account
-      .setSignupSrc(src)
+      .setSignupSrc(body)
       .then(() => {
-        if (!cancelled) clearSignupSrc(localStorage)
+        if (cancelled) return
+        if (src) clearSignupSrc(localStorage)
+        if (touch) clearSignupTouch(localStorage)
       })
       .catch(() => {})
     return () => {

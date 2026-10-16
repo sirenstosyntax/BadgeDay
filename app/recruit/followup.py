@@ -11,6 +11,7 @@ at the moment it was saved. Each test date is reminded once.
 
 from __future__ import annotations
 
+import ipaddress
 import logging
 import re
 from dataclasses import dataclass, replace
@@ -24,6 +25,8 @@ from app.recruit.mail import EmailSender, OutboundEmail
 logger = logging.getLogger(__name__)
 
 SRC_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+# Exact hosts only. A referrer from either is our own page, not a source.
+OWN_REFERRER_HOSTS = frozenset({"badgeday.com", "app.badgeday.com"})
 FORBIDDEN_WORDS = re.compile(
     r"\b(pass|passed|passing|hired|guarantee|guaranteed)\b",
     re.IGNORECASE,
@@ -62,6 +65,24 @@ def valid_signup_src(raw: str | None) -> str | None:
     return text
 
 
+def valid_referrer_domain(raw: str | None) -> str | None:
+    """A hostname that passes the src rule. A URL, an IP, or our own host is dropped."""
+    if raw is None:
+        return None
+    text = raw.strip().lower().rstrip(".")
+    if not text or text in OWN_REFERRER_HOSTS or _is_ip_address(text):
+        return None
+    return valid_signup_src(text)
+
+
+def _is_ip_address(text: str) -> bool:
+    try:
+        ipaddress.ip_address(text)
+    except ValueError:
+        return False
+    return True
+
+
 def reminder_due_at(test_on: date, now: datetime) -> datetime | None:
     """None when the date is already inside the seven-day window."""
     today = now.astimezone(UTC).date()
@@ -74,6 +95,10 @@ def reminder_due_at(test_on: date, now: datetime) -> datetime | None:
 @dataclass
 class FollowUpState:
     signup_src: str | None = None
+    signup_referrer_domain: str | None = None
+    signup_utm_source: str | None = None
+    signup_utm_medium: str | None = None
+    signup_utm_campaign: str | None = None
     test_on: date | None = None
     reminder_due_at: datetime | None = None
     reminder_sent_for: date | None = None
@@ -86,6 +111,33 @@ def apply_signup_src(state: FollowUpState, raw: str | None) -> FollowUpState:
     if parsed is None or state.signup_src is not None:
         return state
     return replace(state, signup_src=parsed)
+
+
+def apply_signup_attribution(
+    state: FollowUpState,
+    *,
+    src: str | None = None,
+    referrer_domain: str | None = None,
+    utm_source: str | None = None,
+    utm_medium: str | None = None,
+    utm_campaign: str | None = None,
+) -> FollowUpState:
+    """First value wins on each column. An explicit src never comes from the referrer."""
+    state = apply_signup_src(state, src)
+    incoming = {
+        "signup_referrer_domain": valid_referrer_domain(referrer_domain),
+        "signup_utm_source": valid_signup_src(utm_source),
+        "signup_utm_medium": valid_signup_src(utm_medium),
+        "signup_utm_campaign": valid_signup_src(utm_campaign),
+    }
+    changes: dict[str, str] = {}
+    for field, parsed in incoming.items():
+        if parsed is None or getattr(state, field) is not None:
+            continue
+        changes[field] = parsed
+    if not changes:
+        return state
+    return replace(state, **changes)
 
 
 def apply_test_date(
