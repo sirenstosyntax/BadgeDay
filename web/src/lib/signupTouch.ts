@@ -3,7 +3,17 @@ import { validSignupSrc } from './startRoute'
 /** First-touch attribution. Survives the magic-link return in this browser. */
 export const SIGNUP_TOUCH_KEY = 'badgeday.signup-touch'
 
-const OWN_HOSTS = new Set(['badgeday.com', 'app.badgeday.com'])
+// Same set as OWN_REFERRER_HOSTS. TWA origin is app.badgeday.com.
+const OWN_HOSTS = new Set([
+  'badgeday.com',
+  'www.badgeday.com',
+  'app.badgeday.com',
+  'api.badgeday.com',
+  'badgeday.app',
+  'www.badgeday.app',
+  'sirenstosyntax.com',
+  'www.sirenstosyntax.com',
+])
 
 export type SignupTouch = {
   referrer_domain: string | null

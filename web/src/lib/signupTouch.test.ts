@@ -45,9 +45,16 @@ test('referrer keeps the hostname and drops the path, query, and userinfo', () =
 test('our own hosts and IP referrers are ignored', () => {
   assert.equal(referrerDomain('https://app.badgeday.com/start?src=zazu'), null)
   assert.equal(referrerDomain('https://badgeday.com/'), null)
+  assert.equal(referrerDomain('https://www.badgeday.com/waitlist'), null)
   assert.equal(referrerDomain('https://App.BadgeDay.com/foo'), null)
+  assert.equal(referrerDomain('https://api.badgeday.com/'), null)
+  assert.equal(referrerDomain('https://badgeday.app/'), null)
+  assert.equal(referrerDomain('https://www.badgeday.app/'), null)
+  assert.equal(referrerDomain('https://sirenstosyntax.com/privacy'), null)
+  assert.equal(referrerDomain('https://www.sirenstosyntax.com/'), null)
   assert.equal(referrerDomain('http://8.8.8.8/lookup'), null)
   assert.equal(referrerDomain('http://[2001:db8::1]/'), null)
+  assert.equal(referrerDomain('https://www.google.com/search?q=firefighter'), 'www.google.com')
 })
 
 test('utm tags are captured and a value that fails the src rule is dropped', () => {

@@ -312,7 +312,18 @@ def test_first_touch_keeps_src_and_stores_referrer_and_utm_once() -> None:
     assert _row(dropped)["signup_utm_medium"] == "email"
     assert _row(dropped)["signup_utm_campaign"] is None
 
-    for host in ("app.badgeday.com", "BADGEDAY.COM", "8.8.8.8", "2001:db8::1"):
+    for host in (
+        "app.badgeday.com",
+        "www.badgeday.com",
+        "BADGEDAY.COM",
+        "api.badgeday.com",
+        "badgeday.app",
+        "www.badgeday.app",
+        "sirenstosyntax.com",
+        "WWW.SIRENSTOSYNTAX.COM",
+        "8.8.8.8",
+        "2001:db8::1",
+    ):
         again = FakeDb()
         again.tables["profiles"].append(_profile())
         store_signup_src(again, USER, None, NOW, referrer_domain=host)

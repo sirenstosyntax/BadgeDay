@@ -25,8 +25,21 @@ from app.recruit.mail import EmailSender, OutboundEmail
 logger = logging.getLogger(__name__)
 
 SRC_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
-# Exact hosts only. A referrer from either is our own page, not a source.
-OWN_REFERRER_HOSTS = frozenset({"badgeday.com", "app.badgeday.com"})
+# Hosts we own. A referrer from one of these is our own page, not a source.
+# badgeday_infrastructure_map.md, the TWA origin (app.badgeday.com), and the
+# redirect alternates in app/redirect.py.
+OWN_REFERRER_HOSTS = frozenset(
+    {
+        "badgeday.com",
+        "www.badgeday.com",
+        "app.badgeday.com",
+        "api.badgeday.com",
+        "badgeday.app",
+        "www.badgeday.app",
+        "sirenstosyntax.com",
+        "www.sirenstosyntax.com",
+    }
+)
 FORBIDDEN_WORDS = re.compile(
     r"\b(pass|passed|passing|hired|guarantee|guaranteed)\b",
     re.IGNORECASE,
