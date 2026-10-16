@@ -337,10 +337,12 @@ def test_first_touch_keeps_src_and_stores_referrer_and_utm_once() -> None:
     assert apply_signup_attribution(tagged, src="other", referrer_domain="bing.com") == tagged
 
     migration = (ROOT / "supabase/migrations/0018_signup_first_touch.sql").read_text()
-    assert "add column signup_referrer_domain text" in migration
-    assert "add column signup_utm_source text" in migration
-    assert "add column signup_utm_medium text" in migration
-    assert "add column signup_utm_campaign text" in migration
+    assert "add column if not exists signup_referrer_domain text" in migration
+    assert "add column if not exists signup_utm_source text" in migration
+    assert "add column if not exists signup_utm_medium text" in migration
+    assert "add column if not exists signup_utm_campaign text" in migration
+    assert "profiles_signup_referrer_domain_shape" in migration
+    assert "if not exists" in migration
     assert "create table" not in migration.lower()
 
 
