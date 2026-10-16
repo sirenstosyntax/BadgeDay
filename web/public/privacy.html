@@ -26,7 +26,7 @@
       <h1>Privacy Policy</h1>
       <p class="dates">
         BadgeDay, a product of Sirens to Syntax LLC<br />
-        Effective date: July 26, 2026 · Last updated: August 21, 2026
+        Effective date: July 26, 2026 · Last updated: October 16, 2026
       </p>
 
       <div class="summary">
@@ -43,10 +43,13 @@
         </p>
         <p>
           We hold your email address so you can sign in, and a link to your Stripe customer
-          record so we know you have paid — we never see your card. We run no analytics on
-          this app, no advertising trackers, and no cross-site tracking of any kind. You
-          can delete any document, or your entire account and everything in it, from
-          inside the app at any time.
+          record so we know you have paid — we never see your card. We do not use a
+          third-party analytics tool, advertising trackers, or cross-site tracking. When you
+          sign up we record, once, the name of the site that referred you (the domain only),
+          any campaign tags on the link (utm_source, utm_medium, and utm_campaign), and a
+          campaign tag (src) if the link has one. Those are kept on your account and deleted
+          with it. You can delete any document, or your entire account and everything in it,
+          from inside the app at any time.
         </p>
         <p>The rest of this document explains that in more detail.</p>
       </div>
@@ -135,11 +138,14 @@
 
       <h2>What we do not collect</h2>
       <p>
-        The BadgeDay app runs <strong>no analytics</strong>. There is no PostHog, no Google
-        Analytics, no product-analytics tool of any kind in the application. There are no
-        advertising trackers or pixels, no cross-site tracking, and no third-party fonts or
-        scripts loaded from anyone else's servers when you use the app — the whole thing is
-        served from one origin.
+        The BadgeDay app does not use a third-party analytics tool. There is no PostHog, no
+        Google Analytics, and no product-analytics tool of any kind in the application.
+        There are no advertising trackers or pixels, no cross-site tracking, and no
+        third-party fonts or scripts loaded from anyone else's servers when you use the app
+        — the whole thing is served from one origin. We do record, once at sign-up, the
+        referring site's name (the domain only), campaign tags on the link (utm_source,
+        utm_medium, and utm_campaign), and a campaign tag (src) if the link has one. Those
+        are kept on the account and deleted with it.
       </p>
       <p>
         This is a deliberate difference from our marketing site, which does use analytics.
@@ -250,8 +256,12 @@
       <p>
         The app sets <strong>no analytics or advertising cookies</strong>. When you sign in,
         your browser stores a session token locally so that you stay signed in and do not
-        have to request a new link on every visit. That token is what makes the app work;
-        clearing your browser storage signs you out, and nothing else is kept there.
+        have to request a new link on every visit. Before you sign in, a campaign tag from
+        the link (src), if the link has one, and the referring site's name (the domain only)
+        plus any utm_source, utm_medium, and utm_campaign tags, are held in this browser's
+        local storage (badgeday.signup-src and badgeday.signup-touch), including for
+        visitors who never sign up. They are not sent to us unless you sign in. When you
+        sign up we record them once on your account, and they are deleted with the account.
       </p>
 
       <h2>How long we keep it</h2>
