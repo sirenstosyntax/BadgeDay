@@ -600,15 +600,16 @@ def test_recruit_subscription_updated_resolves_user_from_linked_customer(
     ]
 
 
-def test_a_discounted_promote_checkout_grants_nothing(
+def test_a_discounted_promote_checkout_grants_and_alerts(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """Fail closed: a coupon on a Promote price writes no pass and no link."""
+    """Stripe has already charged. Grant the pass, then log the discount."""
     client, gateway, applied = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
     gateway.event = {
         "type": "checkout.session.completed",
         "data": {
             "object": {
+                "id": "cs_promote_discount",
                 "client_reference_id": USER_ID,
                 "customer": "cus_existing",
                 "mode": "payment",
@@ -623,19 +624,30 @@ def test_a_discounted_promote_checkout_grants_nothing(
         response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
     assert response.status_code == 200
     assert response.json() == {"received": True}
-    assert applied == []
-    assert "non-Recruit" in caplog.text
-    assert "price_intensive" in caplog.text
+    assert applied[0] == LinkCustomer(user_id=USER_ID, customer_id="cus_existing")
+    assert isinstance(applied[1], GrantPass)
+    marker = next(
+        record.getMessage()
+        for record in caplog.records
+        if record.levelno == logging.ERROR and "PROMOTE_DISCOUNT_GRANTED" in record.getMessage()
+    )
+    assert "session_id=cs_promote_discount" in marker
+    assert "price_id=price_intensive" in marker
+    assert "amount_discount=2900" in marker
+    assert "cus_existing" not in marker
+    assert USER_ID not in marker
 
 
-def test_a_promote_checkout_with_a_discount_list_grants_nothing(
+def test_a_promote_checkout_with_a_discount_list_links_and_alerts(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
+    """A discounted Promote subscription checkout links, as a full-price one does."""
     client, gateway, applied = _harness(monkeypatch)
     gateway.event = {
         "type": "checkout.session.completed",
         "data": {
             "object": {
+                "id": "cs_promote_monthly",
                 "client_reference_id": USER_ID,
                 "customer": "cus_existing",
                 "mode": "subscription",
@@ -648,8 +660,17 @@ def test_a_promote_checkout_with_a_discount_list_grants_nothing(
     with caplog.at_level(logging.ERROR):
         response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
     assert response.status_code == 200
-    assert applied == []
-    assert "no entitlement written" in caplog.text
+    assert applied == [LinkCustomer(user_id=USER_ID, customer_id="cus_existing")]
+    assert not any(isinstance(change, GrantPass) for change in applied)
+    marker = next(
+        record.getMessage()
+        for record in caplog.records
+        if record.levelno == logging.ERROR and "PROMOTE_DISCOUNT_GRANTED" in record.getMessage()
+    )
+    assert "session_id=cs_promote_monthly" in marker
+    assert "price_id=price_monthly" in marker
+    assert "amount_discount=" in marker
+    assert "cus_existing" not in marker
 
 
 def test_a_discounted_recruit_checkout_still_grants(

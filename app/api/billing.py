@@ -198,10 +198,10 @@ async def webhook(
     price_id = stripe_price_id_from_event(event)
     module = module_for_stripe_price(settings, price_id)
 
-    # A coupon on a non-Recruit price must not entitle. Acknowledge and write
-    # nothing: granting the pass or the subscription at the reduced price is
-    # the failure this closes. Recruit discounts still fall through.
-    if discounted_checkout_must_not_grant(event, module=module):
+    # An unmapped discounted checkout still writes nothing. A discounted
+    # Promote checkout does not: Stripe has already charged, so it grants
+    # below, the same as full price, and the error line is the alert.
+    if discounted_checkout_must_not_grant(event, module=module) and module != "promote":
         session = (event.get("data") or {}).get("object") or {}
         details = session.get("total_details") if isinstance(session, dict) else {}
         if not isinstance(details, dict):
@@ -247,6 +247,21 @@ async def webhook(
             event, pass_days=settings.intensive_pass_days, now=now
         ):
             apply_change(service, change)
+        if discounted_checkout_must_not_grant(event, module=module):
+            session = (event.get("data") or {}).get("object") or {}
+            if not isinstance(session, dict):
+                session = {}
+            details = session.get("total_details")
+            amount_discount = (
+                details.get("amount_discount", "") if isinstance(details, dict) else ""
+            )
+            session_id = session.get("id") if isinstance(session.get("id"), str) else ""
+            logger.error(
+                "PROMOTE_DISCOUNT_GRANTED session_id=%s price_id=%s amount_discount=%s",
+                session_id,
+                price_id or "",
+                amount_discount,
+            )
         return {"received": True}
 
     if event.get("type") == "customer.subscription.deleted":
