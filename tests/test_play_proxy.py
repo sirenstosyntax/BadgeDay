@@ -50,6 +50,8 @@ def test_lookup_sends_the_bearer_and_not_a_package_name() -> None:
     assert timeout == 15
     assert request.full_url == "https://verify.example.test/v1/play"
     assert request.get_header("Authorization") == f"Bearer {_SECRET}"
+    # urllib stores names via str.capitalize(), so "User-Agent" is "User-agent".
+    assert request.get_header("User-agent") == "BadgeDay/1.0 (+https://app.badgeday.com)"
     payload = json.loads(request.data.decode())
     assert payload == {"op": "subscription.get", "purchaseToken": _TOKEN}
     assert "packageName" not in payload

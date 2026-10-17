@@ -571,6 +571,8 @@ def test_resend_posts_the_list_unsubscribe_headers(monkeypatch: pytest.MonkeyPat
         captured["url"] = request.full_url
         captured["body"] = json.loads(request.data.decode())
         captured["auth"] = request.get_header("Authorization")
+        # urllib stores names via str.capitalize(), so "User-Agent" is "User-agent".
+        captured["user_agent"] = request.get_header("User-agent")
         captured["timeout"] = timeout
         return _Resp()
 
@@ -592,6 +594,7 @@ def test_resend_posts_the_list_unsubscribe_headers(monkeypatch: pytest.MonkeyPat
     assert result.delivered is True
     assert captured["url"] == "https://api.resend.com/emails"
     assert captured["auth"] == "Bearer re_test"
+    assert captured["user_agent"] == "BadgeDay/1.0 (+https://app.badgeday.com)"
     assert captured["body"]["from"] == "BadgeDay <hello@badgeday.com>"
     assert captured["body"]["headers"]["List-Unsubscribe-Post"] == "List-Unsubscribe=One-Click"
     assert "re_test" not in json.dumps(captured["body"])
