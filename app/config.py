@@ -114,6 +114,10 @@ class Settings(BaseSettings):
     # not "90, times two".
     intensive_pass_days: int = 90
     recruit_6month_pass_days: int = 183
+    # Recruit Checkout only. When true, the session shows a promotion-code
+    # field (approved group pricing: a student 90-day pass, prepaid seats).
+    # Promote checkout never receives the flag. Does not create Stripe objects.
+    stripe_allow_promotion_codes: bool = False
 
     # Where the browser app lives, used to build the URLs Stripe returns the candidate to
     # after checkout or the billing portal. Not the API's own origin — the human ends up
@@ -276,6 +280,13 @@ class Settings(BaseSettings):
             )
             if p
         )
+
+    @field_validator("stripe_allow_promotion_codes", mode="before")
+    @classmethod
+    def _blank_promotion_flag_is_off(cls, value: object) -> object:
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return False
+        return value
 
     @field_validator("azure_docintel_endpoint")
     @classmethod

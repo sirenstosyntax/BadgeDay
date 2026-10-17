@@ -14,7 +14,7 @@ import time
 
 import pytest
 
-from app.billing.gateway import StripeGateway, WebhookVerificationError
+from app.billing.gateway import StripeGateway, WebhookVerificationError, checkout_session_params
 from app.config import Settings
 
 SECRET = "whsec_test_secret_for_signing"
@@ -31,6 +31,24 @@ def _signed(payload: bytes, secret: str = SECRET) -> str:
         secret.encode(), b"%d." % timestamp + payload, hashlib.sha256
     ).hexdigest()
     return f"t={timestamp},v1={signature}"
+
+
+def test_checkout_params_are_card_only_and_omit_promotion_codes_unless_asked() -> None:
+    base = dict(
+        mode="payment",
+        price_id="price_recruit_90",
+        customer_id="cus_1",
+        client_reference_id="user-1",
+        success_url="https://app.badgeday.test/?checkout=success",
+        cancel_url="https://app.badgeday.test/?checkout=cancelled",
+    )
+    card_only = checkout_session_params(**base)
+    assert card_only["payment_method_types"] == ["card"]
+    assert "allow_promotion_codes" not in card_only
+
+    with_code = checkout_session_params(**base, allow_promotion_codes=True)
+    assert with_code["payment_method_types"] == ["card"]
+    assert with_code["allow_promotion_codes"] is True
 
 
 def test_a_verified_event_comes_back_as_a_plain_nested_dict() -> None:

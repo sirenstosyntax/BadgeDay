@@ -33,8 +33,10 @@ from app.billing.module import (
 from app.billing.plan import (
     CHECKOUT_MODE,
     PROMOTE_PLANS,
+    RECRUIT_PLANS,
     LinkCustomer,
     Plan,
+    discounted_checkout_must_not_grant,
     plan_changes,
     stripe_price_id_from_event,
 )
@@ -132,6 +134,10 @@ def checkout(
         success_url=f"{settings.public_web_url}/?checkout=success",
         cancel_url=f"{settings.public_web_url}/?checkout=cancelled",
         metadata={"plan": body.plan, "price_id": price_id, "user_id": user.id},
+        allow_promotion_codes=(
+            settings.stripe_allow_promotion_codes and body.plan in RECRUIT_PLANS
+        ),
+        payment_method_types=["card"],
     )
     return Redirect(url=url)
 
@@ -192,6 +198,25 @@ async def webhook(
     price_id = stripe_price_id_from_event(event)
     module = module_for_stripe_price(settings, price_id)
 
+    # An unmapped discounted checkout still writes nothing. A discounted
+    # Promote checkout does not: Stripe has already charged, so it grants
+    # below, the same as full price, and the error line is the alert.
+    if discounted_checkout_must_not_grant(event, module=module) and module != "promote":
+        session = (event.get("data") or {}).get("object") or {}
+        details = session.get("total_details") if isinstance(session, dict) else {}
+        if not isinstance(details, dict):
+            details = {}
+        logger.error(
+            "refusing checkout.session.completed with a discount on a non-Recruit "
+            "price; no entitlement written price_id=%s module=%s customer=%s "
+            "amount_discount=%s",
+            price_id or "",
+            module or "unmapped",
+            stripe_object_id(session.get("customer")) if isinstance(session, dict) else "",
+            details.get("amount_discount"),
+        )
+        return {"received": True}
+
     # Grant paths fail closed: a missing or unknown price must not fall
     # open to Promote plan_changes. Only a mapped Promote price writes
     # profiles; only a mapped Recruit price writes entitlements.
@@ -222,6 +247,21 @@ async def webhook(
             event, pass_days=settings.intensive_pass_days, now=now
         ):
             apply_change(service, change)
+        if discounted_checkout_must_not_grant(event, module=module):
+            session = (event.get("data") or {}).get("object") or {}
+            if not isinstance(session, dict):
+                session = {}
+            details = session.get("total_details")
+            amount_discount = (
+                details.get("amount_discount", "") if isinstance(details, dict) else ""
+            )
+            session_id = session.get("id") if isinstance(session.get("id"), str) else ""
+            logger.error(
+                "PROMOTE_DISCOUNT_GRANTED session_id=%s price_id=%s amount_discount=%s",
+                session_id,
+                price_id or "",
+                amount_discount,
+            )
         return {"received": True}
 
     if event.get("type") == "customer.subscription.deleted":

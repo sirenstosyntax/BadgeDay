@@ -137,6 +137,94 @@ def test_a_complete_recruit_subscription_checkout_grants_without_paid_status() -
     ]
 
 
+def _recruit_90day(**extra: object) -> dict:
+    session = {
+        "client_reference_id": USER,
+        "customer": CUSTOMER,
+        "mode": "payment",
+        "status": "complete",
+        "metadata": {"price_id": "price_recruit_90"},
+    }
+    session.update(extra)
+    return {"type": "checkout.session.completed", "data": {"object": session}}
+
+
+def _pass_grant(changes: list):
+    grants = [change for change in changes if isinstance(change, GrantModulePass)]
+    assert len(grants) == 1
+    return grants[0]
+
+
+def test_full_price_discounted_and_comped_passes_grant_the_same_access() -> None:
+    """A promotion changes the charge, not the pass. 100% off is no_payment_required."""
+    full = _pass_grant(
+        _recruit(_recruit_90day(payment_status="paid", amount_total=5900))
+    )
+    discounted = _pass_grant(
+        _recruit(
+            _recruit_90day(
+                payment_status="paid",
+                amount_subtotal=5900,
+                amount_total=4500,
+            )
+        )
+    )
+    comped = _pass_grant(
+        _recruit(
+            _recruit_90day(payment_status="no_payment_required", amount_total=0)
+        )
+    )
+    assert full == discounted == comped
+    assert full.expires_at == NOW + timedelta(days=90)
+    assert full.module == "recruit"
+
+
+def test_an_unpaid_complete_pass_does_not_entitle() -> None:
+    changes = _recruit(_recruit_90day(payment_status="unpaid"))
+    assert changes == [LinkCustomer(user_id=USER, customer_id=CUSTOMER)]
+
+
+def test_a_fully_discounted_subscription_checkout_still_entitles() -> None:
+    changes = _recruit(
+        {
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "client_reference_id": USER,
+                    "customer": CUSTOMER,
+                    "mode": "subscription",
+                    "status": "complete",
+                    "payment_status": "no_payment_required",
+                    "metadata": {"price_id": "price_recruit_mo"},
+                }
+            },
+        }
+    )
+    assert changes == [
+        LinkCustomer(user_id=USER, customer_id=CUSTOMER),
+        SetModuleSubscription(user_id=USER, module="recruit", status="active"),
+    ]
+
+
+def test_an_unpaid_complete_subscription_checkout_does_not_entitle() -> None:
+    changes = _recruit(
+        {
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "client_reference_id": USER,
+                    "customer": CUSTOMER,
+                    "mode": "subscription",
+                    "status": "complete",
+                    "payment_status": "unpaid",
+                    "metadata": {"price_id": "price_recruit_mo"},
+                }
+            },
+        }
+    )
+    assert changes == [LinkCustomer(user_id=USER, customer_id=CUSTOMER)]
+
+
 def test_an_unpaid_open_recruit_subscription_checkout_only_links() -> None:
     changes = _recruit(
         {
