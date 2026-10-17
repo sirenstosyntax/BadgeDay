@@ -125,15 +125,23 @@ deploy_app() {
 say "Web app ($WEB_APP)"
 deploy_app "$WEB_APP" "--ingress external --target-port 8000" --min-replicas 1 --max-replicas 3
 
-FQDN="$(az containerapp show --name "$WEB_APP" --resource-group "$RESOURCE_GROUP" \
-  --query 'properties.configuration.ingress.fqdn' -o tsv)"
-WEB_URL="https://${FQDN}"
-
 # PUBLIC_WEB_URL is where Stripe returns the candidate after checkout, so it must be a host
 # that actually answers. Once the custom domain is bound, that is the canonical host and not
 # the ingress FQDN — but only if it is really bound, so a fresh deployment (or a copy of this
 # script pointed at other resources) still gets a URL that works. Ask Azure rather than trust
 # the default: a hostname the candidate lands on after paying is not the place to guess.
+# An empty FQDN would make WEB_URL "https://" and that value would be written to both apps.
+FQDN="$(az containerapp show --name "$WEB_APP" --resource-group "$RESOURCE_GROUP" \
+  --query 'properties.configuration.ingress.fqdn' -o tsv)" || {
+  echo "error: could not read the ingress FQDN for $WEB_APP. Refusing to set PUBLIC_WEB_URL on $WEB_APP or $WORKER_APP." >&2
+  exit 1
+}
+if [[ -z "$FQDN" ]]; then
+  echo "error: $WEB_APP returned an empty ingress FQDN. PUBLIC_WEB_URL would be https://. Refusing to set it on $WEB_APP or $WORKER_APP." >&2
+  exit 1
+fi
+WEB_URL="https://${FQDN}"
+
 if [[ -n "$CANONICAL_WEB_URL" ]]; then
   # Compare and rebuild from the bare host, so a value given with a scheme or a trailing
   # slash still matches Azure's hostname list and still yields a clean https:// origin.
@@ -165,6 +173,46 @@ az containerapp update --name "$WEB_APP" --resource-group "$RESOURCE_GROUP" \
 # flags, and the entry point sidesteps that entirely.
 say "Worker app ($WORKER_APP)"
 deploy_app "$WORKER_APP" "" --min-replicas 1 --max-replicas 1 --command "badgeday-worker"
+
+# Same overwrite the web app just did. Otherwise the worker keeps .env and
+# falls back to localhost.
+say "Setting PUBLIC_WEB_URL=$WEB_URL"
+az containerapp secret set --name "$WORKER_APP" --resource-group "$RESOURCE_GROUP" \
+  --secrets "public-web-url=${WEB_URL}" -o none
+az containerapp update --name "$WORKER_APP" --resource-group "$RESOURCE_GROUP" \
+  --set-env-vars "PUBLIC_WEB_URL=secretref:public-web-url" -o none
+
+# deploy_app already started a revision from .env, which may be localhost.
+# A secret change does not start another revision, and the env update above
+# is the same secretref. Right after deploy_app, latestReadyRevisionName can
+# still be the revision being retired while the new one starts. Wait until
+# it equals latestRevisionName, then restart that revision so the process
+# reads the secret. Single revision mode is the default.
+deadline=$((SECONDS + 300))
+WORKER_REVISION=""
+LATEST_REVISION=""
+while true; do
+  WORKER_REVISION="$(az containerapp show --name "$WORKER_APP" --resource-group "$RESOURCE_GROUP" \
+    --query 'properties.latestReadyRevisionName' -o tsv)"
+  LATEST_REVISION="$(az containerapp show --name "$WORKER_APP" --resource-group "$RESOURCE_GROUP" \
+    --query 'properties.latestRevisionName' -o tsv)"
+  if [[ -n "$WORKER_REVISION" && "$WORKER_REVISION" == "$LATEST_REVISION" ]]; then
+    break
+  fi
+  if (( SECONDS >= deadline )); then
+    echo "error: timed out waiting for $WORKER_APP's new revision to become ready. The worker still needs a manual restart to pick up PUBLIC_WEB_URL: az containerapp revision restart --name $WORKER_APP --resource-group $RESOURCE_GROUP --revision $LATEST_REVISION" >&2
+    exit 1
+  fi
+  sleep 5
+done
+say "Restarting $WORKER_REVISION so it reads PUBLIC_WEB_URL"
+if ! az containerapp revision restart \
+  --name "$WORKER_APP" \
+  --resource-group "$RESOURCE_GROUP" \
+  --revision "$WORKER_REVISION"; then
+  echo "error: revision restart failed. The worker still needs a manual restart to pick up PUBLIC_WEB_URL: az containerapp revision restart --name $WORKER_APP --resource-group $RESOURCE_GROUP --revision $WORKER_REVISION" >&2
+  exit 1
+fi
 
 # --- Done ------------------------------------------------------------------------------
 say "Deployed."
