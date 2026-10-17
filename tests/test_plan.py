@@ -14,6 +14,8 @@ from app.billing.plan import (
     GrantPass,
     LinkCustomer,
     SetSubscription,
+    checkout_session_discounted,
+    discounted_checkout_must_not_grant,
     plan_changes,
 )
 
@@ -27,6 +29,21 @@ def _changes(event: dict) -> list:
 
 
 # --- Checkout ----------------------------------------------------------------
+
+
+def test_a_discount_is_an_amount_or_a_nonempty_discounts_list() -> None:
+    assert checkout_session_discounted({"total_details": {"amount_discount": 1}})
+    assert checkout_session_discounted({"discounts": [{"coupon": "student"}]})
+    assert not checkout_session_discounted({})
+    assert not checkout_session_discounted({"total_details": {"amount_discount": 0}})
+    assert not checkout_session_discounted({"discounts": []})
+    event = {
+        "type": "checkout.session.completed",
+        "data": {"object": {"total_details": {"amount_discount": 500}}},
+    }
+    assert discounted_checkout_must_not_grant(event, module="promote")
+    assert discounted_checkout_must_not_grant(event, module=None)
+    assert not discounted_checkout_must_not_grant(event, module="recruit")
 
 
 def test_a_paid_pass_checkout_links_the_customer_and_grants_the_pass() -> None:

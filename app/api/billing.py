@@ -36,6 +36,7 @@ from app.billing.plan import (
     RECRUIT_PLANS,
     LinkCustomer,
     Plan,
+    discounted_checkout_must_not_grant,
     plan_changes,
     stripe_price_id_from_event,
 )
@@ -136,6 +137,7 @@ def checkout(
         allow_promotion_codes=(
             settings.stripe_allow_promotion_codes and body.plan in RECRUIT_PLANS
         ),
+        payment_method_types=["card"],
     )
     return Redirect(url=url)
 
@@ -195,6 +197,25 @@ async def webhook(
     now = datetime.now(UTC)
     price_id = stripe_price_id_from_event(event)
     module = module_for_stripe_price(settings, price_id)
+
+    # A coupon on a non-Recruit price must not entitle. Acknowledge and write
+    # nothing: granting the pass or the subscription at the reduced price is
+    # the failure this closes. Recruit discounts still fall through.
+    if discounted_checkout_must_not_grant(event, module=module):
+        session = (event.get("data") or {}).get("object") or {}
+        details = session.get("total_details") if isinstance(session, dict) else {}
+        if not isinstance(details, dict):
+            details = {}
+        logger.error(
+            "refusing checkout.session.completed with a discount on a non-Recruit "
+            "price; no entitlement written price_id=%s module=%s customer=%s "
+            "amount_discount=%s",
+            price_id or "",
+            module or "unmapped",
+            stripe_object_id(session.get("customer")) if isinstance(session, dict) else "",
+            details.get("amount_discount"),
+        )
+        return {"received": True}
 
     # Grant paths fail closed: a missing or unknown price must not fall
     # open to Promote plan_changes. Only a mapped Promote price writes

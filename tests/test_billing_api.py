@@ -224,6 +224,20 @@ def test_recruit_checkout_allows_promotion_codes_only_when_the_flag_is_set(
     response = promote.post("/billing/checkout", json={"plan": "monthly"})
     assert response.status_code == 200
     assert promote_gateway.checkouts[0]["allow_promotion_codes"] is False
+    assert promote_gateway.checkouts[0]["payment_method_types"] == ["card"]
+
+
+def test_recruit_checkout_is_card_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ACH is async: checkout can complete unpaid, and we do not grant on unpaid."""
+    client, gateway, _ = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
+    response = client.post("/billing/checkout", json={"plan": "recruit_monthly"})
+    assert response.status_code == 200
+    assert gateway.checkouts[0]["payment_method_types"] == ["card"]
+
+    promote, promote_gateway, _ = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
+    response = promote.post("/billing/checkout", json={"plan": "intensive_90day"})
+    assert response.status_code == 200
+    assert promote_gateway.checkouts[0]["payment_method_types"] == ["card"]
 
 
 def test_promote_checkout_is_unchanged_when_recruit_prices_are_also_set(
@@ -584,6 +598,86 @@ def test_recruit_subscription_updated_resolves_user_from_linked_customer(
     assert applied == [
         SetModuleSubscription(user_id=USER_ID, module="recruit", status="active")
     ]
+
+
+def test_a_discounted_promote_checkout_grants_nothing(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Fail closed: a coupon on a Promote price writes no pass and no link."""
+    client, gateway, applied = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
+    gateway.event = {
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "client_reference_id": USER_ID,
+                "customer": "cus_existing",
+                "mode": "payment",
+                "payment_status": "paid",
+                "status": "complete",
+                "metadata": {"price_id": "price_intensive"},
+                "total_details": {"amount_discount": 2900, "amount_total": 10000},
+            }
+        },
+    }
+    with caplog.at_level(logging.ERROR):
+        response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
+    assert response.status_code == 200
+    assert response.json() == {"received": True}
+    assert applied == []
+    assert "non-Recruit" in caplog.text
+    assert "price_intensive" in caplog.text
+
+
+def test_a_promote_checkout_with_a_discount_list_grants_nothing(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    client, gateway, applied = _harness(monkeypatch)
+    gateway.event = {
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "client_reference_id": USER_ID,
+                "customer": "cus_existing",
+                "mode": "subscription",
+                "payment_status": "paid",
+                "metadata": {"price_id": "price_monthly"},
+                "discounts": [{"promotion_code": "promo_student"}],
+            }
+        },
+    }
+    with caplog.at_level(logging.ERROR):
+        response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
+    assert response.status_code == 200
+    assert applied == []
+    assert "no entitlement written" in caplog.text
+
+
+def test_a_discounted_recruit_checkout_still_grants(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.storage.entitlements import GrantModulePass
+
+    client, gateway, applied = _harness(monkeypatch, settings=RECRUIT_CONFIGURED)
+    gateway.event = {
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "client_reference_id": USER_ID,
+                "customer": "cus_existing",
+                "mode": "payment",
+                "payment_status": "paid",
+                "status": "complete",
+                "metadata": {"price_id": "price_recruit_90"},
+                "total_details": {"amount_discount": 5900},
+                "discounts": [{"coupon": "student"}],
+            }
+        },
+    }
+    response = client.post("/billing/webhook", content=b"{}", headers={"stripe-signature": "x"})
+    assert response.status_code == 200
+    assert applied[0] == LinkCustomer(user_id=USER_ID, customer_id="cus_existing")
+    assert isinstance(applied[1], GrantModulePass)
+    assert applied[1].module == "recruit"
 
 
 def test_a_promote_subscription_checkout_still_only_links(

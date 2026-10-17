@@ -37,6 +37,7 @@ class PaymentGateway(Protocol):
         cancel_url: str,
         metadata: dict[str, str] | None = None,
         allow_promotion_codes: bool = False,
+        payment_method_types: list[str] | None = None,
     ) -> str:
         """Create a checkout session and return the URL to send the candidate to."""
         ...
@@ -62,6 +63,46 @@ class PaymentGateway(Protocol):
         invented".
         """
         ...
+
+
+def checkout_session_params(
+    *,
+    mode: Literal["subscription", "payment"],
+    price_id: str,
+    customer_id: str,
+    client_reference_id: str,
+    success_url: str,
+    cancel_url: str,
+    metadata: dict[str, str] | None = None,
+    allow_promotion_codes: bool = False,
+    payment_method_types: list[str] | None = None,
+) -> dict[str, object]:
+    """The Checkout Session create params. Card only, on every plan.
+
+    ACH and other async methods can finish ``checkout.session.completed`` as
+    ``unpaid``. We do not grant on unpaid, so the buyer can be charged later
+    and never receive the pass. ``card`` is synchronous. Apple Pay and Google
+    Pay are wallets on that type; ``link`` is not included.
+    """
+    session_metadata = {key: value for key, value in (metadata or {}).items() if value}
+    params: dict[str, object] = {
+        "mode": mode,
+        "customer": customer_id,
+        "client_reference_id": client_reference_id,
+        "line_items": [{"price": price_id, "quantity": 1}],
+        "success_url": success_url,
+        "cancel_url": cancel_url,
+        "payment_method_types": list(payment_method_types or ["card"]),
+    }
+    if session_metadata:
+        params["metadata"] = session_metadata
+        # Subscription events do not include the checkout session. Copy the
+        # same ids onto the subscription so later renewals still map to a module.
+        if mode == "subscription":
+            params["subscription_data"] = {"metadata": session_metadata}
+    if allow_promotion_codes:
+        params["allow_promotion_codes"] = True
+    return params
 
 
 class StripeGateway:
@@ -91,24 +132,19 @@ class StripeGateway:
         cancel_url: str,
         metadata: dict[str, str] | None = None,
         allow_promotion_codes: bool = False,
+        payment_method_types: list[str] | None = None,
     ) -> str:
-        session_metadata = {key: value for key, value in (metadata or {}).items() if value}
-        params: dict[str, object] = {
-            "mode": mode,
-            "customer": customer_id,
-            "client_reference_id": client_reference_id,
-            "line_items": [{"price": price_id, "quantity": 1}],
-            "success_url": success_url,
-            "cancel_url": cancel_url,
-        }
-        if session_metadata:
-            params["metadata"] = session_metadata
-            # Subscription events do not include the checkout session. Copy the
-            # same ids onto the subscription so later renewals still map to a module.
-            if mode == "subscription":
-                params["subscription_data"] = {"metadata": session_metadata}
-        if allow_promotion_codes:
-            params["allow_promotion_codes"] = True
+        params = checkout_session_params(
+            mode=mode,
+            price_id=price_id,
+            customer_id=customer_id,
+            client_reference_id=client_reference_id,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata=metadata,
+            allow_promotion_codes=allow_promotion_codes,
+            payment_method_types=payment_method_types,
+        )
         session = self._client.checkout.sessions.create(params=params)
         if session.url is None:
             raise RuntimeError("Stripe returned a checkout session without a URL.")
