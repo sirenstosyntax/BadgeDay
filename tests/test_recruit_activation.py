@@ -23,6 +23,7 @@ from app.recruit.followup import (
     RESULTS_SUBJECT,
     BoardSummary,
     FollowUpState,
+    apply_signup_attribution,
     apply_signup_src,
     apply_test_date,
     render_results,
@@ -238,6 +239,122 @@ def test_signup_src_is_stored_once_and_a_missing_tag_writes_nothing() -> None:
     assert apply_signup_src(FollowUpState(), None).signup_src is None
     once = apply_signup_src(FollowUpState(), "test1")
     assert apply_signup_src(once, "other").signup_src == "test1"
+
+
+def test_first_touch_keeps_src_and_stores_referrer_and_utm_once() -> None:
+    db = FakeDb()
+    db.tables["profiles"].append(_profile())
+    store_signup_src(
+        db,
+        USER,
+        "test1",
+        NOW,
+        referrer_domain="news.ycombinator.com",
+        utm_source="hn",
+        utm_medium="social",
+        utm_campaign="oct",
+    )
+    row = _row(db)
+    assert row["signup_src"] == "test1"
+    assert row["signup_referrer_domain"] == "news.ycombinator.com"
+    assert row["signup_utm_source"] == "hn"
+    assert row["signup_utm_medium"] == "social"
+    assert row["signup_utm_campaign"] == "oct"
+
+    # A later landing does not replace the first write, and src stays the tag.
+    store_signup_src(
+        db,
+        USER,
+        "other",
+        NOW,
+        referrer_domain="bing.com",
+        utm_source="bing",
+        utm_medium="cpc",
+        utm_campaign="later",
+    )
+    assert _row(db)["signup_src"] == "test1"
+    assert _row(db)["signup_referrer_domain"] == "news.ycombinator.com"
+    assert _row(db)["signup_utm_source"] == "hn"
+
+    # No ?src= still records the touch, and does not invent a signup_src.
+    bare = FakeDb()
+    bare.tables["profiles"].append(_profile())
+    store_signup_src(
+        bare,
+        USER,
+        None,
+        NOW,
+        referrer_domain="google.com",
+        utm_source="newsletter",
+        utm_medium="email",
+        utm_campaign="oct-16",
+    )
+    assert _row(bare)["signup_src"] is None
+    assert _row(bare)["signup_referrer_domain"] == "google.com"
+    assert _row(bare)["signup_utm_source"] == "newsletter"
+
+    # Path, own hosts, IPs, and tags that fail the src rule are dropped.
+    dropped = FakeDb()
+    dropped.tables["profiles"].append(_profile())
+    store_signup_src(
+        dropped,
+        USER,
+        None,
+        NOW,
+        referrer_domain="https://news.ycombinator.com/item?id=1",
+        utm_source="has space",
+        utm_medium="email",
+        utm_campaign="x" * 65,
+    )
+    assert _row(dropped)["signup_src"] is None
+    assert _row(dropped)["signup_referrer_domain"] is None
+    assert _row(dropped)["signup_utm_source"] is None
+    assert _row(dropped)["signup_utm_medium"] == "email"
+    assert _row(dropped)["signup_utm_campaign"] is None
+
+    for host in (
+        "app.badgeday.com",
+        "www.badgeday.com",
+        "BADGEDAY.COM",
+        "api.badgeday.com",
+        "badgeday.app",
+        "www.badgeday.app",
+        "sirenstosyntax.com",
+        "WWW.SIRENSTOSYNTAX.COM",
+        "8.8.8.8",
+        "2001:db8::1",
+    ):
+        again = FakeDb()
+        again.tables["profiles"].append(_profile())
+        store_signup_src(again, USER, None, NOW, referrer_domain=host)
+        assert again.tables["profiles"][0].get("signup_referrer_domain") is None
+        assert again.tables["profiles"][0]["signup_src"] is None
+
+    old = FakeDb()
+    old.tables["profiles"].append(
+        _profile(created_at=(NOW - timedelta(days=30)).isoformat())
+    )
+    store_signup_src(old, USER, None, NOW, referrer_domain="google.com", utm_source="hn")
+    assert old.tables["profiles"][0].get("signup_referrer_domain") is None
+    assert old.tables["profiles"][0].get("signup_utm_source") is None
+
+    tagged = apply_signup_attribution(
+        FollowUpState(),
+        src="test1",
+        referrer_domain="google.com",
+    )
+    assert tagged.signup_src == "test1"
+    assert tagged.signup_referrer_domain == "google.com"
+    assert apply_signup_attribution(tagged, src="other", referrer_domain="bing.com") == tagged
+
+    migration = (ROOT / "supabase/migrations/0018_signup_first_touch.sql").read_text()
+    assert "add column if not exists signup_referrer_domain text" in migration
+    assert "add column if not exists signup_utm_source text" in migration
+    assert "add column if not exists signup_utm_medium text" in migration
+    assert "add column if not exists signup_utm_campaign text" in migration
+    assert "profiles_signup_referrer_domain_shape" in migration
+    assert "if not exists" in migration
+    assert "create table" not in migration.lower()
 
 
 def test_finishing_the_free_board_sends_one_results_email_within_five_minutes() -> None:
@@ -495,6 +612,22 @@ def test_signup_and_test_date_routes_write_the_signed_in_account() -> None:
     assert _row(db)["signup_src"] is None
     assert client.post("/me/signup-src", json={"src": "test1"}).status_code == 204
     assert _row(db)["signup_src"] == "test1"
+    assert (
+        client.post(
+            "/me/signup-src",
+            json={
+                "src": "other",
+                "referrer_domain": "google.com",
+                "utm_source": "newsletter",
+                "utm_medium": "has space",
+            },
+        ).status_code
+        == 204
+    )
+    assert _row(db)["signup_src"] == "test1"
+    assert _row(db)["signup_referrer_domain"] == "google.com"
+    assert _row(db)["signup_utm_source"] == "newsletter"
+    assert _row(db)["signup_utm_medium"] is None
 
     assert client.put("/me/recruit-test-date", json={"test_on": "2026-11-14"}).status_code == 204
     assert _row(db)["recruit_test_on"] == "2026-11-14"

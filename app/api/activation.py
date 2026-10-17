@@ -23,6 +23,10 @@ _INVALID = "This unsubscribe link is not valid."
 
 class SignupSrcBody(BaseModel):
     src: str | None = None
+    referrer_domain: str | None = None
+    utm_source: str | None = None
+    utm_medium: str | None = None
+    utm_campaign: str | None = None
 
 
 class TestDateBody(BaseModel):
@@ -31,8 +35,16 @@ class TestDateBody(BaseModel):
 
 @router.post("/me/signup-src", status_code=204)
 def post_signup_src(body: SignupSrcBody, user: CurrentUserDep, service: ServiceDbDep) -> None:
-    """Store the link tag once. A missing or invalid tag writes nothing."""
-    store_signup_src(service, user.id, body.src)
+    """Store the link tag and first-touch columns once. Invalid values write nothing."""
+    store_signup_src(
+        service,
+        user.id,
+        body.src,
+        referrer_domain=body.referrer_domain,
+        utm_source=body.utm_source,
+        utm_medium=body.utm_medium,
+        utm_campaign=body.utm_campaign,
+    )
 
 
 @router.put("/me/recruit-test-date", status_code=204)

@@ -102,10 +102,16 @@ export const api = {
     // Hard-deletes the candidate and everything of theirs, and cancels billing. The token
     // is invalid the instant this returns — the caller signs out immediately after.
     remove: () => request<void>('/me', { method: 'DELETE' }),
-    setSignupSrc: (src: string) =>
+    setSignupSrc: (body: {
+      src?: string
+      referrer_domain?: string
+      utm_source?: string
+      utm_medium?: string
+      utm_campaign?: string
+    }) =>
       request<void>('/me/signup-src', {
         method: 'POST',
-        body: JSON.stringify({ src }),
+        body: JSON.stringify(body),
       }),
     setTestDate: (testOn: string | null) =>
       request<void>('/me/recruit-test-date', {
