@@ -166,6 +166,14 @@ az containerapp update --name "$WEB_APP" --resource-group "$RESOURCE_GROUP" \
 say "Worker app ($WORKER_APP)"
 deploy_app "$WORKER_APP" "" --min-replicas 1 --max-replicas 1 --command "badgeday-worker"
 
+# Same overwrite the web app just did. Otherwise the worker keeps .env and
+# falls back to localhost.
+say "Setting PUBLIC_WEB_URL=$WEB_URL"
+az containerapp secret set --name "$WORKER_APP" --resource-group "$RESOURCE_GROUP" \
+  --secrets "public-web-url=${WEB_URL}" -o none
+az containerapp update --name "$WORKER_APP" --resource-group "$RESOURCE_GROUP" \
+  --set-env-vars "PUBLIC_WEB_URL=secretref:public-web-url" -o none
+
 # --- Done ------------------------------------------------------------------------------
 say "Deployed."
 echo "    Web:  $WEB_URL"
