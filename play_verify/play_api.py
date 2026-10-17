@@ -15,6 +15,9 @@ from collections.abc import Callable
 
 ANDROID_PUBLISHER_SCOPE = "https://www.googleapis.com/auth/androidpublisher"
 PLAY_API_ROOT = "https://androidpublisher.googleapis.com/androidpublisher/v3"
+# Same agent as Resend. urllib's default "Python-urllib/x" is blocked by
+# Cloudflare (error 1010) on hosts that sit behind it.
+USER_AGENT = "BadgeDay/1.0 (+https://app.badgeday.com)"
 
 RequestFn = Callable[[str, str, dict | None], tuple[int, str]]
 
@@ -159,7 +162,11 @@ class MetadataAuthorizedRequest:
     def __call__(self, method: str, url: str, body: dict | None) -> tuple[int, str]:
         access = self._access_token()
         data = None if body is None else json.dumps(body).encode()
-        headers = {"Authorization": f"Bearer {access}", "Accept": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {access}",
+            "Accept": "application/json",
+            "User-Agent": USER_AGENT,
+        }
         if data is not None:
             headers["Content-Type"] = "application/json"
         request = urllib.request.Request(url, data=data, headers=headers, method=method)

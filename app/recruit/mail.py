@@ -20,6 +20,9 @@ from app.config import Settings
 logger = logging.getLogger(__name__)
 
 RESEND_URL = "https://api.resend.com/emails"
+# Cloudflare in front of api.resend.com rejects urllib's default
+# "Python-urllib/x" User-Agent with 403 error 1010.
+USER_AGENT = "BadgeDay/1.0 (+https://app.badgeday.com)"
 
 
 @dataclass(frozen=True)
@@ -78,6 +81,7 @@ class ResendSender:
                 "Authorization": f"Bearer {self._api_key}",
                 "Content-Type": "application/json",
                 "Accept": "application/json",
+                "User-Agent": USER_AGENT,
             },
             method="POST",
         )

@@ -24,6 +24,9 @@ from typing import Any
 from app.billing.store_gateway import StoreNotConfigured, StoreVerificationError
 
 _TIMEOUT_SECONDS = 15
+# Same agent as Resend. urllib's default "Python-urllib/x" is blocked by
+# Cloudflare (error 1010) on hosts that sit behind it.
+USER_AGENT = "BadgeDay/1.0 (+https://app.badgeday.com)"
 
 
 class _RefuseRedirect(urllib.request.HTTPRedirectHandler):
@@ -113,6 +116,7 @@ class KeylessProxyPlayClient:
                 "Authorization": f"Bearer {self._secret}",
                 "Content-Type": "application/json",
                 "Accept": "application/json",
+                "User-Agent": USER_AGENT,
             },
         )
         try:
