@@ -326,7 +326,9 @@ def reviewable(db: Client, session_id: str) -> list[ReviewItem]:
     """Everything answered in a session, with its answer and citation.
 
     Reads answered_questions, which joins through responses — so a question is reviewable
-    only once it has been answered.
+    only once it has been answered. The view is security invoker over
+    answered_question_rows() (migration 0019). Answer columns stay revoked on
+    questions.
     """
     rows = (
         db.table("answered_questions")
