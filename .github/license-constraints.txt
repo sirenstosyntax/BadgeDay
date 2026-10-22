@@ -1,0 +1,6 @@
+# Applied only by .github/workflows/licenses.yml.
+# There is no Python lockfile. An unconstrained install resolves the newest
+# certifi, and a new PyPI release would fail the pinned row in
+# license-exceptions.toml without a repo change. Keep this pin equal to that
+# row. The API image does not use this file.
+certifi==2026.10.19

@@ -34,6 +34,7 @@ jobs:
           cache-dependency-path: |
             pyproject.toml
             deploy/play-verify/requirements.txt
+            .github/license-constraints.txt
 
       - uses: actions/setup-node@v4
         with:
@@ -48,11 +49,16 @@ jobs:
       # project is built by hatchling from pyproject.toml.
       # Install dev only. The ops extra is migration tooling and stays out of
       # this job, so its packages are not part of the scanned tree.
+      # No Python lockfile exists. The constraint file is used only here and
+      # pins certifi to the reviewed release in license-exceptions.toml.
       - name: Install Python dependencies
         run: |
           python -m pip install --only-binary=:all: \
+            -c .github/license-constraints.txt \
             -e ".[dev]" -r deploy/play-verify/requirements.txt
-          python -m pip install --only-binary=:all: "pip-licenses==5.5.5"
+          python -m pip install --only-binary=:all: \
+            -c .github/license-constraints.txt \
+            "pip-licenses==5.5.5"
 
       # --ignore-scripts: license metadata is in the published package, and a
       # postinstall hook is not part of the license check.
