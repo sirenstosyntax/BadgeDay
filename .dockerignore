@@ -15,7 +15,10 @@ web/dist
 
 # Not needed at runtime.
 .git
-.github
+# Exclude the directory's contents, not the directory, so the certifi pin can
+# be re-included. A negated path under an excluded parent never enters the context.
+.github/*
+!.github/license-constraints.txt
 tests
 supabase
 scripts
