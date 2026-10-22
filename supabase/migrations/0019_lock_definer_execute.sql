@@ -38,10 +38,16 @@
 -- There is no committed cross-user write through those two RPCs.
 --
 -- The live check also rejects the service role, because auth.uid() is null
--- on that JWT. The worker does not call these two functions (it calls
--- complete_queued_recruit_attempt and persist_recruit_completed_attempt).
--- reject_unless_self_or_service keeps the client check and lets service_role
--- pass a user id, which is how persist_recruit_completed_attempt has to work.
+-- on that JWT. That rejection stays. The worker does not call these two
+-- functions (it calls complete_queued_recruit_attempt and
+-- persist_recruit_completed_attempt). CREATE OR REPLACE keeps existing
+-- grants, and the live ACLs already include service_role, so this migration
+-- revokes EXECUTE on both from service_role and grants it only to
+-- authenticated.
+--
+-- reject_unless_self_or_service is only for has_access, has_module_access,
+-- has_recruit_access, and persist_recruit_completed_attempt. The last of
+-- those is how the worker writes a completed attempt for a user id.
 --
 -- has_access(candidate), has_module_access, and has_recruit_access are reads.
 -- Before this migration any anon or signed-in caller could pass another
@@ -190,7 +196,9 @@ begin
     raise exception 'missing or invalid board arguments' using errcode = '22023';
   end if;
 
-  perform public.reject_unless_self_or_service(p_user_id);
+  if p_user_id is distinct from auth.uid() then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
 
   if exists (
     select 1 from public.recruit_boards
@@ -225,9 +233,9 @@ end;
 $$;
 
 revoke all on function public.start_recruit_board(uuid, uuid, timestamptz, jsonb)
-  from public, anon;
+  from public, anon, service_role;
 grant execute on function public.start_recruit_board(uuid, uuid, timestamptz, jsonb)
-  to authenticated, service_role;
+  to authenticated;
 
 create or replace function public.submit_queued_recruit_attempt(
   p_id uuid,
@@ -251,7 +259,9 @@ begin
     raise exception 'missing required argument' using errcode = '22023';
   end if;
 
-  perform public.reject_unless_self_or_service(p_user_id);
+  if p_user_id is distinct from auth.uid() then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
 
   insert into public.recruit_attempts (
     id, user_id, scenario_id, question_text, started_at,
@@ -276,10 +286,10 @@ $$;
 
 revoke all on function public.submit_queued_recruit_attempt(
   uuid, uuid, text, text, timestamptz, text, text, uuid, integer
-) from public, anon;
+) from public, anon, service_role;
 grant execute on function public.submit_queued_recruit_attempt(
   uuid, uuid, text, text, timestamptz, text, text, uuid, integer
-) to authenticated, service_role;
+) to authenticated;
 
 -- Service-role only, and it takes p_user_id. The worker calls it with the
 -- service-role key. The guard is what stops a later grant to authenticated
