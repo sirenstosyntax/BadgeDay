@@ -423,7 +423,7 @@ def test_worker_passes_computed_metrics_into_critique_answer(monkeypatch) -> Non
     )
     monkeypatch.setattr("app.worker.pipeline.mark_running", lambda *a: None)
     monkeypatch.setattr("app.worker.pipeline.download_audio", lambda db, path: b"fake-audio")
-    monkeypatch.setattr("app.worker.pipeline.delete_audio", lambda db, path: None)
+    monkeypatch.setattr("app.worker.pipeline.discard_audio", lambda *args, **kwargs: None)
 
     job = Job(
         id="job-r",
@@ -478,7 +478,7 @@ def test_worker_loads_rubric_by_criterion_id_not_scenario_id(monkeypatch) -> Non
     )
     monkeypatch.setattr("app.worker.pipeline.mark_running", lambda *a: None)
     monkeypatch.setattr("app.worker.pipeline.download_audio", lambda db, path: b"fake-audio")
-    monkeypatch.setattr("app.worker.pipeline.delete_audio", lambda db, path: None)
+    monkeypatch.setattr("app.worker.pipeline.discard_audio", lambda *args, **kwargs: None)
 
     job = Job(
         id="job-r",
@@ -523,7 +523,7 @@ def test_worker_legacy_c2_attempt_still_loads_c2_rubric(monkeypatch) -> None:
     )
     monkeypatch.setattr("app.worker.pipeline.mark_running", lambda *a: None)
     monkeypatch.setattr("app.worker.pipeline.download_audio", lambda db, path: b"xxxx")
-    monkeypatch.setattr("app.worker.pipeline.delete_audio", lambda db, path: None)
+    monkeypatch.setattr("app.worker.pipeline.discard_audio", lambda *args, **kwargs: None)
 
     job = Job(
         id="job-r",

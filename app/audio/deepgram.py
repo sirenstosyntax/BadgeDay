@@ -6,7 +6,10 @@ a transcriber. The listen call already exists as a configured paid API
 (`DEEPGRAM_API_KEY`); this file does not add a package.
 
 The request matches `scripts/asr_check.py`: nova-2, filler_words on, smart_format
-off. smart_format tidies speech, which is the failure mode for filler metrics.
+off, and `mip_opt_out=true`. smart_format tidies speech, which is the failure mode
+for filler metrics. The opt-out is Deepgram's per-request Model Improvement
+Program switch: without it, audio and transcripts are retained to train models.
+https://developers.deepgram.com/trust-security/your-data
 """
 
 from pathlib import Path
@@ -17,6 +20,22 @@ from app.audio.models import Transcript, Word
 from app.config import Settings
 
 LISTEN_URL = "https://api.deepgram.com/v1/listen"
+
+
+def listen_params(model: str) -> dict[str, str]:
+    """Query string for one pre-recorded listen call.
+
+    `mip_opt_out=true` is the documented opt-out. Opted-out audio and transcripts
+    are kept only while Deepgram is producing the transcript. Usage logs, which
+    do not contain the audio or the transcript, are a separate record.
+    """
+    return {
+        "model": model,
+        "filler_words": "true",
+        "punctuate": "true",
+        "smart_format": "false",
+        "mip_opt_out": "true",
+    }
 
 
 def transcript_from_deepgram(payload: dict) -> Transcript:
@@ -51,12 +70,7 @@ class DeepgramTranscriber:
             raise RuntimeError("DEEPGRAM_API_KEY is not set")
         response = httpx.post(
             LISTEN_URL,
-            params={
-                "model": self._model,
-                "filler_words": "true",
-                "punctuate": "true",
-                "smart_format": "false",
-            },
+            params=listen_params(self._model),
             headers={"Authorization": f"Token {self._key}"},
             content=path.read_bytes(),
             timeout=300,

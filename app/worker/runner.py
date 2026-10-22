@@ -23,7 +23,12 @@ from supabase import Client
 from app.config import Settings, get_settings
 from app.storage.client import service_client
 from app.storage.documents import set_status
-from app.storage.recruit import delete_audio, get_attempt, mark_failed
+from app.storage.recruit import (
+    RECRUIT_AUDIO_RETAINED_AFTER_SCORING_FAILURE,
+    discard_audio,
+    get_attempt,
+    mark_failed,
+)
 from app.worker.jobs import Job, claim, fail, requeue_stale, succeed
 from app.worker.pipeline import HANDLERS, AttemptGone, DocumentGone, EmptyRecruitAudio
 
@@ -31,6 +36,9 @@ logger = logging.getLogger(__name__)
 
 IDLE_SLEEP_SECONDS = 5
 STALE_SWEEP_EVERY = 60
+# A recording older than a day has outlived transcription. The check itself
+# runs monthly: the delete-failure metric is the immediate alert.
+AUDIO_RETENTION_CHECK_EVERY = 30 * 24 * 60 * 60
 
 
 def run_one(db: Client, settings: Settings, worker: str) -> bool:
@@ -64,7 +72,12 @@ def run_one(db: Client, settings: Settings, worker: str) -> bool:
         attempt = get_attempt(db, exc.attempt_id)
         path = attempt.audio_storage_path if attempt else None
         mark_failed(db, exc.attempt_id, exc.detail)
-        delete_audio(db, path)
+        discard_audio(
+            db,
+            path,
+            attempt_id=exc.attempt_id,
+            metric=RECRUIT_AUDIO_RETAINED_AFTER_SCORING_FAILURE,
+        )
         from app.worker.pipeline import _maybe_enqueue_c1
 
         _maybe_enqueue_c1(db, attempt.board_id if attempt else None)
@@ -92,7 +105,12 @@ def _give_up(db: Client, job: Job, detail: str) -> None:
             job.attempt_id,
             "The critique could not be finished. Try a new question.",
         )
-        delete_audio(db, path)
+        discard_audio(
+            db,
+            path,
+            attempt_id=job.attempt_id,
+            metric=RECRUIT_AUDIO_RETAINED_AFTER_SCORING_FAILURE,
+        )
         from app.worker.pipeline import _maybe_enqueue_c1
 
         _maybe_enqueue_c1(db, attempt.board_id if attempt else None)
@@ -109,6 +127,21 @@ def _give_up(db: Client, job: Job, detail: str) -> None:
         )
 
 
+def _sweep_audio_retention(db: Client, last_check: float | None, now: float) -> float:
+    """List recruit-audio. ERROR, and return, when anything is older than a day."""
+    if last_check is not None and now - last_check < AUDIO_RETENTION_CHECK_EVERY:
+        return last_check
+    from app.storage.recruit_audio_retention import enforce_recruit_audio_retention
+
+    try:
+        enforce_recruit_audio_retention(db)
+    except Exception:
+        logger.error("recruit_audio_retention_check_failed", exc_info=True)
+        # Do not wait a month to notice that the check itself is broken.
+        return now - AUDIO_RETENTION_CHECK_EVERY + 24 * 60 * 60
+    return now
+
+
 def _sweep_followup(db: Client, settings: Settings) -> None:
     """Results and reminder mail. Not a jobs-table kind — it scans profiles."""
     try:
@@ -121,11 +154,13 @@ def _sweep_followup(db: Client, settings: Settings) -> None:
 
 def run_forever(db: Client, settings: Settings, worker: str) -> None:
     last_sweep = 0.0
+    last_retention_check: float | None = None
     while True:
         now = time.monotonic()
         if now - last_sweep > STALE_SWEEP_EVERY:
             requeue_stale(db)
             _sweep_followup(db, settings)
+            last_retention_check = _sweep_audio_retention(db, last_retention_check, now)
             last_sweep = now
 
         if not run_one(db, settings, worker):

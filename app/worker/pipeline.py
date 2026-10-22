@@ -30,7 +30,13 @@ from app.ingest.chunker import chunk_document
 from app.recruit.bank import C2_SCENARIO_ID, criterion_id_for, question_for
 from app.storage.content import clear_questions, load_chunks, save_chunks, save_questions
 from app.storage.documents import BUCKET, get_document, record_page_count, set_status
-from app.storage.recruit import delete_audio, download_audio, get_attempt, mark_running
+from app.storage.recruit import (
+    RECRUIT_AUDIO_RETAINED_AFTER_CRITIQUE,
+    discard_audio,
+    download_audio,
+    get_attempt,
+    mark_running,
+)
 from app.worker.jobs import Job, enqueue
 
 logger = logging.getLogger(__name__)
@@ -179,7 +185,12 @@ def run_recruit_critique(db: Client, settings: Settings, job: Job) -> None:
     if outcome.failure and outcome.failure.startswith("persist_failed"):
         raise RuntimeError(outcome.failure)
 
-    delete_audio(db, audio_path)
+    discard_audio(
+        db,
+        audio_path,
+        attempt_id=attempt.id,
+        metric=RECRUIT_AUDIO_RETAINED_AFTER_CRITIQUE,
+    )
     logger.info("recruit attempt %s: critique stored", attempt.id)
     _maybe_enqueue_c1(db, attempt.board_id)
 

@@ -248,7 +248,7 @@ def test_empty_recruit_audio_marks_the_attempt_and_succeeds_the_job(
     db = _claimable(kind="recruit_critique", document_id=None, attempt_id=ATT)
     monkeypatch.setattr("app.worker.runner.HANDLERS", {"recruit_critique": empty})
     monkeypatch.setattr("app.worker.runner.get_attempt", lambda *_: None)
-    monkeypatch.setattr("app.worker.runner.delete_audio", lambda *_: None)
+    monkeypatch.setattr("app.worker.runner.discard_audio", lambda *_, **__: None)
     assert run_one(db, SETTINGS, "w1") is True
     assert db.updates("jobs")[0]["status"] == "succeeded"
     assert db.updates("recruit_attempts")[0]["status"] == "critique_failed"
@@ -270,7 +270,7 @@ def test_the_final_recruit_failure_marks_the_attempt(
     )
     monkeypatch.setattr("app.worker.runner.HANDLERS", {"recruit_critique": explode})
     monkeypatch.setattr("app.worker.runner.get_attempt", lambda *_: None)
-    monkeypatch.setattr("app.worker.runner.delete_audio", lambda *_: None)
+    monkeypatch.setattr("app.worker.runner.discard_audio", lambda *_, **__: None)
     run_one(db, SETTINGS, "w1")
 
     assert db.updates("jobs")[0]["status"] == "failed"
