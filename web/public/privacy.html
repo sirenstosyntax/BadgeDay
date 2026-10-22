@@ -26,7 +26,7 @@
       <h1>Privacy Policy</h1>
       <p class="dates">
         BadgeDay, a product of Sirens to Syntax LLC<br />
-        Effective date: July 26, 2026 · Last updated: October 16, 2026
+        Effective date: July 26, 2026 · Last updated: October 22, 2026
       </p>
 
       <div class="summary">
@@ -34,7 +34,8 @@
         <p>
           When you use Oral board, we record the answer you speak, send it to Deepgram to
           turn into text, keep the text and the notes with your practice, and discard the
-          recording.
+          recording. That transcription request asks Deepgram not to retain the audio or
+          the transcript for model improvement.
         </p>
         <p>
           When you upload documents, we turn them into practice questions for you. Your
@@ -108,7 +109,8 @@
         When you use Oral board, we record the answer you speak. We send that recording to
         Deepgram to turn it into text. We use the text to write notes on what went well and
         what to improve. We keep the transcript and those notes with your practice, the
-        same way we keep typed answers. We do not keep the recording.
+        same way we keep typed answers. We do not keep the recording. Each request asks
+        Deepgram not to retain the audio or the transcript for model improvement.
       </p>
 
       <h3>Your practice</h3>
@@ -187,8 +189,9 @@
         text is extracted by Microsoft Azure's document analysis service; the extracted
         sections are sent to Anthropic to draft questions from; the questions come back and
         are stored against your account. For Oral board: spoken audio goes to Deepgram to
-        be turned into text; that text goes to Anthropic to draft notes. Nothing else is
-        done with it at any stage.
+        be turned into text, and the request asks Deepgram not to retain that audio or
+        transcript for model improvement; that text goes to Anthropic to draft notes.
+        Nothing else is done with it at any stage.
       </p>
       <div class="table-scroll">
         <table>
@@ -225,8 +228,10 @@
             <tr>
               <td>Deepgram</td>
               <td>
-                Receives the spoken answer to turn it into text. We do not store the
-                recording after transcription.
+                Receives the spoken answer to turn it into text. Every transcription
+                request sets Deepgram's mip_opt_out parameter to true, which asks
+                Deepgram not to retain that audio or transcript for model improvement.
+                We do not store the recording after transcription.
               </td>
             </tr>
             <tr>

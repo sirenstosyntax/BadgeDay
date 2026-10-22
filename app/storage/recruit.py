@@ -7,7 +7,8 @@ uses the service role to mark running / failed and to download audio.
 """
 
 import logging
-from datetime import UTC, datetime
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 from uuid import uuid4
 
@@ -20,8 +21,29 @@ from app.storage.documents import safe_filename
 logger = logging.getLogger(__name__)
 
 AUDIO_BUCKET = "recruit-audio"
+ORPHAN_TABLE = "recruit_audio_orphans"
+# Queued and running attempts still need the recording. Anything else should
+# already have been deleted; the sweep treats those objects as unattached.
+IN_PROGRESS_ATTEMPT_STATUSES = ("queued", "running")
+# Young objects may still be inside the critique that uploaded them. Older
+# than this, and not on an in-progress attempt, they are recordings we said
+# we would not keep.
+STALE_AUDIO_AFTER = timedelta(hours=24)
+# Supabase storage list defaults to 100. Ask for that page and walk offset
+# ourselves so a busy prefix is not silently truncated.
+_LIST_PAGE = 100
+# user / attempt / file is three levels. Deeper than this is not our layout.
+_MAX_LIST_DEPTH = 8
+_PLACEHOLDER = ".emptyFolderPlaceholder"
 
 AttemptStatus = Literal["queued", "running", "completed", "abandoned", "critique_failed"]
+OrphanReason = Literal["delete_failed", "stale_unattached"]
+
+
+@dataclass(frozen=True)
+class RecruitAudioObject:
+    path: str
+    created_at: datetime | None
 
 
 class RecruitAttemptRecord(BaseModel):
@@ -174,12 +196,252 @@ def download_audio(db: Client, path: str) -> bytes:
 
 
 def delete_audio(db: Client, path: str | None) -> None:
+    """Remove one recording. A failure is an orphan, not a raised exception.
+
+    Callers have often already finished the attempt (the critique is stored,
+    or the insert rolled back). Raising here would retry work that succeeded
+    and still leave the file. The ERROR line is the alert; the
+    `recruit_audio_orphans` row is the list to retry from.
+    """
     if not path:
         return
     try:
         db.storage.from_(AUDIO_BUCKET).remove([path])
+    except Exception as exc:
+        detail = f"{type(exc).__name__}: {exc}"
+        logger.error(
+            "recruit_audio_delete_failed storage_path=%s error=%s",
+            path,
+            " ".join(detail.split()),
+            exc_info=True,
+        )
+        record_recruit_audio_orphan(db, path, reason="delete_failed", error=detail)
+        return
+    clear_recruit_audio_orphan(db, path)
+
+
+def record_recruit_audio_orphan(
+    db: Client, path: str, *, reason: OrphanReason, error: str
+) -> None:
+    """Upsert one path we failed to discard. Service role only; see migration 0019."""
+    detail = " ".join((error or "unknown error").split())[:2000] or "unknown error"
+    now = datetime.now(UTC).isoformat()
+    try:
+        existing = (
+            db.table(ORPHAN_TABLE)
+            .select("storage_path")
+            .eq("storage_path", path)
+            .limit(1)
+            .execute()
+            .data
+        )
+        if existing:
+            (
+                db.table(ORPHAN_TABLE)
+                .update({"reason": reason, "error": detail, "last_seen_at": now})
+                .eq("storage_path", path)
+                .execute()
+            )
+            return
+        db.table(ORPHAN_TABLE).insert(
+            {
+                "storage_path": path,
+                "reason": reason,
+                "error": detail,
+                "first_seen_at": now,
+                "last_seen_at": now,
+            }
+        ).execute()
     except Exception:
-        logger.exception("could not delete Recruit audio at %s", path)
+        logger.error(
+            "recruit_audio_orphan_record_failed storage_path=%s reason=%s",
+            path,
+            reason,
+            exc_info=True,
+        )
+
+
+def clear_recruit_audio_orphan(db: Client, path: str) -> None:
+    """Drop the retry row after the object is gone. Missing row is success."""
+    try:
+        db.table(ORPHAN_TABLE).delete().eq("storage_path", path).execute()
+    except Exception:
+        logger.error(
+            "recruit_audio_orphan_clear_failed storage_path=%s",
+            path,
+            exc_info=True,
+        )
+
+
+def _created_at(item: dict) -> datetime | None:
+    raw = item.get("created_at")
+    if isinstance(raw, datetime):
+        moment = raw if raw.tzinfo is not None else raw.replace(tzinfo=UTC)
+        return moment.astimezone(UTC)
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    try:
+        return datetime.fromisoformat(raw.replace("Z", "+00:00")).astimezone(UTC)
+    except ValueError:
+        return None
+
+
+def _is_folder(item: dict) -> bool:
+    """Storage list returns a folder with a null id and a file with a uuid."""
+    return not item.get("id")
+
+
+def _list_prefix(bucket, prefix: str) -> list[dict]:
+    rows: list[dict] = []
+    offset = 0
+    seen: set[str] = set()
+    while True:
+        page = bucket.list(
+            prefix,
+            {
+                "limit": _LIST_PAGE,
+                "offset": offset,
+                "sortBy": {"column": "name", "order": "asc"},
+            },
+        )
+        if not page:
+            break
+        fresh: list[dict] = []
+        for item in page:
+            name = str(item.get("name") or "")
+            if name in seen:
+                continue
+            seen.add(name)
+            fresh.append(item)
+        if not fresh:
+            # Offset was ignored and this page repeated. Stop rather than loop.
+            break
+        rows.extend(fresh)
+        if len(page) < _LIST_PAGE:
+            break
+        offset += len(page)
+    return rows
+
+
+def list_recruit_audio_objects(db: Client) -> list[RecruitAudioObject]:
+    """Every object in the private recruit-audio bucket.
+
+    The storage API lists one prefix at a time. Recordings live at
+    `{user}/{attempt}/{file}`. The caller must be the service role: there is
+    no select policy for a candidate, on purpose.
+    """
+    bucket = db.storage.from_(AUDIO_BUCKET)
+    found: list[RecruitAudioObject] = []
+    stack: list[tuple[str, int]] = [("", 0)]
+    while stack:
+        prefix, depth = stack.pop()
+        for item in _list_prefix(bucket, prefix):
+            name = str(item.get("name") or "")
+            if not name or name == _PLACEHOLDER:
+                continue
+            path = f"{prefix}/{name}" if prefix else name
+            if _is_folder(item):
+                if depth + 1 > _MAX_LIST_DEPTH:
+                    logger.error(
+                        "recruit_audio_sweep_failed storage_path=%s error=listing_too_deep",
+                        path,
+                    )
+                    continue
+                stack.append((path, depth + 1))
+                continue
+            found.append(RecruitAudioObject(path=path, created_at=_created_at(item)))
+    return found
+
+
+def in_progress_audio_paths(db: Client) -> set[str]:
+    """Paths a queued or running attempt still points at. Service role sees all."""
+    paths: set[str] = set()
+    start = 0
+    page = 1000
+    while True:
+        rows = (
+            db.table("recruit_attempts")
+            .select("audio_storage_path")
+            .in_("status", list(IN_PROGRESS_ATTEMPT_STATUSES))
+            .order("audio_storage_path")
+            .range(start, start + page - 1)
+            .execute()
+            .data
+            or []
+        )
+        for row in rows:
+            path = row.get("audio_storage_path")
+            if path:
+                paths.add(path)
+        if len(rows) < page:
+            break
+        start += page
+    return paths
+
+
+def sweep_stale_recruit_audio(
+    db: Client,
+    *,
+    now: datetime | None = None,
+    max_age: timedelta = STALE_AUDIO_AFTER,
+) -> list[str]:
+    """ERROR, and record, each object older than `max_age` with no live attempt.
+
+    Does not delete. A mis-listed bucket must not become a mass delete. The
+    row in `recruit_audio_orphans` is what a retry reads. Returns the stale
+    paths. Listing or attempt-lookup failure logs ERROR and returns nothing,
+    so a broken read cannot mark every file an orphan.
+    """
+    moment = now or datetime.now(UTC)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    moment = moment.astimezone(UTC)
+    cutoff = moment - max_age
+    try:
+        objects = list_recruit_audio_objects(db)
+    except Exception:
+        logger.error("recruit_audio_sweep_failed", exc_info=True)
+        return []
+    try:
+        protected = in_progress_audio_paths(db)
+    except Exception:
+        logger.error("recruit_audio_sweep_failed", exc_info=True)
+        return []
+
+    hours = int(max_age.total_seconds() // 3600)
+    stale: list[str] = []
+    seen: set[str] = set()
+    for obj in objects:
+        if obj.path in seen:
+            continue
+        seen.add(obj.path)
+        if obj.created_at is not None and obj.created_at >= cutoff:
+            continue
+        if obj.path in protected:
+            continue
+        stale.append(obj.path)
+        if obj.created_at is None:
+            age = "unknown"
+        else:
+            age = f"{(moment - obj.created_at).total_seconds() / 3600:.1f}"
+        logger.error(
+            "recruit_audio_orphan storage_path=%s age_hours=%s",
+            obj.path,
+            age,
+        )
+        record_recruit_audio_orphan(
+            db,
+            obj.path,
+            reason="stale_unattached",
+            error=(
+                f"object older than {hours}h and not attached to a queued or running attempt"
+            ),
+        )
+    if stale:
+        logger.error("recruit_audio_orphan_count count=%d", len(stale))
+    else:
+        logger.info("recruit audio sweep found no stale objects")
+    return stale
 
 
 def create_queued_attempt(
