@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "Cited practice questions generated from a firefighter promotional reading list."
 requires-python = ">=3.12"
 dependencies = [
-    "psycopg[binary]>=3.2",
     "fastapi>=0.115",
     "python-multipart>=0.0.20",
     "uvicorn[standard]>=0.32",
@@ -30,6 +29,10 @@ dev = [
     "pytest-asyncio>=0.24",
     "httpx>=0.28",
     "ruff>=0.8",
+]
+# Migration runner only. Not the app image, not CI, and not the license job.
+ops = [
+    "psycopg[binary]>=3.2",
 ]
 
 [project.scripts]

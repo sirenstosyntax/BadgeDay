@@ -3,6 +3,7 @@
 Deliberately minimal — enough to apply an ordered set of files and record what has run,
 without pulling in a migration framework before the schema has settled.
 
+    pip install -e ".[ops]"                       # psycopg; not in the app image
     python scripts/apply_migrations.py            # apply anything not yet applied
     python scripts/apply_migrations.py --status   # show what has and has not run
     python scripts/apply_migrations.py --mark-applied 0001_initial_schema.sql
@@ -81,7 +82,10 @@ def _connect(db_url: str):
     try:
         import psycopg
     except ImportError:
-        sys.exit("psycopg is not installed. Run: pip install 'psycopg[binary]'")
+        sys.exit(
+            "psycopg is not installed. The migration runner needs the ops extra, "
+            'which is separate from the app install. Run: pip install -e ".[ops]"'
+        )
     return psycopg.connect(db_url)
 
 

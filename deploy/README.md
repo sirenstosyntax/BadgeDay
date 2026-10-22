@@ -67,7 +67,9 @@ usage, which are per-document and unchanged by this.
 
 ## Migrations
 
-From the repo root, with `SUPABASE_DB_URL` set:
+From the repo root, with `SUPABASE_DB_URL` set. The runner imports `psycopg`
+from the `ops` extra (`pip install -e ".[ops]"`). The app image does not
+include that extra.
 
 ```bash
 python scripts/apply_migrations.py --status
