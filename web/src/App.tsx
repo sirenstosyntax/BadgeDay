@@ -60,6 +60,7 @@ import { Account } from './ui/Account'
 import { Choose } from './ui/Choose'
 import { Documents } from './ui/Documents'
 import { LegalLinks } from './ui/LegalLinks'
+import { OpenSourceAcknowledgements } from './ui/OpenSourceAcknowledgements'
 import { Paywall } from './ui/Paywall'
 import { Quiz } from './ui/Quiz'
 import { Recruit } from './ui/Recruit'
@@ -84,6 +85,7 @@ type View =
   | { name: 'recruit'; entry?: 'board' | 'home' }
   | { name: 'test-date' }
   | { name: 'offline-empty' }
+  | { name: 'acknowledgements' }
 
 export default function App() {
   const { session, loading } = useSession()
@@ -591,6 +593,8 @@ export default function App() {
             onCacheOffline={(id) => cacheOffline(id)}
             onOpenOffline={openCachedSession}
           />
+        ) : view.name === 'acknowledgements' ? (
+          <OpenSourceAcknowledgements onBack={() => setView({ name: 'choose' })} />
         ) : (
           <Choose
             onOralBoard={() => setView({ name: 'recruit' })}
@@ -600,7 +604,7 @@ export default function App() {
       </main>
 
       <footer className="mx-auto max-w-3xl px-4 pb-10">
-        <LegalLinks />
+        <LegalLinks onOpenSource={() => setView({ name: 'acknowledgements' })} />
       </footer>
 
       {showPaywall && (

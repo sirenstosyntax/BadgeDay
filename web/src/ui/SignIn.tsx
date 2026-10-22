@@ -26,6 +26,7 @@ import {
 import { looksLikeSignInEmail, showSignInCodeField } from '../lib/signInCodeField'
 import { START_CAMPAIGN_HEADING, showStartCampaign } from '../lib/startRoute'
 import { LegalLinks } from './LegalLinks'
+import { OpenSourceAcknowledgements } from './OpenSourceAcknowledgements'
 
 export function SignIn() {
   const emailForm = useRef<HTMLFormElement>(null)
@@ -39,6 +40,7 @@ export function SignIn() {
   const [sending, setSending] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const [reviewerConfigured, setReviewerConfigured] = useState(false)
+  const [openSource, setOpenSource] = useState(false)
   const showPassword = showPlayReviewerPassword(reviewerConfigured)
   const campaign = showStartCampaign(window.location.pathname, window.location.search)
   // On a tagged /start page the password path stays collapsed so the email
@@ -202,6 +204,16 @@ export function SignIn() {
     )
   }
 
+  if (openSource) {
+    return (
+      <div className="flex min-h-screen items-start justify-center bg-stone-50 px-4 py-16 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
+        <div className="w-full max-w-sm">
+          <OpenSourceAcknowledgements onBack={() => setOpenSource(false)} />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-screen items-start justify-center bg-stone-50 px-4 py-16 dark:bg-stone-950">
       <div className="w-full max-w-sm">
@@ -352,7 +364,7 @@ export function SignIn() {
           )}
         </div>
 
-        <LegalLinks className="mt-10" />
+        <LegalLinks className="mt-10" onOpenSource={() => setOpenSource(true)} />
       </div>
     </div>
   )
