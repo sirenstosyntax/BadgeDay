@@ -51,11 +51,18 @@ Install scripts are not run while the tree is installed for this check:
 dependency cannot execute `setup.py`. An unreadable directory in those
 installed trees fails the job; it is not skipped.
 
-- Python: the environment from `pip install --only-binary=:all: -e ".[dev]"`
+- Python: `pip install --only-binary=:all: -c .github/license-constraints.txt -e ".[dev]"`
   plus `deploy/play-verify/requirements.txt`, including transitive packages.
-  `pip-licenses` cross-checks that inventory. The `ops` extra is not
+  `pip-licenses` is installed with the same constraint and cross-checks that
+  inventory. There is no Python lockfile. The constraint file pins certifi to
+  the release in `license-exceptions.toml`, so a newer certifi on PyPI does not
+  enter the scan. The exact pin freezes the
+  image's root-certificate bundle, so bump certifi on each release or monthly,
+  whichever comes first, and update the constraint and the exception row
+  together. The `ops` extra is not
   installed. It is migration tooling (`scripts/apply_migrations.py`), not
-  part of the app image and not part of this scan.
+  part of the app image and not part of this scan. Packages in the `ops`
+  extra are excluded from the scan and need a manual license review when added.
 - npm: `web/package-lock.json` and `mobile/ios/package-lock.json`, including
   dev, transitive, and optional platform packages. Installed trees are
   cross-checked with `license-checker-rseidelsohn` (pinned to 4.4.2, the

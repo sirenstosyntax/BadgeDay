@@ -44,7 +44,10 @@ COPY recruit_rubric_c2_motivation.md ./
 COPY recruit_rubric_c3_teamwork.md ./
 COPY recruit_rubric_c4_integrity_ethics.md ./
 COPY recruit_rubric_c5_judgment_composure.md ./
-RUN pip install -e .
+# Same certifi pin the license job scans and THIRD_PARTY_NOTICES.md names
+# (2026.10.19). An unconstrained install would take a newer release on rebuild.
+COPY .github/license-constraints.txt .github/license-constraints.txt
+RUN pip install -c .github/license-constraints.txt -e .
 
 # The built SPA from stage 1, landing where app/spa.py looks for it (../web/dist).
 COPY --from=web /web/dist ./web/dist

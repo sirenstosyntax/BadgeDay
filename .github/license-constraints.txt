@@ -1,0 +1,7 @@
+# This pin governs both the license CI job (.github/workflows/licenses.yml)
+# and the shipped API image (Dockerfile pip install -c).
+# There is no Python lockfile. An unconstrained install resolves the newest
+# certifi, and a new PyPI release would fail the pinned row in
+# license-exceptions.toml without a repo change. Keep this pin equal to that
+# row.
+certifi==2026.10.19
