@@ -25,9 +25,11 @@ fail the build.
 
 `license-exceptions.toml` is the only place a non-permissive package is
 allowed. Each row names the ecosystem (`pypi`, `npm`, or `gem`), the package,
-the canonical license expression CI prints, why it may ship, who reviewed it,
-and the date. An empty field does not approve anything. No package is
-pre-approved in that file.
+the canonical license expression CI prints, why it may ship, `approved_by`,
+and the date. `version` pins that review to one release. A newer release is
+not covered until the row is updated. An empty field does not approve
+anything. The Ruby license stays off the allow list; a gem that needs it is
+an exception row, not an allow-list change.
 
 Add a row only after a person has accepted the obligation. Do not add one
 merely to turn CI green.

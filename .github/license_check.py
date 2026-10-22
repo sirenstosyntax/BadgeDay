@@ -164,11 +164,11 @@ def load_exceptions(path: Path, allow: set[str]) -> list[ExceptionRow]:
     if not isinstance(raw_rows, list):
         raise SystemExit("license-exceptions.toml: exception must be a list of tables")
     rows: list[ExceptionRow] = []
-    required = ("ecosystem", "package", "license", "reason", "reviewer", "date")
+    required = ("ecosystem", "package", "license", "reason", "date")
     for index, row in enumerate(raw_rows, start=1):
         if not isinstance(row, dict):
             raise SystemExit(f"license-exceptions.toml row {index} is not a table")
-        unknown = set(row) - set(required) - {"version"}
+        unknown = set(row) - set(required) - {"version", "reviewer", "approved_by"}
         if unknown:
             fields = ", ".join(sorted(unknown))
             raise SystemExit(f"license-exceptions.toml row {index} has unknown fields: {fields}")
@@ -176,6 +176,18 @@ def load_exceptions(path: Path, allow: set[str]) -> list[ExceptionRow]:
             value = row.get(key)
             if not isinstance(value, str) or not value.strip():
                 raise SystemExit(f"license-exceptions.toml row {index} is missing {key}")
+        approved_by = row.get("approved_by", row.get("reviewer", ""))
+        reviewer_field = row.get("reviewer", "")
+        if not isinstance(approved_by, str) or not approved_by.strip():
+            raise SystemExit(f"license-exceptions.toml row {index} is missing approved_by")
+        if (
+            isinstance(reviewer_field, str)
+            and reviewer_field.strip()
+            and reviewer_field.strip() != approved_by.strip()
+        ):
+            raise SystemExit(
+                f"license-exceptions.toml row {index} approved_by and reviewer disagree"
+            )
         if row["ecosystem"] not in {"pypi", "npm", "gem"}:
             raise SystemExit(
                 f"license-exceptions.toml row {index} ecosystem must be pypi, npm, or gem"
@@ -200,15 +212,17 @@ def load_exceptions(path: Path, allow: set[str]) -> list[ExceptionRow]:
                 f"license-exceptions.toml row {index} is already on the allow list ({canonical})"
             )
         version = row.get("version", "")
-        if version and not isinstance(version, str):
-            raise SystemExit(f"license-exceptions.toml row {index} version must be a string")
+        if not isinstance(version, str) or not version.strip():
+            raise SystemExit(
+                f"license-exceptions.toml row {index} version is required and pins the review"
+            )
         rows.append(
             ExceptionRow(
                 ecosystem=row["ecosystem"],
                 package=row["package"].strip(),
                 license=canonical,
                 reason=row["reason"].strip(),
-                reviewer=row["reviewer"].strip(),
+                reviewer=approved_by.strip(),
                 date=row["date"],
                 version=version.strip() if isinstance(version, str) else "",
             )
@@ -400,6 +414,39 @@ def self_test(allow: set[str]) -> None:
     for forbidden in forbidden_ids:
         if forbidden in allow:
             raise SystemExit(f"{forbidden} must not be on the allow list")
+    _assert_version_pin()
+
+
+def _assert_version_pin() -> None:
+    """An exception version matches that release only."""
+    pinned = Finding(
+        ecosystem="pypi",
+        name="certifi",
+        version="2026.10.19",
+        expression="MPL-2.0",
+        status="fail",
+        role="transitive",
+    )
+    other = Finding(
+        ecosystem="pypi",
+        name="certifi",
+        version="2099.1.1",
+        expression="MPL-2.0",
+        status="fail",
+        role="transitive",
+    )
+    row = ExceptionRow(
+        ecosystem="pypi",
+        package="certifi",
+        license="MPL-2.0",
+        reason="Mozilla CA bundle, used unmodified.",
+        reviewer="Grant",
+        date="2026-10-22",
+        version="2026.10.19",
+    )
+    problems = apply_exceptions([pinned, other], [row])
+    if pinned.status != "excepted" or other.status != "fail" or problems:
+        raise SystemExit(f"version pin self-test failed: {pinned.status} {other.status} {problems}")
 
 
 def fetch_bytes(url: str) -> bytes:
@@ -1214,6 +1261,10 @@ def apply_exceptions(findings: list[Finding], rows: list[ExceptionRow]) -> list[
             )
             if not same_package:
                 continue
+            # A version on the row pins the review. A different release stays
+            # unreviewed, and the row fails as unused if that release is gone.
+            if row.version and row.version != finding.version:
+                continue
             if row.license != finding.expression:
                 problems.append(
                     f"exception for {row.ecosystem}:{row.package} names {row.license} "
@@ -1225,7 +1276,7 @@ def apply_exceptions(findings: list[Finding], rows: list[ExceptionRow]) -> list[
             if finding.status == "fail":
                 finding.status = "excepted"
                 finding.notes = (
-                    f"reviewed by {row.reviewer} on {row.date}: {row.reason}"
+                    f"approved by {row.reviewer} on {row.date}: {row.reason}"
                 )
             elif finding.status != "excepted":
                 problems.append(

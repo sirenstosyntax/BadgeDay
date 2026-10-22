@@ -1,27 +1,296 @@
 # Reviewed exceptions to LICENSE-POLICY.md.
 #
 # A package whose license is outside .github/license-allowlist.txt ships only
-# when a row below records a deliberate review. Nothing is pre-approved.
-# CI fails on copyleft and on unknown licenses until that review exists.
+# when a row below records a deliberate review. CI fails on copyleft and on
+# unknown licenses until that review exists.
 #
 # Required fields on every [[exception]] row:
-#   ecosystem   pypi, npm, or gem
-#   package     distribution name (npm scopes included, for example @capgo/native-purchases)
-#   license     canonical SPDX expression printed by .github/license_check.py
-#   reason      what was reviewed and why this package may ship
-#   reviewer    person who accepted the obligation
-#   date        YYYY-MM-DD
-# Optional:
-#   version     version that was reviewed; matching is by package and license
+#   ecosystem    pypi, npm, or gem
+#   package      distribution name (npm scopes included)
+#   license      canonical SPDX expression printed by .github/license_check.py
+#   reason       what was reviewed and why this package may ship
+#   approved_by  person who accepted the obligation
+#   date         YYYY-MM-DD
+#   version      pins the review to that release; a newer release is not covered
 #
 # A blank field does not approve the package. A row that matches nothing in
 # the tree fails CI, so a removed dependency takes its exception with it.
+# The Ruby license is not on the allow list. Do not add it there.
 
-# [[exception]]
-# ecosystem = "pypi"
-# package = "example"
-# license = "MPL-2.0"
-# reason = "Why this package may ship, and what was reviewed."
-# reviewer = "Name"
-# date = "2026-10-22"
-# version = "0.0.0"
+# --- pypi: Mozilla CA bundle, used unmodified ---
+
+[[exception]]
+ecosystem = "pypi"
+package = "certifi"
+license = "MPL-2.0"
+reason = "Mozilla CA bundle used unmodified. MPL-2.0. No permissive republish of this bundle."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "2026.10.19"
+
+# --- npm: iOS purchases plugin, used unmodified, no patches ---
+
+[[exception]]
+ecosystem = "npm"
+package = "@capgo/native-purchases"
+license = "MPL-2.0"
+reason = "iOS purchases plugin used unmodified, no patches. MPL-2.0. Compiled into the iOS app."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "7.19.3"
+
+# --- npm: lightningcss and platform bindings. Build-time CSS, not shipped (web/dist only). ---
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.32.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.33.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-android-arm64"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.32.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-android-arm64"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.33.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-darwin-arm64"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.32.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-darwin-arm64"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.33.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-darwin-x64"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.32.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-darwin-x64"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.33.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-freebsd-x64"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.32.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-freebsd-x64"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.33.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-linux-arm-gnueabihf"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.32.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-linux-arm-gnueabihf"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.33.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-linux-arm64-gnu"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.32.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-linux-arm64-gnu"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.33.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-linux-arm64-musl"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.32.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-linux-arm64-musl"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.33.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-linux-x64-gnu"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.32.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-linux-x64-gnu"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.33.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-linux-x64-musl"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.32.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-linux-x64-musl"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.33.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-win32-arm64-msvc"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.32.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-win32-arm64-msvc"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.33.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-win32-x64-msvc"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.32.0"
+
+[[exception]]
+ecosystem = "npm"
+package = "lightningcss-win32-x64-msvc"
+license = "MPL-2.0"
+reason = "Build-time CSS tool, not shipped. The runtime image contains web/dist only. MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "1.33.0"
+
+# --- gems: Fastlane iOS release tooling, not shipped in the app. Ruby stays off the allow list. ---
+
+[[exception]]
+ecosystem = "gem"
+package = "domain_name"
+license = "BSD-2-Clause AND BSD-3-Clause AND MPL-2.0"
+reason = "Fastlane iOS release tooling, not shipped in the app. The vendored public suffix list is MPL-2.0."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "0.6.20260907"
+
+[[exception]]
+ecosystem = "gem"
+package = "highline"
+license = "GPL-2.0-only OR Ruby"
+reason = "Fastlane iOS release tooling, not shipped in the app. Neither GPL-2.0-only nor the Ruby license is permissive."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "2.0.3"
+
+[[exception]]
+ecosystem = "gem"
+package = "rdoc"
+license = "GPL-2.0-only OR Ruby"
+reason = "Fastlane iOS release tooling, not shipped in the app. Neither GPL-2.0-only nor the Ruby license is permissive."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "8.0.0"
+
+[[exception]]
+ecosystem = "gem"
+package = "nkf"
+license = "(BSD-2-Clause OR Ruby) AND (EPL-2.0 OR LGPL-2.1-only)"
+reason = "Fastlane iOS release tooling, not shipped in the app. JRuby sources in the gem are EPL-2.0 or LGPL-2.1."
+approved_by = "Grant"
+date = "2026-10-22"
+version = "0.3.0"
