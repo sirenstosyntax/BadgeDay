@@ -23,7 +23,7 @@ from supabase import Client
 from app.config import Settings, get_settings
 from app.storage.client import service_client
 from app.storage.documents import set_status
-from app.storage.recruit import delete_audio, get_attempt, mark_failed
+from app.storage.recruit import delete_audio, get_attempt, mark_failed, sweep_stale_recruit_audio
 from app.worker.jobs import Job, claim, fail, requeue_stale, succeed
 from app.worker.pipeline import HANDLERS, AttemptGone, DocumentGone, EmptyRecruitAudio
 
@@ -31,6 +31,9 @@ logger = logging.getLogger(__name__)
 
 IDLE_SLEEP_SECONDS = 5
 STALE_SWEEP_EVERY = 60
+# The age threshold is 24h, so an hourly walk is enough. The first loop runs
+# it immediately (last_audio starts at 0).
+RECRUIT_AUDIO_SWEEP_EVERY = 60 * 60
 
 
 def run_one(db: Client, settings: Settings, worker: str) -> bool:
@@ -119,14 +122,26 @@ def _sweep_followup(db: Client, settings: Settings) -> None:
         logger.exception("recruit follow-up sweep failed")
 
 
+def _sweep_recruit_audio(db: Client) -> None:
+    """Private recruit-audio bucket. ERROR if a file outlived its attempt."""
+    try:
+        sweep_stale_recruit_audio(db)
+    except Exception:
+        logger.exception("recruit audio orphan sweep failed")
+
+
 def run_forever(db: Client, settings: Settings, worker: str) -> None:
     last_sweep = 0.0
+    last_audio = 0.0
     while True:
         now = time.monotonic()
         if now - last_sweep > STALE_SWEEP_EVERY:
             requeue_stale(db)
             _sweep_followup(db, settings)
             last_sweep = now
+        if now - last_audio >= RECRUIT_AUDIO_SWEEP_EVERY:
+            _sweep_recruit_audio(db)
+            last_audio = now
 
         if not run_one(db, settings, worker):
             time.sleep(IDLE_SLEEP_SECONDS)
@@ -157,6 +172,7 @@ def main() -> int:
     if args.once:
         requeue_stale(db)
         _sweep_followup(db, settings)
+        _sweep_recruit_audio(db)
         drained = 0
         while run_one(db, settings, worker):
             drained += 1
