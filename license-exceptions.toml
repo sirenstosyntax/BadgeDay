@@ -1,0 +1,27 @@
+# Reviewed exceptions to LICENSE-POLICY.md.
+#
+# A package whose license is outside .github/license-allowlist.txt ships only
+# when a row below records a deliberate review. Nothing is pre-approved.
+# CI fails on copyleft and on unknown licenses until that review exists.
+#
+# Required fields on every [[exception]] row:
+#   ecosystem   pypi, npm, or gem
+#   package     distribution name (npm scopes included, for example @capgo/native-purchases)
+#   license     canonical SPDX expression printed by .github/license_check.py
+#   reason      what was reviewed and why this package may ship
+#   reviewer    person who accepted the obligation
+#   date        YYYY-MM-DD
+# Optional:
+#   version     version that was reviewed; matching is by package and license
+#
+# A blank field does not approve the package. A row that matches nothing in
+# the tree fails CI, so a removed dependency takes its exception with it.
+
+# [[exception]]
+# ecosystem = "pypi"
+# package = "example"
+# license = "MPL-2.0"
+# reason = "Why this package may ship, and what was reviewed."
+# reviewer = "Name"
+# date = "2026-10-22"
+# version = "0.0.0"

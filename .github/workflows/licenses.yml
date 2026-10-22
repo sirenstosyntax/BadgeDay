@@ -1,0 +1,79 @@
+# Fail the build when a dependency is copyleft or its license is unknown.
+#
+# The full-tree job installs the same Python and npm trees CI already tests
+# (python:3.12, node:20 — see ci.yml) and reads mobile/ios/Gemfile.lock.
+# dependency-review only diffs a pull request; it is not the check that
+# covers packages already on main. Policy: LICENSE-POLICY.md.
+
+name: Licenses
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: licenses-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tree:
+    name: Full dependency tree
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            deploy/play-verify/requirements.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            mobile/ios/package-lock.json
+
+      # --only-binary refuses a dependency sdist, so nothing under site-packages
+      # can run setup.py while this job builds the tree it scans. The local
+      # project is built by hatchling from pyproject.toml.
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --only-binary=:all: \
+            -e ".[dev]" -r deploy/play-verify/requirements.txt
+          python -m pip install --only-binary=:all: "pip-licenses==5.5.5"
+
+      # --ignore-scripts: license metadata is in the published package, and a
+      # postinstall hook is not part of the license check.
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci --ignore-scripts
+
+      - name: Install Capacitor iOS dependencies
+        working-directory: mobile/ios
+        run: npm ci --ignore-scripts
+
+      - name: Check licenses
+        run: python .github/license_check.py
+
+  dependency-review:
+    name: Pull request dependency diff
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+        with:
+          config-file: .github/dependency-review-config.yml
+          comment-summary-in-pr: never
