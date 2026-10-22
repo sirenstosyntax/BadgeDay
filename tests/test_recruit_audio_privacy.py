@@ -24,6 +24,7 @@ from app.storage.recruit_audio_retention import (
     RECRUIT_AUDIO_OLDER_THAN_ONE_DAY,
     StoredAudio,
     enforce_recruit_audio_retention,
+    list_recruit_audio_objects,
     stale_audio_names,
 )
 from app.worker.pipeline import EmptyRecruitAudio
@@ -182,6 +183,51 @@ def test_retention_check_logs_when_a_file_is_too_old(caplog: pytest.LogCaptureFi
     assert stale == ["user/attempt/a.webm"]
     assert RECRUIT_AUDIO_OLDER_THAN_ONE_DAY in caplog.text
     assert "count=1" in caplog.text
+    assert "user/attempt/a.webm" not in caplog.text
+
+
+def test_every_page_of_user_folders_is_walked() -> None:
+    """A full page of folders must not hide the folders on the pages before it."""
+    old = NOW - timedelta(days=2)
+    root_pages = [
+        SimpleNamespace(
+            objects=[],
+            folders=[SimpleNamespace(key="user-a", name="user-a")],
+            hasNext=True,
+            nextCursor="page-2",
+        ),
+        SimpleNamespace(
+            objects=[],
+            folders=[SimpleNamespace(key="user-b", name="user-b")],
+            hasNext=False,
+            nextCursor=None,
+        ),
+    ]
+
+    def file_page(user: str) -> SimpleNamespace:
+        return SimpleNamespace(
+            objects=[
+                SimpleNamespace(
+                    key=f"{user}/attempt/a.webm",
+                    name="a.webm",
+                    created_at=old,
+                )
+            ],
+            folders=[],
+            hasNext=False,
+            nextCursor=None,
+        )
+
+    class Bucket:
+        def list_v2(self, options):
+            prefix = options["prefix"]
+            if prefix == "":
+                return root_pages[1] if options.get("cursor") == "page-2" else root_pages[0]
+            return file_page(prefix)
+
+    db = SimpleNamespace(storage=SimpleNamespace(from_=lambda _name: Bucket()))
+    names = [item.name for item in list_recruit_audio_objects(db)]
+    assert names == ["user-a/attempt/a.webm", "user-b/attempt/a.webm"]
 
 
 def test_retention_sweep_waits_a_month_after_a_clean_check() -> None:
@@ -221,6 +267,41 @@ def test_retention_script_fails_closed_without_credentials(monkeypatch) -> None:
         lambda: Settings(supabase_url="", supabase_service_role_key=""),
     )
     assert module.main() == 2
+
+
+def _load_retention_script():
+    spec = importlib.util.spec_from_file_location(
+        "recruit_audio_retention_check",
+        ROOT / "scripts" / "recruit_audio_retention_check.py",
+    )
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_retention_script_prints_the_count_and_no_storage_path(
+    monkeypatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    module = _load_retention_script()
+    monkeypatch.setattr(
+        module,
+        "get_settings",
+        lambda: Settings(supabase_url="https://example.supabase.co", supabase_service_role_key="k"),
+    )
+    monkeypatch.setattr(module, "service_client", lambda _settings: object())
+    monkeypatch.setattr(
+        module,
+        "enforce_recruit_audio_retention",
+        lambda _db: ["11111111-1111-1111-1111-111111111111/attempt/answer.webm"],
+    )
+    assert module.main() == 1
+    captured = capsys.readouterr()
+    text = captured.out + captured.err
+    assert "1 file" in text
+    assert "11111111" not in text
+    assert "attempt" not in text
+    assert "answer.webm" not in text
 
 
 def test_privacy_page_states_what_deepgram_retains() -> None:

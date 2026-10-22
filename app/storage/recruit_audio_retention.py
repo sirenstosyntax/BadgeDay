@@ -68,6 +68,7 @@ def list_recruit_audio_objects(db: Client) -> list[StoredAudio]:
             return
         seen.add(prefix)
         cursor: str | None = None
+        folders: list[str] = []
         for _ in range(_MAX_PAGES):
             options: dict[str, Any] = {
                 "prefix": prefix,
@@ -80,15 +81,20 @@ def list_recruit_audio_objects(db: Client) -> list[StoredAudio]:
             for obj in page.objects:
                 key = obj.key or _join(prefix, obj.name)
                 found.append(StoredAudio(name=key, created_at=obj.created_at))
+            # Folders arrive on every page. Walking only after the cursor
+            # runs out drops every user folder except the last page.
+            for folder in page.folders:
+                folder_prefix = folder.key or _join(prefix, folder.name)
+                folders.append(folder_prefix.rstrip("/"))
             next_cursor = page.nextCursor if page.hasNext else None
             if next_cursor and next_cursor != cursor:
                 cursor = next_cursor
                 continue
-            for folder in page.folders:
-                folder_prefix = folder.key or _join(prefix, folder.name)
-                walk(folder_prefix.rstrip("/"), depth + 1)
-            return
-        raise RuntimeError(f"recruit-audio listing did not finish under {prefix!r}")
+            break
+        else:
+            raise RuntimeError("recruit-audio listing did not finish")
+        for folder_prefix in folders:
+            walk(folder_prefix, depth + 1)
 
     walk("", 0)
     return found
@@ -98,10 +104,7 @@ def enforce_recruit_audio_retention(db: Client, *, now: datetime | None = None) 
     """Return stale names. Log an ERROR metric when the list is not empty."""
     stale = stale_audio_names(list_recruit_audio_objects(db), now=now or datetime.now(UTC))
     if stale:
-        logger.error(
-            "%s count=%d sample=%s",
-            RECRUIT_AUDIO_OLDER_THAN_ONE_DAY,
-            len(stale),
-            stale[:20],
-        )
+        # Count only. Paths are user and attempt ids, and this line is what
+        # the public GitHub Action log captures.
+        logger.error("%s count=%d", RECRUIT_AUDIO_OLDER_THAN_ONE_DAY, len(stale))
     return stale

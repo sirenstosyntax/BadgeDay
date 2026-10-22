@@ -25,17 +25,17 @@ def main() -> int:
     try:
         stale = enforce_recruit_audio_retention(service_client(settings))
     except Exception as exc:
-        print(f"recruit-audio retention check failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+        # Type only. The message can carry a storage path, and this log is public.
+        print(
+            f"recruit-audio retention check failed: {type(exc).__name__}",
+            file=sys.stderr,
+        )
         return 1
     if stale:
         print(
             f"recruit-audio has {len(stale)} file(s) older than one day.",
             file=sys.stderr,
         )
-        for name in stale[:50]:
-            print(f"  {name}", file=sys.stderr)
-        if len(stale) > 50:
-            print(f"  ... {len(stale) - 50} more", file=sys.stderr)
         return 1
     print("recruit-audio has no files older than one day.")
     return 0
