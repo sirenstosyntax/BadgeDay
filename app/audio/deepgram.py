@@ -6,7 +6,14 @@ a transcriber. The listen call already exists as a configured paid API
 (`DEEPGRAM_API_KEY`); this file does not add a package.
 
 The request matches `scripts/asr_check.py`: nova-2, filler_words on, smart_format
-off. smart_format tidies speech, which is the failure mode for filler metrics.
+off, and `mip_opt_out=true`. smart_format tidies speech, which is the failure
+mode for filler metrics. `mip_opt_out` defaults to false on Deepgram's
+pre-recorded listen API, which leaves the audio eligible for their Model
+Improvement Program. Both call sites go through `listen_params` so the flag
+cannot be set on one and forgotten on the other.
+
+https://developers.deepgram.com/trust-security/your-data
+https://developers.deepgram.com/reference/speech-to-text/listen-pre-recorded
 """
 
 from pathlib import Path
@@ -17,6 +24,23 @@ from app.audio.models import Transcript, Word
 from app.config import Settings
 
 LISTEN_URL = "https://api.deepgram.com/v1/listen"
+
+
+def listen_params(model: str) -> dict[str, str]:
+    """Query string for every pre-recorded `/v1/listen` call.
+
+    The string `"true"` is intentional. httpx stringifies a bool as `True`,
+    and the documented query value is `true`.
+    """
+    return {
+        "model": model,
+        "filler_words": "true",
+        "punctuate": "true",
+        "smart_format": "false",
+        # Default is false. true asks Deepgram not to retain this audio or
+        # transcript for model improvement.
+        "mip_opt_out": "true",
+    }
 
 
 def transcript_from_deepgram(payload: dict) -> Transcript:
@@ -51,12 +75,7 @@ class DeepgramTranscriber:
             raise RuntimeError("DEEPGRAM_API_KEY is not set")
         response = httpx.post(
             LISTEN_URL,
-            params={
-                "model": self._model,
-                "filler_words": "true",
-                "punctuate": "true",
-                "smart_format": "false",
-            },
+            params=listen_params(self._model),
             headers={"Authorization": f"Token {self._key}"},
             content=path.read_bytes(),
             timeout=300,
