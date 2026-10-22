@@ -4,9 +4,12 @@ Re-running those files fails. The runner records them when the probe matches
 and does not execute the SQL.
 """
 
+import builtins
 from pathlib import Path
 
-from scripts.apply_migrations import LEDGER_GAPS, ledger_gap_already_present
+import pytest
+
+from scripts.apply_migrations import LEDGER_GAPS, _connect, ledger_gap_already_present
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "scripts" / "apply_migrations.py"
@@ -55,3 +58,17 @@ def test_the_runner_records_the_gap_instead_of_reapplying_it() -> None:
 
 def test_the_deploy_default_location_is_centralus() -> None:
     assert 'LOCATION="${LOCATION:-centralus}"' in DEPLOY.read_text()
+
+
+def test_missing_ops_extra_names_the_install(monkeypatch: pytest.MonkeyPatch) -> None:
+    real_import = builtins.__import__
+
+    def blocked(name: str, *args: object, **kwargs: object):
+        if name == "psycopg" or name.startswith("psycopg."):
+            raise ImportError("No module named psycopg")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", blocked)
+    with pytest.raises(SystemExit, match=r"ops extra") as caught:
+        _connect("postgresql://example")
+    assert 'pip install -e ".[ops]"' in str(caught.value)

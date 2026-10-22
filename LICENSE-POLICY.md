@@ -51,7 +51,9 @@ installed trees fails the job; it is not skipped.
 
 - Python: the environment from `pip install --only-binary=:all: -e ".[dev]"`
   plus `deploy/play-verify/requirements.txt`, including transitive packages.
-  `pip-licenses` cross-checks that inventory.
+  `pip-licenses` cross-checks that inventory. The `ops` extra is not
+  installed. It is migration tooling (`scripts/apply_migrations.py`), not
+  part of the app image and not part of this scan.
 - npm: `web/package-lock.json` and `mobile/ios/package-lock.json`, including
   dev, transitive, and optional platform packages. Installed trees are
   cross-checked with `license-checker-rseidelsohn` (pinned to 4.4.2, the

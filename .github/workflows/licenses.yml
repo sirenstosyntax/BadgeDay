@@ -46,6 +46,8 @@ jobs:
       # --only-binary refuses a dependency sdist, so nothing under site-packages
       # can run setup.py while this job builds the tree it scans. The local
       # project is built by hatchling from pyproject.toml.
+      # Install dev only. The ops extra is migration tooling and stays out of
+      # this job, so its packages are not part of the scanned tree.
       - name: Install Python dependencies
         run: |
           python -m pip install --only-binary=:all: \

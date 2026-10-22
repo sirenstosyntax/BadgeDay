@@ -1321,6 +1321,10 @@ def assert_install_commands() -> None:
         raise SystemExit("licenses workflow must pip-install with --only-binary=:all:")
     if re.search(r"pip install(?![^\n]*--only-binary)", workflow):
         raise SystemExit("a pip install in the licenses workflow is missing --only-binary")
+    for extra_list in re.findall(r"\.\[([^\]]+)\]", workflow):
+        names = {part.strip() for part in extra_list.split(",") if part.strip()}
+        if "ops" in names:
+            raise SystemExit("licenses workflow must not install the ops extra")
 
 
 def assert_scan_scope(findings: list[Finding]) -> None:
@@ -1343,11 +1347,17 @@ def assert_scan_scope(findings: list[Finding]) -> None:
             "(private / UNLICENSED root, not a dependency)"
         )
     pyproject = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))
-    dev_specs = pyproject.get("project", {}).get("optional-dependencies", {}).get("dev", [])
-    for spec in dev_specs:
+    extras = pyproject.get("project", {}).get("optional-dependencies", {})
+    for spec in extras.get("dev", []):
         name = requirement_parts(spec)[0].replace("_", "-")
         if name and name not in pypi_names:
             problems.append(f"Python dev extra {name!r} was not scanned")
+    for spec in extras.get("ops", []):
+        name = requirement_parts(spec)[0].replace("_", "-")
+        if name and name in pypi_names:
+            problems.append(
+                f"ops extra {name!r} is installed; the license job must not install ops"
+            )
     for project in NPM_PROJECTS:
         manifest = json.loads((project / "package.json").read_text(encoding="utf-8"))
         root_name = manifest.get("name")
