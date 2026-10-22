@@ -54,9 +54,12 @@ installed trees fails the job; it is not skipped.
 - Python: `pip install --only-binary=:all: -c .github/license-constraints.txt -e ".[dev]"`
   plus `deploy/play-verify/requirements.txt`, including transitive packages.
   `pip-licenses` is installed with the same constraint and cross-checks that
-  inventory. There is no Python lockfile. The constraint file is used only by
-  this job and pins certifi to the release in `license-exceptions.toml`, so a
-  newer certifi on PyPI does not enter the scan. The `ops` extra is not
+  inventory. There is no Python lockfile. The constraint file pins certifi to
+  the release in `license-exceptions.toml`, so a newer certifi on PyPI does not
+  enter the scan. The exact pin freezes the
+  image's root-certificate bundle, so bump certifi on each release or monthly,
+  whichever comes first, and update the constraint and the exception row
+  together. The `ops` extra is not
   installed. It is migration tooling (`scripts/apply_migrations.py`), not
   part of the app image and not part of this scan. Packages in the `ops`
   extra are excluded from the scan and need a manual license review when added.
