@@ -21,6 +21,20 @@ logger = logging.getLogger(__name__)
 
 AUDIO_BUCKET = "recruit-audio"
 
+# Stable log names. These are the alerts: a swallowed exception is how a
+# recording outlives the promise that we discard it. Alert on the name.
+RECRUIT_AUDIO_DELETE_FAILED = "recruit_audio_delete_failed"
+RECRUIT_AUDIO_RETAINED_AFTER_SCORING_FAILURE = "recruit_audio_retained_after_scoring_failure"
+RECRUIT_AUDIO_RETAINED_AFTER_CRITIQUE = "recruit_audio_retained_after_critique"
+
+
+class RecruitAudioDeleteError(RuntimeError):
+    """The recording is still in recruit-audio after a delete attempt."""
+
+    def __init__(self, path: str) -> None:
+        self.path = path
+        super().__init__(path)
+
 AttemptStatus = Literal["queued", "running", "completed", "abandoned", "critique_failed"]
 
 
@@ -174,12 +188,39 @@ def download_audio(db: Client, path: str) -> bytes:
 
 
 def delete_audio(db: Client, path: str | None) -> None:
+    """Remove one recording. Failure raises after an ERROR metric.
+
+    The metric name is `recruit_audio_delete_failed`. Callers that must keep
+    going — a failed critique has already told the candidate — catch
+    `RecruitAudioDeleteError` and emit their own metric. They must not go back
+    to logging and returning.
+    """
     if not path:
         return
     try:
         db.storage.from_(AUDIO_BUCKET).remove([path])
-    except Exception:
-        logger.exception("could not delete Recruit audio at %s", path)
+    except Exception as exc:
+        logger.error("%s path=%s", RECRUIT_AUDIO_DELETE_FAILED, path, exc_info=True)
+        raise RecruitAudioDeleteError(path) from exc
+
+
+def discard_audio(
+    db: Client,
+    path: str | None,
+    *,
+    attempt_id: str | None,
+    metric: str,
+) -> None:
+    """Delete, and if that fails, log `metric` with the attempt id.
+
+    Raised from `delete_audio`, then caught here so the worker loop stays up.
+    Crashing the worker does not delete the object. The ERROR line is what an
+    alert counts; the monthly bucket check is the backstop.
+    """
+    try:
+        delete_audio(db, path)
+    except RecruitAudioDeleteError:
+        logger.error("%s attempt=%s path=%s", metric, attempt_id, path)
 
 
 def create_queued_attempt(
@@ -218,7 +259,12 @@ def create_queued_attempt(
             },
         ).execute()
     except Exception:
-        delete_audio(db, path)
+        # The insert failed. Surface that error. A delete failure is already
+        # an ERROR metric inside delete_audio; do not let it replace the cause.
+        try:
+            delete_audio(db, path)
+        except RecruitAudioDeleteError:
+            pass
         raise
     record = get_attempt(db, attempt_id)
     if record is None:
