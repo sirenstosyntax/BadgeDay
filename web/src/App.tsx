@@ -22,6 +22,7 @@ import {
 import { signOut, useSession } from './lib/auth'
 import { isOnline } from './lib/connectivity'
 import { clearDeviceLocalUserData } from './lib/deviceLocal'
+import { practiceScope, promoteFreeTaste } from './lib/freeTaste'
 import {
   anyModuleHasManageableBilling,
   headerManageModule,
@@ -88,6 +89,7 @@ type View =
 export default function App() {
   const { session, loading } = useSession()
   const { account, entitled, refreshAccount, settled } = useAccount(!!session)
+  const freeTaste = promoteFreeTaste(account, entitled)
   const [view, setView] = useState<View>({ name: 'choose' })
   const [entryApplied, setEntryApplied] = useState(false)
   const [starting, setStarting] = useState(false)
@@ -361,8 +363,11 @@ export default function App() {
     }
   }
 
-  async function practise(documentId: string | null) {
-    if (!entitled) {
+  async function practise(chosen: string | null) {
+    // Without a plan, only Promote's free document can be practised, and the server
+    // refuses the rest with a 402 anyway. Asking first saves a round trip to the paywall.
+    const documentId = practiceScope(entitled, freeTaste, chosen)
+    if (documentId === undefined) {
       needsAccess()
       return
     }
@@ -582,6 +587,8 @@ export default function App() {
         ) : view.name === 'documents' ? (
           <Documents
             entitled={entitled}
+            freeTaste={freeTaste}
+            onUploaded={() => void refreshAccount()}
             onNeedsAccess={needsAccess}
             onPractise={(id) => void practise(id)}
             iosShell={iosShell}

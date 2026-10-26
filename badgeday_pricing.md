@@ -59,6 +59,27 @@ and IDs are unchanged.
 
 ---
 
+## 2026-10-26 — Promote free taste (pending merge)
+
+Grant approved a free Promote taste on 2026-10-26, as proposed: **one document per
+account, no card, its first 30 pages read, up to 10 cited questions.** Migration
+`0019_promote_free_taste.sql` decides which upload is the free one; the worker applies the
+caps (`PROMOTE_FREE_TASTE_PAGES`, `PROMOTE_FREE_TASTE_QUESTIONS`). Paid amounts above are
+unchanged.
+
+Why now, against "Why give the gap analysis away entirely" below, which kept Promote
+without a free tier because a stranger's upload costs Document Intelligence money: the
+page cap is what bounds that. prebuilt-layout bills per page analysed, so a 30-page read
+is a 30-page bill however large the upload, and generation stops at the question cap.
+Until this, a promotional candidate paid before seeing one question from their own
+reading list, which is the whole pitch.
+
+The claim outlives the document (delete and re-upload does not reset it). Deleting the
+whole account does reset it — accepted, because a tombstone keyed on email would break the
+hard-delete promise, and the caps keep that path cheap.
+
+---
+
 ## The market, priced
 
 Everything below was retrieved 2026-07-29.

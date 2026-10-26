@@ -80,6 +80,13 @@ export type Account = {
   free_board_open?: boolean
   signup_src?: string | null
   recruit_test_on?: string | null
+  // Promote's free document (migration 0019). Open until it has been used; the id is the
+  // one document a candidate without a plan may practise. The caps are what the server
+  // will read and write for it — shown to the candidate, never hardcoded here.
+  promote_free_taste_open?: boolean
+  promote_free_taste_document_id?: string | null
+  promote_free_taste_pages?: number
+  promote_free_taste_questions?: number
 }
 
 /** Named offers. Amounts live in Stripe / Play — never hardcoded here. */
