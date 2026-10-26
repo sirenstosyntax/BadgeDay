@@ -18,6 +18,7 @@ from app.config import Settings
 from app.storage.activation import ActivationPublic
 from app.storage.billing import Entitlement
 from app.storage.entitlements import ModuleEntitlement
+from app.storage.free_taste import FreeTaste
 from app.storage.store import ManagedElsewhere
 
 USER_ID = "44444444-4444-4444-4444-444444444444"
@@ -50,6 +51,7 @@ def _client(
     recruit_store: ManagedElsewhere | None = None,
     settings: Settings | None = None,
     stripe_customer_id: str | None = None,
+    free_taste: FreeTaste | None = None,
 ) -> TestClient:
     configured = settings or Settings()
     app = FastAPI()
@@ -78,6 +80,9 @@ def _client(
     monkeypatch.setattr("app.api.account.managed_elsewhere_for", _managed)
     monkeypatch.setattr(
         "app.api.account.customer_id_for", lambda *_: stripe_customer_id
+    )
+    monkeypatch.setattr(
+        "app.api.account.free_taste_for", lambda *_: free_taste or FreeTaste(open=True)
     )
     monkeypatch.setattr(
         "app.api.account.read_activation_public",
@@ -336,6 +341,48 @@ def test_a_recruit_play_row_does_not_set_promote_managed_by(
 
 
 # --- Deleting the account ----------------------------------------------------
+
+
+def test_me_reports_an_unused_free_document_with_its_caps(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client(
+        monkeypatch,
+        Entitlement(entitled=False, subscription_status="none"),
+        settings=Settings(promote_free_taste_pages=12, promote_free_taste_questions=4),
+    )
+    body = client.get("/me").json()
+    assert body["entitled"] is False
+    assert body["promote_free_taste_open"] is True
+    assert body["promote_free_taste_document_id"] is None
+    # The app prints these, so they come from configuration and are never hardcoded.
+    assert body["promote_free_taste_pages"] == 12
+    assert body["promote_free_taste_questions"] == 4
+
+
+def test_me_names_the_free_document_once_it_is_used(monkeypatch: pytest.MonkeyPatch) -> None:
+    doc = "55555555-5555-5555-5555-555555555555"
+    client = _client(
+        monkeypatch,
+        Entitlement(entitled=False, subscription_status="none"),
+        free_taste=FreeTaste(open=False, document_id=doc),
+    )
+    body = client.get("/me").json()
+    assert body["promote_free_taste_open"] is False
+    assert body["promote_free_taste_document_id"] == doc
+
+
+def test_a_deleted_free_document_does_not_reopen_the_free_taste(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _client(
+        monkeypatch,
+        Entitlement(entitled=False, subscription_status="none"),
+        free_taste=FreeTaste(open=False, document_id=None),
+    )
+    body = client.get("/me").json()
+    assert body["promote_free_taste_open"] is False
+    assert body["promote_free_taste_document_id"] is None
 
 
 class _DeletingGateway:

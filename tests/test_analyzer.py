@@ -116,3 +116,96 @@ def test_a_result_without_figures_recognizes_none() -> None:
 def test_a_figure_without_elements_is_survivable() -> None:
     result = _Result([_Figure(elements=None, caption=_Elements(None))])
     assert figure_paragraph_indices(result) == set()
+
+
+# --- Promote's free document: reading only the first pages --------------------------
+
+
+def test_a_page_limit_drops_everything_past_it(analyzer: FixtureDocumentAnalyzer) -> None:
+    capped = analyzer.analyze(Path("synthetic_sog.pdf"), max_pages=1)
+    assert capped.page_count == 1
+    assert {block.page for block in capped.blocks} == {1}
+
+
+def test_a_page_limit_past_the_end_changes_nothing(
+    analyzer: FixtureDocumentAnalyzer, synthetic_sog: AnalyzedDocument
+) -> None:
+    assert analyzer.analyze(Path("synthetic_sog.pdf"), max_pages=30) == synthetic_sog
+
+
+class _Poller:
+    def __init__(self, result: object) -> None:
+        self._result = result
+
+    def result(self) -> object:
+        return self._result
+
+
+class _ThreePageResult:
+    """Three pages came back even though fewer were asked for: a provider that ignores
+    the range must still not leak pages past the cap."""
+
+    def __init__(self) -> None:
+        region = type("Region", (), {})
+        self.paragraphs = []
+        for page in (1, 2, 3):
+            r = region()
+            r.page_number = page
+            self.paragraphs.append(
+                type(
+                    "P",
+                    (),
+                    {"content": f"text on page {page}", "bounding_regions": [r], "role": None},
+                )()
+            )
+        self.pages = [object(), object(), object()]
+        self.figures = []
+
+
+def _fake_azure(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
+    calls: list[dict] = []
+
+    class _Client:
+        def __init__(self, **_: object) -> None:
+            pass
+
+        def begin_analyze_document(self, model: str, body: object, **options: object):
+            calls.append({"model": model, **options})
+            return _Poller(_ThreePageResult())
+
+    monkeypatch.setattr("azure.ai.documentintelligence.DocumentIntelligenceClient", _Client)
+    return calls
+
+
+def test_azure_is_asked_for_only_the_capped_pages_of_a_pdf(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls = _fake_azure(monkeypatch)
+    pdf = tmp_path / "list.pdf"
+    pdf.write_bytes(b"%PDF-")
+    document = AzureDocumentAnalyzer("https://x", "k").analyze(pdf, max_pages=2)
+    assert calls == [{"model": "prebuilt-layout", "pages": "1-2"}]
+    assert document.page_count == 2
+    assert {block.page for block in document.blocks} == {1, 2}
+
+
+def test_a_docx_is_cut_after_extraction_because_it_has_no_page_range(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls = _fake_azure(monkeypatch)
+    docx = tmp_path / "list.docx"
+    docx.write_bytes(b"PK")
+    document = AzureDocumentAnalyzer("https://x", "k").analyze(docx, max_pages=1)
+    assert calls == [{"model": "prebuilt-layout"}]
+    assert {block.page for block in document.blocks} == {1}
+
+
+def test_an_uncapped_read_asks_azure_for_the_whole_document(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls = _fake_azure(monkeypatch)
+    pdf = tmp_path / "list.pdf"
+    pdf.write_bytes(b"%PDF-")
+    document = AzureDocumentAnalyzer("https://x", "k").analyze(pdf)
+    assert calls == [{"model": "prebuilt-layout"}]
+    assert document.page_count == 3

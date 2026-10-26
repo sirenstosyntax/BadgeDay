@@ -60,6 +60,26 @@ class AnalyzedDocument(BaseModel):
     blocks: list[AnalyzedBlock]
 
 
+def first_pages(document: AnalyzedDocument, limit: int) -> AnalyzedDocument:
+    """The same document, cut to its first `limit` pages.
+
+    Promote's free document (migration 0019) is read only this far. Applied after
+    extraction as well as asked of the provider, because a provider is not obliged to honour
+    a page range — Document Intelligence takes one for a PDF and has no pages to range over
+    in a DOCX — and the cap is a cost promise that should not depend on which file type
+    a stranger happened to upload.
+    """
+    if limit < 1:
+        raise ValueError("a page limit must be at least 1")
+    if document.page_count <= limit and all(block.page <= limit for block in document.blocks):
+        return document
+    return AnalyzedDocument(
+        source_name=document.source_name,
+        page_count=min(document.page_count, limit),
+        blocks=[block for block in document.blocks if block.page <= limit],
+    )
+
+
 def format_section_path(path: list[str]) -> str:
     """Render an outline path the way a reader would cite it.
 

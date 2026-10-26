@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, api } from '../lib/api'
 import { isOnline } from '../lib/connectivity'
+import { type FreeTaste, freeTasteNotice } from '../lib/freeTaste'
 import { IOS_SETTINGS_ACCESS, pickPromoteDocument, scanPromotePage } from '../lib/nativeUpload'
 import { emptyCacheMessage } from '../lib/offlinePractice'
 import type { Coverage, DocumentRecord, DocumentStatus } from '../lib/types'
@@ -29,6 +30,11 @@ function StatusPill({ status }: { status: DocumentStatus }) {
 
 type DocumentsProps = {
   entitled: boolean
+  // Promote's free document. Without a plan, a candidate may still upload this one and
+  // practise it; the server is what enforces that, this only stops the app sending them
+  // to the paywall for something it would allow.
+  freeTaste?: FreeTaste
+  onUploaded?: () => void
   onNeedsAccess: () => void
   onPractise: (documentId: string | null) => void
   iosShell?: boolean
@@ -39,8 +45,12 @@ type DocumentsProps = {
   cachingOffline?: boolean
 }
 
+const NO_FREE_TASTE: FreeTaste = { canUpload: false, documentId: null, pages: null, questions: null }
+
 export function Documents({
   entitled,
+  freeTaste = NO_FREE_TASTE,
+  onUploaded,
   onNeedsAccess,
   onPractise,
   iosShell = false,
@@ -55,6 +65,7 @@ export function Documents({
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
+  const canUpload = entitled || freeTaste.canUpload
 
   const refresh = useCallback(async () => {
     try {
@@ -85,6 +96,8 @@ export function Documents({
     try {
       await api.documents.upload(file)
       await refresh()
+      // The free document is used the moment it lands, so the account has changed too.
+      if (!entitled) onUploaded?.()
     } catch (caught) {
       // A lapsed plan is not an upload error to apologise for — it is the paywall. Hand it
       // up rather than showing "that upload did not go through" over a billing problem.
@@ -108,7 +121,7 @@ export function Documents({
   }
 
   async function uploadFromIos(kind: 'files' | 'camera') {
-    if (!entitled) {
+    if (!canUpload) {
       onNeedsAccess()
       return
     }
@@ -157,7 +170,7 @@ export function Documents({
             information.
           </p>
         </div>
-        {entitled && iosShell ? (
+        {canUpload && iosShell ? (
           <div className="flex shrink-0 flex-wrap justify-end gap-2">
             <button
               type="button"
@@ -176,7 +189,7 @@ export function Documents({
               Scan page
             </button>
           </div>
-        ) : entitled ? (
+        ) : canUpload ? (
           <label className="shrink-0 cursor-pointer rounded-lg bg-stone-900 px-3 py-2 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900">
             {uploading ? 'Uploading…' : 'Add document'}
             <input
@@ -189,8 +202,8 @@ export function Documents({
             />
           </label>
         ) : (
-          // No file picker without a plan: opening one only to reject the upload with a 402
-          // wastes the candidate's time. Send them to the paywall instead.
+          // No file picker without a plan (and with the free document used): opening one only
+          // to reject the upload with a 402 wastes the candidate's time. Paywall instead.
           <button
             onClick={onNeedsAccess}
             className="shrink-0 rounded-lg bg-stone-900 px-3 py-2 text-sm font-medium text-white dark:bg-stone-100 dark:text-stone-900"
@@ -202,10 +215,7 @@ export function Documents({
 
       {!entitled && (
         <div className="flex items-center justify-between gap-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-          <span>
-            No active plan. You can still read and delete what you have uploaded; adding
-            documents and starting sessions need a subscription.
-          </span>
+          <span>{freeTasteNotice(freeTaste)}</span>
           <button
             onClick={onNeedsAccess}
             className="shrink-0 font-medium underline underline-offset-2"
@@ -243,6 +253,11 @@ export function Documents({
                   <div className="flex items-center gap-2">
                     <span className="truncate font-medium">{document.filename}</span>
                     <StatusPill status={document.status} />
+                    {document.id === freeTaste.documentId && (
+                      <span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs text-stone-800 dark:bg-stone-800 dark:text-stone-200">
+                        Free
+                      </span>
+                    )}
                   </div>
                   <div className="mt-1 text-xs text-stone-500 dark:text-stone-400">
                     {document.page_count ? `${document.page_count} pages · ` : ''}
@@ -250,6 +265,12 @@ export function Documents({
                       ? `${cover.percent}% covered (${cover.sections_exercised}/${cover.sections_total} sections)`
                       : 'No coverage yet'}
                   </div>
+                  {entitled && document.id === freeTaste.documentId && (
+                    <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                      This was your free document, so only part of it was used. Upload it
+                      again to practise the whole thing.
+                    </p>
+                  )}
                   {document.error && (
                     <p className="mt-1 text-xs text-red-700 dark:text-red-400">{document.error}</p>
                   )}

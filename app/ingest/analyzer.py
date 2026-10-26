@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from app.config import Settings
-from app.ingest.models import ROLE_FIGURE, AnalyzedBlock, AnalyzedDocument
+from app.ingest.models import ROLE_FIGURE, AnalyzedBlock, AnalyzedDocument, first_pages
 
 # Document Intelligence cross-references its own result with JSON pointers: a figure
 # lists `/paragraphs/7` to mean `result.paragraphs[7]`. Only paragraph pointers matter
@@ -57,9 +57,13 @@ def figure_paragraph_indices(result: Any) -> set[int]:
 
 
 class DocumentAnalyzer(Protocol):
-    """Extracts page-located text from a PDF or DOCX."""
+    """Extracts page-located text from a PDF or DOCX.
 
-    def analyze(self, path: Path) -> AnalyzedDocument: ...
+    `max_pages`, when given, means nothing past that page is returned. Promote's free
+    document is the only caller that sets it.
+    """
+
+    def analyze(self, path: Path, *, max_pages: int | None = None) -> AnalyzedDocument: ...
 
 
 class FixtureDocumentAnalyzer:
@@ -73,14 +77,15 @@ class FixtureDocumentAnalyzer:
     def __init__(self, fixture_dir: Path) -> None:
         self.fixture_dir = fixture_dir
 
-    def analyze(self, path: Path) -> AnalyzedDocument:
+    def analyze(self, path: Path, *, max_pages: int | None = None) -> AnalyzedDocument:
         fixture = self.fixture_dir / f"{path.stem}.json"
         if not fixture.exists():
             raise FileNotFoundError(
                 f"No fixture for {path.name}. Expected {fixture}. "
                 "Set AZURE_DOCINTEL_ENDPOINT and AZURE_DOCINTEL_KEY to analyze real documents."
             )
-        return AnalyzedDocument.model_validate_json(fixture.read_text())
+        document = AnalyzedDocument.model_validate_json(fixture.read_text())
+        return first_pages(document, max_pages) if max_pages else document
 
 
 class AzureDocumentAnalyzer:
@@ -109,7 +114,7 @@ class AzureDocumentAnalyzer:
         self.endpoint = endpoint
         self.key = key
 
-    def analyze(self, path: Path) -> AnalyzedDocument:
+    def analyze(self, path: Path, *, max_pages: int | None = None) -> AnalyzedDocument:
         # Imported lazily so the package is usable (and testable) without the Azure SDK
         # installed or credentials present.
         from azure.ai.documentintelligence import DocumentIntelligenceClient
@@ -118,8 +123,14 @@ class AzureDocumentAnalyzer:
         client = DocumentIntelligenceClient(
             endpoint=self.endpoint, credential=AzureKeyCredential(self.key)
         )
+        # A page range is what makes a capped read cheap: Document Intelligence bills the
+        # pages it analyses, so asking for 1-30 is paying for 30. It only means anything
+        # for a PDF; a DOCX is cut after extraction instead, by first_pages below.
+        options = {}
+        if max_pages and path.suffix.lower() == ".pdf":
+            options["pages"] = f"1-{max_pages}"
         with path.open("rb") as fh:
-            poller = client.begin_analyze_document("prebuilt-layout", body=fh)
+            poller = client.begin_analyze_document("prebuilt-layout", body=fh, **options)
         result = poller.result()
 
         figure_paragraphs = figure_paragraph_indices(result)
@@ -139,11 +150,12 @@ class AzureDocumentAnalyzer:
                 role = ROLE_FIGURE
             blocks.append(AnalyzedBlock(text=text, page=page, role=role))
 
-        return AnalyzedDocument(
+        document = AnalyzedDocument(
             source_name=path.name,
             page_count=max(len(result.pages or []), 1),
             blocks=blocks,
         )
+        return first_pages(document, max_pages) if max_pages else document
 
 
 def get_analyzer(settings: Settings, fixture_dir: Path | None = None) -> DocumentAnalyzer:

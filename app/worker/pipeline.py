@@ -30,6 +30,7 @@ from app.ingest.chunker import chunk_document
 from app.recruit.bank import C2_SCENARIO_ID, criterion_id_for, question_for
 from app.storage.content import clear_questions, load_chunks, save_chunks, save_questions
 from app.storage.documents import BUCKET, get_document, record_page_count, set_status
+from app.storage.free_taste import is_free_taste_document
 from app.storage.recruit import delete_audio, download_audio, get_attempt, mark_running
 from app.worker.jobs import Job, enqueue
 
@@ -65,6 +66,12 @@ def run_ingest(db: Client, settings: Settings, job: Job) -> None:
     document = _document(db, job)
     set_status(db, document.id, "analyzing")
 
+    # Promote's free document is read only to its first pages. Everyone else's document
+    # is read whole, through exactly the call it always was.
+    max_pages = (
+        settings.promote_free_taste_pages if is_free_taste_document(db, document.id) else None
+    )
+
     data = db.storage.from_(BUCKET).download(document.storage_path)
 
     # The analyzer takes a path because Document Intelligence and the fixture analyzer
@@ -76,7 +83,11 @@ def run_ingest(db: Client, settings: Settings, job: Job) -> None:
     try:
         handle.write(data)
         handle.close()
-        analyzed = get_analyzer(settings).analyze(Path(handle.name))
+        analyzer = get_analyzer(settings)
+        if max_pages:
+            analyzed = analyzer.analyze(Path(handle.name), max_pages=max_pages)
+        else:
+            analyzed = analyzer.analyze(Path(handle.name))
     finally:
         Path(handle.name).unlink(missing_ok=True)
 
@@ -108,11 +119,22 @@ def run_generate(db: Client, settings: Settings, job: Job) -> None:
     # same sections and a coverage figure counting both.
     clear_questions(db, document.id)
 
+    # Promote's free document gets a taste, not the whole list: generation stops once the
+    # cap is reached, so the model is not paid for sections nobody can practise for free.
+    limit = (
+        settings.promote_free_taste_questions
+        if is_free_taste_document(db, document.id)
+        else None
+    )
+
     client = Anthropic(api_key=settings.anthropic_api_key)
     stored = 0
     for chunk in chunks:
+        if limit is not None and stored >= limit:
+            break
         outcome = generate_for_chunk(chunk, client, settings)
-        stored += save_questions(db, outcome.questions)
+        questions = outcome.questions if limit is None else outcome.questions[: limit - stored]
+        stored += save_questions(db, questions)
 
     logger.info("document %s: %d questions across %d sections", document.id, stored, len(chunks))
     set_status(db, document.id, "ready")

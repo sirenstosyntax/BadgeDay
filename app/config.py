@@ -83,6 +83,14 @@ class Settings(BaseSettings):
     # upload cannot be read wholesale into the process memory of a request handler.
     max_upload_bytes: int = 25 * 1024 * 1024
 
+    # --- Promote free taste (migration 0019) ---------------------------------
+    # One free document per account, without a card, so a candidate sees questions from
+    # their own reading list before paying. Which document is free is the database's
+    # decision; these two numbers are what it may cost. Only the first N pages are read
+    # (Document Intelligence bills per page) and at most M questions are written.
+    promote_free_taste_pages: int = 30
+    promote_free_taste_questions: int = 10
+
     # --- Recruit access (ship gate #4) ---------------------------------------
     # Free first session(s) without a card. Further attempts need a Recruit
     # row on entitlements(user, module). Promote's has_access is a different

@@ -23,6 +23,7 @@ from app.storage.account import purge_account
 from app.storage.activation import read_activation_public
 from app.storage.billing import Entitlement, customer_id_for, entitlement
 from app.storage.entitlements import module_entitlement
+from app.storage.free_taste import free_taste_for
 from app.storage.store import managed_elsewhere_for
 
 router = APIRouter(tags=["account"])
@@ -73,6 +74,13 @@ class Account(Entitlement):
     free_board_open: bool = True
     signup_src: str | None = None
     recruit_test_on: date | None = None
+    # Promote's free document (migration 0019). Open until the candidate has used it; the
+    # id names which document it was, so the app can let them practise that one without a
+    # plan. The two caps are reported so the app states them rather than hardcoding them.
+    promote_free_taste_open: bool = False
+    promote_free_taste_document_id: str | None = None
+    promote_free_taste_pages: int
+    promote_free_taste_questions: int
 
 
 @router.get("/me")
@@ -86,6 +94,7 @@ def me(user: CurrentUserDep, db: DbDep, settings: SettingsDep) -> Account:
         db, user.id, product_ids=store_product_ids_for(settings, "recruit")
     )
     activation = read_activation_public(db, settings)
+    free_taste = free_taste_for(db, user.id)
     return Account(
         id=user.id,
         email=user.email,
@@ -120,6 +129,10 @@ def me(user: CurrentUserDep, db: DbDep, settings: SettingsDep) -> Account:
         free_board_open=activation.free_board_open,
         signup_src=activation.signup_src,
         recruit_test_on=activation.recruit_test_on,
+        promote_free_taste_open=free_taste.open,
+        promote_free_taste_document_id=free_taste.document_id,
+        promote_free_taste_pages=settings.promote_free_taste_pages,
+        promote_free_taste_questions=settings.promote_free_taste_questions,
         **state.model_dump(),
     )
 
