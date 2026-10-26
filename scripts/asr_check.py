@@ -31,6 +31,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from app.audio.deepgram import LISTEN_URL, listen_params
 from app.audio.metrics import compute
 from app.audio.models import CORE_FILLERS, Transcript, Word
 from app.config import get_settings
@@ -100,12 +101,13 @@ def _finding(provider: str, transcript: Transcript) -> Finding:
 
 
 def check_deepgram(path: Path) -> Finding | None:
-    """Deepgram nova with filler_words=true.
+    """Deepgram nova with filler_words=true and mip_opt_out=true.
 
     Chosen as the first candidate on documentation: `filler_words=true` is an explicit,
     documented, no-extra-cost switch, and per-word start/end/confidence come back by
     default rather than as a priced add-on. Documentation is not evidence, which is what
-    this script is for.
+    this script is for. The listen query is `listen_params`, the same one the worker
+    sends, including the model-improvement opt-out.
     """
     settings = get_settings()
     if not settings.transcription_configured:
@@ -115,15 +117,9 @@ def check_deepgram(path: Path) -> Finding | None:
 
     import httpx
 
-    params = {
-        "model": settings.deepgram_model,
-        "filler_words": "true",
-        "punctuate": "true",
-        "smart_format": "false",  # smart_format tidies speech, which is the failure mode
-    }
     response = httpx.post(
-        "https://api.deepgram.com/v1/listen",
-        params=params,
+        LISTEN_URL,
+        params=listen_params(settings.deepgram_model),
         headers={"Authorization": f"Token {key}"},
         content=path.read_bytes(),
         timeout=300,
