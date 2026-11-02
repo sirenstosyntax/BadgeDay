@@ -35,8 +35,8 @@ COMPILE_SDK='36'
 # Current "Command line tools only" zip on developer.android.com (Linux).
 CMDLINE_TOOLS_URL='https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip'
 CMDLINE_TOOLS_SHA256='4e4c464f145a7512b57d088ac6c278c03c9eea610886b35a5e0804e74eedf583'
-BUBBLEWRAP_PKG='@bubblewrap/cli@1.25.0'
-# Bubblewrap 1.25's PlayBillingFeature pins this helper; its POM pulls
+BUBBLEWRAP_PKG='@bubblewrap/cli@1.27.0'
+# Bubblewrap 1.27's PlayBillingFeature pins this helper; its POM pulls
 # com.android.billingclient:billing:8.3.0 (Play's v8+ new-app requirement).
 BILLING_HELPER='com.google.androidbrowserhelper:billing:1.2.0'
 BILLING_PERMISSION='com.android.vending.BILLING'
