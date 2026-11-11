@@ -15,7 +15,7 @@ Related PR (implementation source): https://github.com/sirenstosyntax/BadgeDay/p
 
 ## 1. User story
 
-A candidate whose email client (Yahoo Mail, Safe Links, or similar) prefetches the one-time magic-link URL can still sign in: SignIn shows that the link is spent or invalid, and they can type the 6- or 8-digit code from the same email instead of depending on the button surviving prefetch.
+A candidate whose email client (Yahoo Mail, Safe Links, or similar) prefetches the one-time magic-link URL can still sign in: SignIn shows that the link is spent or invalid, and they can type the 6 to 8 digit (inclusive) code from the same email instead of depending on the button surviving prefetch.
 
 ---
 
@@ -26,7 +26,7 @@ A candidate whose email client (Yahoo Mail, Safe Links, or similar) prefetches t
 - Surface Supabase auth redirect errors on SignIn (`#error=…` / `?error=…`, including `otp_expired`).
 - Strip those error params from the address bar after they are shown once (refresh must not keep re-showing a spent link).
 - Keep magic-link send (`signInWithOtp` / email me a sign-in link) unchanged in product meaning.
-- When an email has been sent — and whenever an email address is present — show a code field for 6- or 8-digit OTP.
+- When an email has been sent — and whenever an email address is present — show a code field for 6 to 8 digit (inclusive) OTP.
 - Submit verifies with email + token (OTP type for the same passwordless email path). Wrong code shows an error; happy-path magic-link session exchange remains available when the link is still valid.
 - Copy that tells the user to type the code if the email button does nothing.
 
@@ -61,7 +61,7 @@ Each item is independently verifiable.
 ### OTP code path
 
 7. After a successful send, **or** whenever a plausible email is present on the form, a “Code from the email” field is visible.
-8. The field accepts 6- or 8-digit codes (spaces/punctuation stripped for validation). Incomplete codes cannot submit as success.
+8. The field accepts 6 to 8 digits inclusive after normalize (spaces/punctuation stripped). Length 7 is valid. Incomplete means fewer than 6 digits after normalize; incomplete codes cannot submit as success.
 9. Submitting a complete code attempts verification for that email. Wrong/expired code surfaces an error and leaves the candidate able to retry or request a new email.
 10. Successful verification establishes a session (candidate is signed in). Remembered in-progress sign-in email is cleared on success and on sign-out.
 11. After send, the candidate can request a new email or choose a different email without being stuck on a dead screen.
@@ -78,7 +78,7 @@ Each item is independently verifiable.
 | Concern | Behavior |
 |---|---|
 | Redirect error source | URL hash and/or query: `error`, `error_code`, `error_description` |
-| OTP length | Digits only after normalize; complete when length is 6–8 |
+| OTP length | Digits only after normalize; complete when length is 6–8 inclusive (7 allowed) |
 | Remembered email | Optional client-side remember of the address used for the current sign-in attempt so a burned-link return can still show the code field; cleared on successful verify and on sign-out |
 
 No new server tables required for this slice.
@@ -93,7 +93,7 @@ No new server tables required for this slice.
 | Empty location / no error params | No error banner |
 | Description without `otp_expired` code | AC2 |
 | User refreshes after consume | Error params gone; do not invent a new error |
-| 7-digit typed code | Accept if normalize yields 6–8 digits per AC8 |
+| 7-digit typed code | Accept (AC8 is inclusive 6–8, not 6-or-8-only) |
 | Network failure on verify | Visible error; stay on SignIn |
 
 ---
