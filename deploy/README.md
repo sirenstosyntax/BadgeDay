@@ -65,6 +65,27 @@ usage, which are per-document and unchanged by this.
    `sk_live_…` secret, the live price IDs, and the live webhook signing secret in `.env`,
    then re-run. The script will warn you when it sees `sk_live`.
 
+## Deploy from GitHub (one button)
+
+`.github/workflows/deploy.yml` runs the migrations and then this deploy script on a GitHub
+runner, from `main`, when someone presses **Actions → Deploy → Run workflow**. A failed
+migration stops it before anything ships.
+
+One-time setup, from the repo root on the laptop that already deploys (`.env`,
+`web/.env.local`, `az login` and `gh auth login` in place):
+
+```bash
+./deploy/setup_github_deploy.sh
+```
+
+It pipes three repository secrets to GitHub without printing them: `BADGEDAY_ENV` (this
+`.env`), `BADGEDAY_WEB_ENV` (`web/.env.local`) and `AZURE_CREDENTIALS` (a new service
+principal, Contributor on the BadgeDay resource group only). GitHub's runners have no IPv6,
+so if `SUPABASE_DB_URL` is Supabase's IPv6-only direct host, the copy sent to GitHub uses
+the project's session pooler instead (`scripts/github_deploy_env.py`); the laptop's `.env`
+is unchanged. Re-run the setup after changing `.env`, and within a year (the service
+principal's secret expires).
+
 ## Migrations
 
 From the repo root, with `SUPABASE_DB_URL` set:
