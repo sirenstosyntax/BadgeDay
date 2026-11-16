@@ -11,15 +11,18 @@
   "dependencies": {
     "@capacitor/app": "^7.0.0",
     "@capacitor/camera": "^7.0.0",
-    "@capacitor/core": "^7.0.0",
-    "@capacitor/filesystem": "^7.0.0",
-    "@capacitor/ios": "^7.0.0",
+    "@capacitor/core": "^7.6.10",
+    "@capacitor/filesystem": "^7.1.9",
+    "@capacitor/ios": "^7.6.10",
     "@capacitor/local-notifications": "^7.0.0",
     "@capacitor/splash-screen": "^7.0.0",
     "@capawesome/capacitor-file-picker": "^7.2.0",
     "@capgo/native-purchases": "^7.19.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.0.0"
+    "@capacitor/cli": "^7.6.10"
+  },
+  "overrides": {
+    "@types/node": "^22.20.5"
   }
 }

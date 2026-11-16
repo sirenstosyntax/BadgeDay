@@ -4,3 +4,12 @@ source "https://rubygems.org"
 
 # Pin so CI and a future Mac checkout resolve the same Fastlane.
 gem "fastlane", "~> 2.228"
+
+# Fastlane 2.241.0 requires terminal-notifier >= 3.1.0. That is a major.
+# prism has no upper bound (rdoc asks for >= 1.6); 2.x is a major.
+# rdoc is GPL-2.0-only OR Ruby, and domain_name is BSD plus MPL-2.0.
+# Those two stay on the versions already in the tree.
+gem "terminal-notifier", "~> 2.0"
+gem "prism", ">= 1.6", "< 2"
+gem "rdoc", "8.0.0"
+gem "domain_name", "0.6.20260907"
